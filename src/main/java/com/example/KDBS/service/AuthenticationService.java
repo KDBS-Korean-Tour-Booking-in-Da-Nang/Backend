@@ -5,9 +5,8 @@ import com.example.KDBS.dto.request.IntrospectRequest;
 import com.example.KDBS.dto.request.LogOutRequest;
 import com.example.KDBS.dto.response.AuthenticationResponse;
 import com.example.KDBS.dto.response.IntrospectResponse;
-import com.example.KDBS.entity.InvalidateToken;
-import com.example.KDBS.entity.User;
-import com.example.KDBS.enums.Role;
+import com.example.KDBS.model.InvalidateToken;
+import com.example.KDBS.model.User;
 import com.example.KDBS.enums.Status;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
@@ -24,26 +23,17 @@ import org.springframework.beans.factory.annotation.Value;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.net.http.HttpHeaders;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.Map;
-import java.util.StringJoiner;
 import java.util.UUID;
 
-import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Service
@@ -70,7 +60,7 @@ public class AuthenticationService {
                 () -> new AppException(ErrorCode.EMAIL_NOT_EXISTED)
 
         );
-        if(Status.UNBANNED.name().equalsIgnoreCase(user.getStatus())){
+        if(Status.UNBANNED.name().equalsIgnoreCase(user.getStatus().name())){
             throw new AppException(ErrorCode.USER_IS_BANNED);
         }
         boolean authenticated = passwordEncoder.matches(authenticationRequest.getPassword(), user.getPassword());

@@ -1,4 +1,4 @@
-package com.example.KDBS.entity;
+package com.example.KDBS.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

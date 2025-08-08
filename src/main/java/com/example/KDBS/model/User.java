@@ -1,5 +1,7 @@
-package com.example.KDBS.entity;
+package com.example.KDBS.model;
 
+import com.example.KDBS.enums.Role;
+import com.example.KDBS.enums.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -54,8 +56,8 @@ public class User {
     private LocalDateTime createdAt;
 
     @Column(name = "status", length = 255)
-    private String status;
+    private Status status;
 
     @Column(name = "role", length = 255)
-    private String role;
+    private Role role;
 }

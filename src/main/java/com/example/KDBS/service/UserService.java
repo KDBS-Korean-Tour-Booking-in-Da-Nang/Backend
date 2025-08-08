@@ -2,7 +2,8 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.UserRegisterRequest;
 import com.example.KDBS.dto.response.UserResponse;
-import com.example.KDBS.entity.User;
+import com.example.KDBS.enums.Status;
+import com.example.KDBS.model.User;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -47,9 +47,9 @@ public class UserService {
 
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(Role.USER.name());
-        user.setStatus("noStatus");
-//        user.setOtp(otp);
+        user.setRole(Role.USER);
+        user.setStatus(Status.UNBANNED);
+//        user.setOtp(otp);s
 //        user.setGenerateOtpTime(LocalDateTime.now());
 
         userRepository.save(user);
