@@ -15,7 +15,10 @@ public enum ErrorCode {
     PASSWORD_NOT_MATCHER(1009,"Please enter correct old password", HttpStatus.BAD_REQUEST),
     PASSWORD_NOT_MATCH(1010,"Do not match. Please enter correct password", HttpStatus.BAD_REQUEST),
     OTP_INVALID(1011,"OTP invalid. Try again" ,HttpStatus.BAD_REQUEST ),
-    USER_IS_BANNED(1012,"User is banned.",HttpStatus.BAD_REQUEST);
+    USER_IS_BANNED(1012,"User is banned.",HttpStatus.BAD_REQUEST),
+    TOO_MANY_OTP_REQUESTS(1013, "Too many OTP requests. Please try again later", HttpStatus.TOO_MANY_REQUESTS),
+    OTP_EXPIRED(1014, "OTP has expired. Please request a new one", HttpStatus.BAD_REQUEST),
+    PASSWORD_RESET_FAILED(1015, "Password reset failed. Please try again", HttpStatus.BAD_REQUEST);
 
     private int code;
     private String message;
