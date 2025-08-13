@@ -1,20 +1,37 @@
 package com.example.KDBS.service;
 
+import com.example.KDBS.dto.request.BusinessLicenseRequest;
 import com.example.KDBS.dto.request.UserRegisterRequest;
+import com.example.KDBS.dto.response.IdCardApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
-import com.example.KDBS.enums.Status;
-import com.example.KDBS.model.User;
 import com.example.KDBS.enums.Role;
+import com.example.KDBS.enums.Status;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
+import com.example.KDBS.mapper.UserIdCardMapper;
 import com.example.KDBS.mapper.UserMapper;
+import com.example.KDBS.model.BusinessLicense;
+import com.example.KDBS.model.User;
+import com.example.KDBS.model.UserIdCard;
+import com.example.KDBS.repository.BusinessLicenseRepository;
+import com.example.KDBS.repository.UserIdCardRepository;
 import com.example.KDBS.repository.UserRepository;
+import com.example.KDBS.utils.FileUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -30,7 +47,18 @@ public class UserService {
     @Autowired
     private UserMapper userMapper;
     @Autowired
+    private UserIdCardMapper userIdCardMapper;
+    @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    BusinessLicenseRepository businessLicenseRepository;
+    @Autowired
+    UserIdCardRepository userIdCardRepository;
+
+    private static final String API_URL = "https://api.fpt.ai/vision/idr/vnm";
+    private static final String API_KEY = "YOUR_API_KEY";
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
 
     public String createUser(UserRegisterRequest request) throws IOException {
@@ -65,5 +93,76 @@ public class UserService {
         return users.stream()
                 .map(userMapper::toUserResponse)
                 .toList();
+    }
+
+    public void updateBusinessLicense(BusinessLicenseRequest request) throws IOException {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
+
+        if (user.getBusinessLicense() != null) {
+            throw new AppException(ErrorCode.BUSINESS_LICENSE_EXISTED);
+        }
+
+        String filePath = FileUtils.convertFileToPath(request.getBackImageData(), uploadDir, "/business/registrationFile");
+
+        // Create new license and link it
+        BusinessLicense license = BusinessLicense.builder()
+                .user(user)
+                .filePath(filePath)
+                .build();
+
+        user.setBusinessLicense(license);
+
+        userRepository.save(user);
+    }
+
+    public void processAndSaveIdCard(BusinessLicenseRequest request) throws Exception {
+
+        String frontPath = FileUtils.convertFileToPath(request.getFrontImageData(), uploadDir, "/idcard/front");
+        String backPath = FileUtils.convertFileToPath(request.getBackImageData(), uploadDir, "/idcard/back");
+
+        IdCardApiResponse frontData = callFptApi(request.getFrontImageData());
+
+        // Use mapper
+        UserIdCard entity = userIdCardMapper.toEntity(frontData);
+        entity.setUser(userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found")));
+        entity.setFrontImagePath(frontPath);
+        entity.setBackImagePath(backPath);
+
+        userIdCardRepository.save(entity);
+    }
+
+    private IdCardApiResponse callFptApi(MultipartFile file) throws Exception {
+        RestTemplate restTemplate = new RestTemplate();
+
+        ByteArrayResource fileResource = new ByteArrayResource(file.getBytes()) {
+            @Override
+            public String getFilename() {
+                return file.getOriginalFilename();
+            }
+        };
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("image", fileResource);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.add("api_key", API_KEY);
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                API_URL,
+                HttpMethod.POST,
+                requestEntity,
+                String.class
+        );
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(response.getBody());
+        JsonNode data = root.path("data").get(0);
+
+        return mapper.treeToValue(data, IdCardApiResponse.class);
     }
 }
