@@ -1,5 +1,7 @@
 package com.example.KDBS.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -11,23 +13,62 @@ import java.util.Map;
 @AllArgsConstructor
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@JsonIgnoreProperties(ignoreUnknown = true) // Ignore unknown JSON fields
 public class IdCardApiResponse {
-    private String id;
-    private String id_prob;
+
+    @JsonProperty("id")
+    private String idNumber;
+
+    @JsonProperty("id_prob")
+    private String idProb;
+
     private String name;
-    private String name_prob;
+
+    @JsonProperty("name_prob")
+    private String nameProb;
+
     private String dob;
-    private String dob_prob;
+
+    @JsonProperty("dob_prob")
+    private String dobProb;
+
     private String sex;
-    private String sex_prob;
+
+    @JsonProperty("sex_prob")
+    private String sexProb;
+
     private String nationality;
-    private String nationality_prob;
+
+    @JsonProperty("nationality_prob")
+    private String nationalityProb;
+
     private String home;
-    private String home_prob;
+
+    @JsonProperty("home_prob")
+    private String homeProb;
+
     private String address;
-    private String address_prob;
-    private Map<String, String> address_entities;
+
+    @JsonProperty("address_prob")
+    private String addressProb;
+
+    @JsonProperty("address_entities")
+    private Map<String, String> addressEntities;
+
     private String doe;
-    private String doe_prob;
+
+    @JsonProperty("doe_prob")
+    private String doeProb;
+
     private String type;
+
+    // New fields from API
+    @JsonProperty("overall_score")
+    private String overallScore;
+
+    @JsonProperty("number_of_name_lines")
+    private String numberOfNameLines;
+
+    @JsonProperty("type_new")
+    private String typeNew;
 }

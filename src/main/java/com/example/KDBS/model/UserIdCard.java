@@ -88,4 +88,13 @@ public class UserIdCard {
 
     @Column(name = "back_image_path")
     private String backImagePath;
+
+    @Column(name = "overall_score")
+    private String overallScore;
+
+    @Column(name = "number_of_name_lines")
+    private String numberOfNameLines;
+
+    @Column(name = "type_new")
+    private String typeNew;
 }

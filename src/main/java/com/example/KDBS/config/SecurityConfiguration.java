@@ -26,7 +26,7 @@ public class SecurityConfiguration {
 
     private final String[] PUBLIC_ENDPOINTS = {
             "/api/auth/login", "/api/auth/logout", "/api/auth/introspect",
-            "/api/users/register", "/api/users/verify-account", "/api/users/sendOTP", "/api/users/verify-email", "/api/users/regenerate-otp", "/api/users//update-business-license",
+            "/api/users/register", "/api/users/verify-account", "/api/users/sendOTP", "/api/users/verify-email", "/api/users/regenerate-otp", "/api/users/update-business-license",
             "/api/auth/google/login", "/api/auth/google/callback",
             "/api/auth/forgot-password/request", "/api/auth/forgot-password/reset", "/api/auth/forgot-password/verify-otp"
     };

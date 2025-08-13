@@ -56,7 +56,7 @@ public class UserService {
     UserIdCardRepository userIdCardRepository;
 
     private static final String API_URL = "https://api.fpt.ai/vision/idr/vnm";
-    private static final String API_KEY = "YOUR_API_KEY";
+    private static final String API_KEY = "0Ka4zpceIGAxLIlQ1f89RIaXbLaSHSVd";
     @Value("${file.upload-dir}")
     private String uploadDir;
 
@@ -103,7 +103,7 @@ public class UserService {
             throw new AppException(ErrorCode.BUSINESS_LICENSE_EXISTED);
         }
 
-        String filePath = FileUtils.convertFileToPath(request.getBackImageData(), uploadDir, "/business/registrationFile");
+        String filePath = FileUtils.convertFileToPath(request.getFileData(), uploadDir, "/business/registrationFile");
 
         // Create new license and link it
         BusinessLicense license = BusinessLicense.builder()
