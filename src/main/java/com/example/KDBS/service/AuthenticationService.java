@@ -60,7 +60,7 @@ public class AuthenticationService {
                 () -> new AppException(ErrorCode.EMAIL_NOT_EXISTED)
 
         );
-        if(Status.UNBANNED.name().equalsIgnoreCase(user.getStatus().name())){
+        if(Status.BANNED.name().equalsIgnoreCase(user.getStatus().name())){
             throw new AppException(ErrorCode.USER_IS_BANNED);
         }
         boolean authenticated = passwordEncoder.matches(authenticationRequest.getPassword(), user.getPassword());
