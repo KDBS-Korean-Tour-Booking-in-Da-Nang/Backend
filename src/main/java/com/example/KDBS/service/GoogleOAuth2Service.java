@@ -2,6 +2,8 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.dto.GoogleUserInfo;
 import com.example.KDBS.dto.response.AuthenticationResponse;
+import com.example.KDBS.dto.response.UserResponse;
+import com.example.KDBS.mapper.UserMapper;
 import com.example.KDBS.model.User;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
@@ -28,6 +30,7 @@ public class GoogleOAuth2Service {
     private final PasswordEncoder passwordEncoder;
     private final RestTemplate restTemplate;
     private final AuthenticationService authenticationService;
+    private final UserMapper userMapper;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String clientId;
@@ -58,9 +61,13 @@ public class GoogleOAuth2Service {
             // gen jwt token bang authenservice
             String token = authenticationService.generateToken(user);
             
+            // Convert User to UserResponse
+            UserResponse userResponse = userMapper.toUserResponse(user);
+            
             return AuthenticationResponse.builder()
                     .token(token)
                     .authenticated(true)
+                    .user(userResponse)
                     .build();
                     
         } catch (Exception e) {
