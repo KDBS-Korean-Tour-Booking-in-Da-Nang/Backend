@@ -6,6 +6,7 @@ import com.example.KDBS.dto.response.IdCardApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
+import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.UserIdCardMapper;
@@ -51,6 +52,8 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired
+    private OTPService otpService;
+    @Autowired
     BusinessLicenseRepository businessLicenseRepository;
     @Autowired
     UserIdCardRepository userIdCardRepository;
@@ -66,26 +69,21 @@ public class UserService {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
 
-//        String otp = otpUtil.generateOtp();
-//        try {
-//            emailUtil.sendOtpEmail(request.getEmail(), otp);
-//        } catch (MessagingException e) {
-//            throw new RuntimeException("Unable to send otp please try again");
-//        }
+        // Generate and send OTP for email verification
+        try {
+            otpService.generateAndSendOTP(request.getEmail(), OTPPurpose.VERIFY_EMAIL);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to send OTP. Please try again.");
+        }
 
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.USER);
         user.setStatus(Status.UNBANNED);
-//        user.setOtp(otp);s
-//        user.setGenerateOtpTime(LocalDateTime.now());
 
         userRepository.save(user);
 
-//        tuy theo viec xu ly nhu nao
-//        return "To verify this is your email account, we will send a confirmation code to this email. Please check your email to receive the verification code to activate your account";
-
-        return "Succed";
+        return "Registration successful. Please check your email for verification code.";
     }
 
     public List<UserResponse> getAllUsers(){

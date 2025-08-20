@@ -26,17 +26,19 @@ public class SecurityConfiguration {
 
     private final String[] PUBLIC_ENDPOINTS = {
             "/api/auth/login", "/api/auth/logout", "/api/auth/introspect",
-            "/api/users/register", "/api/users/verify-account", "/api/users/sendOTP", "/api/users/verify-email", "/api/users/regenerate-otp", "/api/users/update-business-license",
+            "/api/users/register", "/api/users/verify-account", "/api/users/sendOTP", "/api/users/verify-email",
+            "/api/users/regenerate-otp", "/api/users/update-business-license",
             "/api/auth/google/login", "/api/auth/google/callback",
             "/api/auth/naver/login", "/api/auth/naver/callback",
-            "/api/auth/forgot-password/request", "/api/auth/forgot-password/reset", "/api/auth/forgot-password/verify-otp"
+            "/api/auth/forgot-password/request", "/api/auth/forgot-password/reset",
+            "/api/auth/forgot-password/verify-otp"
     };
 
     private final String[] PUBLIC_RESOURCES = {
             "/", "/index.html", "/google-login.html", "/css/**", "/js/**", "/images/**"
     };
 
-    private String signature ="OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";
+    private String signature = "OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";
 
     @Autowired
     @Lazy
@@ -45,12 +47,14 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.cors(cors -> cors.configurationSource(request -> {
-                    CorsConfiguration configuration = new CorsConfiguration();
-                    configuration.setAllowedOrigins(Arrays.asList("*"));
-                    configuration.setAllowedMethods(Arrays.asList("*"));
-                    configuration.setAllowedHeaders(Arrays.asList("*"));
-                    return configuration;
-                })).authorizeHttpRequests(authorizationManagerRequestMatcherRegistry -> authorizationManagerRequestMatcherRegistry.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
+            CorsConfiguration configuration = new CorsConfiguration();
+            configuration.setAllowedOrigins(Arrays.asList("*"));
+            configuration.setAllowedMethods(Arrays.asList("*"));
+            configuration.setAllowedHeaders(Arrays.asList("*"));
+            return configuration;
+        })).authorizeHttpRequests(
+                authorizationManagerRequestMatcherRegistry -> authorizationManagerRequestMatcherRegistry
+                        .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
                         .permitAll()
                         .requestMatchers(HttpMethod.PUT, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS).permitAll()
@@ -59,19 +63,15 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
                         .requestMatchers(PUBLIC_RESOURCES).permitAll()
                         .anyRequest()
-                        .authenticated()
-                )
-                .oauth2Login(httpSecurityOAuth2LoginConfigurer ->
-                        httpSecurityOAuth2LoginConfigurer.defaultSuccessUrl("/oauth2/redirectWithRedirectView", true)
-                )
-                .oauth2Login(httpSecurityOAuth2LoginConfigurer ->
-                        httpSecurityOAuth2LoginConfigurer.defaultSuccessUrl("/oauth2/redirectView", true)
-                );
-
+                        .authenticated())
+                .oauth2Login(httpSecurityOAuth2LoginConfigurer -> httpSecurityOAuth2LoginConfigurer
+                        .defaultSuccessUrl("/oauth2/redirectWithRedirectView", true))
+                .oauth2Login(httpSecurityOAuth2LoginConfigurer -> httpSecurityOAuth2LoginConfigurer
+                        .defaultSuccessUrl("/oauth2/redirectView", true));
 
         httpSecurity.oauth2ResourceServer(httpSecurityOAuth2ResourceServerConfigurer -> {
             httpSecurityOAuth2ResourceServerConfigurer.jwt(jwtConfigurer -> jwtConfigurer.decoder(customJwtDecoder)
-                            .jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter()))
                     .authenticationEntryPoint(new JwtAuthEntryPoint());
 
         });
@@ -81,17 +81,16 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    JwtAuthenticationConverter jwtAuthenticationConverter(){
+    JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
         jwtGrantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
-        JwtAuthenticationConverter jwtAuthenticationConverter= new JwtAuthenticationConverter();
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter);
         return jwtAuthenticationConverter;
     }
 
-
     @Bean
-    PasswordEncoder passwordEncoder(){
+    PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(10);
     }
 

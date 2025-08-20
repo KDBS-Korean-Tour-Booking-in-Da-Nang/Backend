@@ -2,9 +2,12 @@ package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.BusinessLicenseRequest;
 import com.example.KDBS.dto.request.UserRegisterRequest;
+import com.example.KDBS.dto.request.EmailVerificationRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
+import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.service.UserService;
+import com.example.KDBS.service.OTPService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +27,10 @@ import java.util.List;
 public class UserController {
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private OTPService otpService;
+
     @Value("${file.upload-dir}")
     private String uploadDir;
 
@@ -34,8 +41,52 @@ public class UserController {
                 .build();
     }
 
+    @PostMapping("/sendOTP")
+    public ApiResponse<Void> sendOTP(@RequestBody @Valid EmailVerificationRequest request) {
+        try {
+            otpService.generateAndSendOTP(request.getEmail(), OTPPurpose.VERIFY_EMAIL);
+            return ApiResponse.<Void>builder()
+                    .message("OTP sent successfully to your email")
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<Void>builder()
+                    .message("Failed to send OTP: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @PostMapping("/verify-email")
+    public ApiResponse<Boolean> verifyEmail(@RequestBody @Valid EmailVerificationRequest request) {
+        try {
+            boolean isValid = otpService.verifyOTP(request.getEmail(), request.getOtpCode(), OTPPurpose.VERIFY_EMAIL);
+            return ApiResponse.<Boolean>builder()
+                    .result(isValid)
+                    .message(isValid ? "Email verified successfully" : "Invalid OTP")
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<Boolean>builder()
+                    .result(false)
+                    .message("Failed to verify email: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @PostMapping("/regenerate-otp")
+    public ApiResponse<Void> regenerateOTP(@RequestBody @Valid EmailVerificationRequest request) {
+        try {
+            otpService.generateAndSendOTP(request.getEmail(), OTPPurpose.VERIFY_EMAIL);
+            return ApiResponse.<Void>builder()
+                    .message("New OTP sent successfully to your email")
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<Void>builder()
+                    .message("Failed to regenerate OTP: " + e.getMessage())
+                    .build();
+        }
+    }
+
     @GetMapping
-    public ApiResponse<List<UserResponse>> getAllUsers(){
+    public ApiResponse<List<UserResponse>> getAllUsers() {
         return ApiResponse.<List<UserResponse>>builder()
                 .result(userService.getAllUsers())
                 .build();
