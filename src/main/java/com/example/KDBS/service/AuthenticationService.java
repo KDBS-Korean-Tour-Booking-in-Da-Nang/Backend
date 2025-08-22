@@ -5,6 +5,8 @@ import com.example.KDBS.dto.request.IntrospectRequest;
 import com.example.KDBS.dto.request.LogOutRequest;
 import com.example.KDBS.dto.response.AuthenticationResponse;
 import com.example.KDBS.dto.response.IntrospectResponse;
+import com.example.KDBS.dto.response.UserResponse;
+import com.example.KDBS.mapper.UserMapper;
 import com.example.KDBS.model.InvalidateToken;
 import com.example.KDBS.model.User;
 import com.example.KDBS.enums.Status;
@@ -25,7 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+
 
 import java.text.ParseException;
 import java.time.Instant;
@@ -43,6 +45,8 @@ public class AuthenticationService {
     private UserRepository userRepository;
     @Autowired
     private InvalidateTokenRepository invalidtokenrepository;
+    @Autowired
+    private UserMapper userMapper;
     protected static final String signature ="OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -60,16 +64,22 @@ public class AuthenticationService {
                 () -> new AppException(ErrorCode.EMAIL_NOT_EXISTED)
 
         );
-        if(Status.UNBANNED.name().equalsIgnoreCase(user.getStatus().name())){
+        if(Status.BANNED.name().equalsIgnoreCase(user.getStatus().name())){
             throw new AppException(ErrorCode.USER_IS_BANNED);
         }
         boolean authenticated = passwordEncoder.matches(authenticationRequest.getPassword(), user.getPassword());
         if (!authenticated)
             throw new AppException(ErrorCode.LOGIN_FAILED);
         var token =generateToken(user);
+        
+        // Convert User to UserResponse
+        UserResponse userResponse = userMapper.toUserResponse(user);
+        
         return AuthenticationResponse.builder()
                 .token(token)
-                .authenticated(true).build();
+                .authenticated(true)
+                .user(userResponse)
+                .build();
 
     }
 //    //phan xu ly google
@@ -106,7 +116,7 @@ public class AuthenticationService {
         }
     }
     public String buildScope(User user) {
-        if (!StringUtils.isEmpty(user.getRole())) {
+        if (user.getRole() != null && !user.getRole().toString().isEmpty()) {
             return "" + user.getRole();
         }
         return "";

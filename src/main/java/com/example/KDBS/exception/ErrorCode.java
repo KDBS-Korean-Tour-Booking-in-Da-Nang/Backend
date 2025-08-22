@@ -18,7 +18,8 @@ public enum ErrorCode {
     USER_IS_BANNED(1012,"User is banned.",HttpStatus.BAD_REQUEST),
     TOO_MANY_OTP_REQUESTS(1013, "Too many OTP requests. Please try again later", HttpStatus.TOO_MANY_REQUESTS),
     OTP_EXPIRED(1014, "OTP has expired. Please request a new one", HttpStatus.BAD_REQUEST),
-    PASSWORD_RESET_FAILED(1015, "Password reset failed. Please try again", HttpStatus.BAD_REQUEST);
+    PASSWORD_RESET_FAILED(1015, "Password reset failed. Please try again", HttpStatus.BAD_REQUEST),
+    BUSINESS_LICENSE_EXISTED(1016, "Business license has existed", HttpStatus.BAD_REQUEST);
 
     private int code;
     private String message;

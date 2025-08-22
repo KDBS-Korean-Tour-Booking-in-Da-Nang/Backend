@@ -1,13 +1,21 @@
 package com.example.KDBS.controller;
 
+import com.example.KDBS.dto.request.BusinessLicenseRequest;
 import com.example.KDBS.dto.request.UserRegisterRequest;
+import com.example.KDBS.dto.request.EmailVerificationRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
+import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.service.UserService;
+import com.example.KDBS.service.OTPService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -20,6 +28,12 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private OTPService otpService;
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
+
     @PostMapping("/register")
     public ApiResponse<String> register(@RequestBody @Valid UserRegisterRequest request) throws IOException {
         return ApiResponse.<String>builder()
@@ -27,10 +41,75 @@ public class UserController {
                 .build();
     }
 
+    @PostMapping("/sendOTP")
+    public ApiResponse<Void> sendOTP(@RequestBody @Valid EmailVerificationRequest request) {
+        try {
+            otpService.generateAndSendOTP(request.getEmail(), OTPPurpose.VERIFY_EMAIL);
+            return ApiResponse.<Void>builder()
+                    .message("OTP sent successfully to your email")
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<Void>builder()
+                    .message("Failed to send OTP: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @PostMapping("/verify-email")
+    public ApiResponse<Boolean> verifyEmail(@RequestBody @Valid EmailVerificationRequest request) {
+        try {
+            boolean isValid = otpService.verifyOTP(request.getEmail(), request.getOtpCode(), OTPPurpose.VERIFY_EMAIL);
+            return ApiResponse.<Boolean>builder()
+                    .result(isValid)
+                    .message(isValid ? "Email verified successfully" : "Invalid OTP")
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<Boolean>builder()
+                    .result(false)
+                    .message("Failed to verify email: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @PostMapping("/regenerate-otp")
+    public ApiResponse<Void> regenerateOTP(@RequestBody @Valid EmailVerificationRequest request) {
+        try {
+            otpService.generateAndSendOTP(request.getEmail(), OTPPurpose.VERIFY_EMAIL);
+            return ApiResponse.<Void>builder()
+                    .message("New OTP sent successfully to your email")
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<Void>builder()
+                    .message("Failed to regenerate OTP: " + e.getMessage())
+                    .build();
+        }
+    }
+
     @GetMapping
-    public ApiResponse<List<UserResponse>> getAllUsers(){
+    public ApiResponse<List<UserResponse>> getAllUsers() {
         return ApiResponse.<List<UserResponse>>builder()
                 .result(userService.getAllUsers())
                 .build();
+    }
+
+    @PutMapping(path = "/update-business-license", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> updateBusinessLicense(
+            @RequestPart("file") MultipartFile file,
+            @RequestPart("idCardFront") MultipartFile idCardFront,
+            @RequestPart("idCardBack") MultipartFile idCardBack,
+            @RequestParam("email") String email) throws Exception {
+
+        // Build request DTO
+        BusinessLicenseRequest request = BusinessLicenseRequest.builder()
+                .email(email)
+                .fileData(file)
+                .frontImageData(idCardFront)
+                .backImageData(idCardBack)
+                .build();
+
+        userService.updateBusinessLicense(request);
+        userService.processAndSaveIdCard(request);
+
+        return ResponseEntity.noContent().build();
     }
 }

@@ -2,6 +2,7 @@ package com.example.KDBS.model;
 
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "User")
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id", length = 30)
@@ -60,4 +62,8 @@ public class User {
 
     @Column(name = "role", length = 255)
     private Role role;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private BusinessLicense businessLicense;
 }

@@ -2,7 +2,7 @@ package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.AuthenticationResponse;
-import com.example.KDBS.service.GoogleOAuth2Service;
+import com.example.KDBS.service.NaverOAuth2Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,17 +12,16 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 @RestController
-@RequestMapping("/api/auth/google")
+@RequestMapping("/api/auth/naver")
 @RequiredArgsConstructor
 @CrossOrigin("*")
-public class GoogleOAuth2Controller {
+public class NaverOAuth2Controller {
 
-    private final GoogleOAuth2Service googleOAuth2Service;
+    private final NaverOAuth2Service naverOAuth2Service;
 
     @GetMapping("/login")
-    public ApiResponse<String> googleLogin() {
-        // login -> redirect toi trang google auth
-        String authUrl = googleOAuth2Service.getAuthorizationUrl();
+    public ApiResponse<String> naverLogin() {
+        String authUrl = naverOAuth2Service.getAuthorizationUrl();
         return ApiResponse.<String>builder()
                 .code(1000)
                 .result(authUrl)
@@ -30,12 +29,14 @@ public class GoogleOAuth2Controller {
     }
 
     @GetMapping("/callback")
-    public void googleCallback(@RequestParam("code") String code, HttpServletResponse response) throws IOException {
+    public void naverCallback(@RequestParam("code") String code,
+                             @RequestParam("state") String state,
+                             HttpServletResponse response) throws IOException {
         try {
-            AuthenticationResponse authResponse = googleOAuth2Service.handleGoogleCallback(code);
+            AuthenticationResponse authResponse = naverOAuth2Service.handleNaverCallback(code, state);
             
             // Redirect to frontend with user data
-            String frontendUrl = "http://localhost:3000/google/callback?" +
+            String frontendUrl = "http://localhost:3000/naver/callback?" +
                     "token=" + URLEncoder.encode(authResponse.getToken(), StandardCharsets.UTF_8) +
                     "&userId=" + authResponse.getUser().getUserId() +
                     "&email=" + URLEncoder.encode(authResponse.getUser().getEmail(), StandardCharsets.UTF_8) +
@@ -48,8 +49,8 @@ public class GoogleOAuth2Controller {
             response.sendRedirect(frontendUrl);
         } catch (Exception e) {
             // Redirect to frontend with error
-            String errorUrl = "http://localhost:3000/google/callback?error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
+            String errorUrl = "http://localhost:3000/naver/callback?error=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
             response.sendRedirect(errorUrl);
         }
     }
-} 
+}
