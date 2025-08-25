@@ -5,6 +5,7 @@ import com.example.KDBS.dto.request.UserRegisterRequest;
 import com.example.KDBS.dto.request.EmailVerificationRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
+import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
 import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.service.UserService;
 import com.example.KDBS.service.OTPService;
@@ -111,5 +112,13 @@ public class UserController {
         userService.processAndSaveIdCard(request);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/business-upload-status")
+    public ApiResponse<BusinessUploadStatusResponse> getBusinessUploadStatus(@RequestParam("email") String email) {
+        BusinessUploadStatusResponse status = userService.getBusinessUploadStatusByEmail(email);
+        return ApiResponse.<BusinessUploadStatusResponse>builder()
+                .result(status)
+                .build();
     }
 }
