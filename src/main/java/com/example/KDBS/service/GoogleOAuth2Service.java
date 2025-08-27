@@ -60,16 +60,16 @@ public class GoogleOAuth2Service {
             User user = saveOrUpdateGoogleUser(userInfo);
             // gen jwt token bang authenservice
             String token = authenticationService.generateToken(user);
-            
+
             // Convert User to UserResponse
             UserResponse userResponse = userMapper.toUserResponse(user);
-            
+
             return AuthenticationResponse.builder()
                     .token(token)
                     .authenticated(true)
                     .user(userResponse)
                     .build();
-                    
+
         } catch (Exception e) {
             log.error("Error handling Google callback: ", e);
             throw new RuntimeException("Google authentication failed", e);
@@ -78,19 +78,19 @@ public class GoogleOAuth2Service {
 
     private String exchangeCodeForToken(String code) {
         String tokenUrl = "https://oauth2.googleapis.com/token";
-        
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        
+
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("client_id", clientId);
         body.add("client_secret", clientSecret);
         body.add("code", code);
         body.add("grant_type", "authorization_code");
         body.add("redirect_uri", redirectUri);
-        
+
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
-        
+
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, request, Map.class);
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
@@ -99,41 +99,40 @@ public class GoogleOAuth2Service {
         } catch (Exception e) {
             log.error("Error exchanging code for token: ", e);
         }
-        
+
         throw new RuntimeException("Failed to exchange authorization code for access token");
     }
 
     private GoogleUserInfo getUserInfoFromGoogle(String accessToken) {
         String userInfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
-        
+
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
-        
+
         HttpEntity<String> request = new HttpEntity<>(headers);
-        
+
         try {
             ResponseEntity<GoogleUserInfo> response = restTemplate.exchange(
-                userInfoUrl, 
-                HttpMethod.GET, 
-                request, 
-                GoogleUserInfo.class
-            );
-            
+                    userInfoUrl,
+                    HttpMethod.GET,
+                    request,
+                    GoogleUserInfo.class);
+
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 return response.getBody();
             }
         } catch (Exception e) {
             log.error("Error getting user info from Google: ", e);
         }
-        
+
         throw new RuntimeException("Failed to get user info from Google");
     }
 
     private User saveOrUpdateGoogleUser(GoogleUserInfo userInfo) {
         String email = userInfo.getEmail();
-        
+
         Optional<User> existingUser = userRepository.findByEmail(email);
-        //check user ton tai
+        // check user ton tai
         if (existingUser.isPresent()) {
             User user = existingUser.get();
             if (userInfo.getPicture() != null && !userInfo.getPicture().equals(user.getAvatar())) {
@@ -142,7 +141,7 @@ public class GoogleOAuth2Service {
             }
             return user;
         } else {
-            //tao user moi default = user
+            // tao user moi default = user
             User newUser = User.builder()
                     .email(email)
                     .username(userInfo.getName())
@@ -156,4 +155,4 @@ public class GoogleOAuth2Service {
             return userRepository.save(newUser);
         }
     }
-} 
+}

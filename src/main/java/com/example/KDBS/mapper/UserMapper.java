@@ -11,5 +11,4 @@ public interface UserMapper {
     User toUser(UserRegisterRequest request);
 
     UserResponse toUserResponse(User user);
-
 }

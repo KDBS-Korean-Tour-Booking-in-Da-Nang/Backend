@@ -35,6 +35,9 @@ public class UserController {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
+    @Autowired
+    private OTPService otpService;
+
     @PostMapping("/register")
     public ApiResponse<String> register(@RequestBody @Valid UserRegisterRequest request) throws IOException {
         return ApiResponse.<String>builder()
