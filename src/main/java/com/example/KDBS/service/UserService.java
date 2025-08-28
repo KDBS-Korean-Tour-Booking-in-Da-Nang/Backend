@@ -3,6 +3,7 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.request.BusinessLicenseRequest;
 import com.example.KDBS.dto.request.UserRegisterRequest;
 import com.example.KDBS.dto.response.IdCardApiResponse;
+import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
@@ -63,7 +64,6 @@ public class UserService {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
-
     public String createUser(UserRegisterRequest request) throws IOException {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
@@ -86,7 +86,7 @@ public class UserService {
         return "Registration successful. Please check your email for verification code.";
     }
 
-    public List<UserResponse> getAllUsers(){
+    public List<UserResponse> getAllUsers() {
         List<User> users = userRepository.findAll();
         return users.stream()
                 .map(userMapper::toUserResponse)
@@ -131,6 +131,37 @@ public class UserService {
         userIdCardRepository.save(entity);
     }
 
+    public BusinessUploadStatusResponse getBusinessUploadStatusByEmail(String email) {
+        var response = BusinessUploadStatusResponse.builder()
+                .uploaded(false)
+                .build();
+
+        // Check existence via repositories
+        String licensePath = businessLicenseRepository.findFilePathByUserEmail(email);
+        String frontPath = userIdCardRepository.findFrontImagePathByUserEmail(email);
+        String backPath = userIdCardRepository.findBackImagePathByUserEmail(email);
+
+        boolean hasAny = (licensePath != null && !licensePath.isEmpty())
+                || (frontPath != null && !frontPath.isEmpty())
+                || (backPath != null && !backPath.isEmpty());
+
+        if (hasAny) {
+            response.setUploaded(true);
+            response.setBusinessLicenseFileName(extractFileName(licensePath));
+            response.setIdCardFrontFileName(extractFileName(frontPath));
+            response.setIdCardBackFileName(extractFileName(backPath));
+        }
+
+        return response;
+    }
+
+    private String extractFileName(String path) {
+        if (path == null)
+            return null;
+        int idx = path.lastIndexOf('/') >= 0 ? path.lastIndexOf('/') : path.lastIndexOf('\\');
+        return idx >= 0 ? path.substring(idx + 1) : path;
+    }
+
     private IdCardApiResponse callFptApi(MultipartFile file) throws Exception {
         RestTemplate restTemplate = new RestTemplate();
 
@@ -154,8 +185,7 @@ public class UserService {
                 API_URL,
                 HttpMethod.POST,
                 requestEntity,
-                String.class
-        );
+                String.class);
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode root = mapper.readTree(response.getBody());

@@ -80,6 +80,4 @@ public class ForgotPasswordService {
             return false;
         }
     }
-
-
-} 
+}

@@ -20,6 +20,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 
+import java.util.Arrays;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -32,7 +34,9 @@ public class SecurityConfiguration {
             "/api/auth/google/login", "/api/auth/google/callback",
             "/api/auth/naver/login", "/api/auth/naver/callback",
             "/api/auth/forgot-password/request", "/api/auth/forgot-password/reset",
-            "/api/auth/forgot-password/verify-otp"
+            "/api/auth/forgot-password/verify-otp",
+            "/api/posts/**",
+            "/api/comments/**"
     };
 
     private final String[] PUBLIC_RESOURCES = {
@@ -59,6 +63,7 @@ public class SecurityConfiguration {
                         .permitAll()
                         .requestMatchers(HttpMethod.PUT, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.DELETE, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.PUT, "/users/change-pass/{email}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/oauth2/redirectWithRedirectView").permitAll()
                         .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
