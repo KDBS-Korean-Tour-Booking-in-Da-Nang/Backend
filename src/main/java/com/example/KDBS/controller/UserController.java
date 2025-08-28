@@ -5,6 +5,7 @@ import com.example.KDBS.dto.request.UserRegisterRequest;
 import com.example.KDBS.dto.request.EmailVerificationRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
+import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
 import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.service.UserService;
 import com.example.KDBS.service.OTPService;
@@ -27,12 +28,11 @@ import java.util.List;
 public class UserController {
     @Autowired
     private UserService userService;
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     @Autowired
     private OTPService otpService;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
 
     @PostMapping("/register")
     public ApiResponse<String> register(@RequestBody @Valid UserRegisterRequest request) throws IOException {
@@ -111,5 +111,13 @@ public class UserController {
         userService.processAndSaveIdCard(request);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/business-upload-status")
+    public ApiResponse<BusinessUploadStatusResponse> getBusinessUploadStatus(@RequestParam("email") String email) {
+        BusinessUploadStatusResponse status = userService.getBusinessUploadStatusByEmail(email);
+        return ApiResponse.<BusinessUploadStatusResponse>builder()
+                .result(status)
+                .build();
     }
 }
