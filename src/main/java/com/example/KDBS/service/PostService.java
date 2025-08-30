@@ -46,7 +46,6 @@ public class PostService {
     public PostResponse createPost(PostRequest postRequest) throws IOException {
         User user = userRepository.findByEmail(postRequest.getUserEmail())
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + postRequest.getUserEmail()));
-
         ForumPost forumPost = postMapper.toEntity(postRequest);
         forumPost.setUser(user);
         forumPost = forumPostRepository.save(forumPost);

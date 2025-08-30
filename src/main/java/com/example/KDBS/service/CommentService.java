@@ -49,6 +49,7 @@ public class CommentService {
         ForumComment forumComment = commentMapper.toEntity(commentRequest);
         forumComment.setUser(user);
         forumComment.setForumPost(forumPost);
+        forumComment.setReact(0); // Initialize react count to 0
 
         handleImage(commentRequest.getImgPath(), forumComment);
 
@@ -95,7 +96,7 @@ public class CommentService {
         forumCommentRepository.delete(forumComment);
     }
 
-    public List<CommentResponse> getCommentsByPostId(Long postId) {
+        public List<CommentResponse> getCommentsByPostId(Long postId) {
         return forumCommentRepository.findByForumPost_ForumPostId(postId).stream()
                 .map(commentMapper::toResponse)
                 .collect(Collectors.toList());
