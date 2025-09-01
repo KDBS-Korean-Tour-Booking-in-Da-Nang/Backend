@@ -9,5 +9,6 @@ public class CommentResponse {
     private Long forumCommentId;
     private String content;
     private String imgPath;
+    private Integer react;
     private LocalDateTime createdAt;
 }
