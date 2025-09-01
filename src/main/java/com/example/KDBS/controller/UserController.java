@@ -29,9 +29,6 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @Autowired
-    private OTPService otpService;
-
     @Value("${file.upload-dir}")
     private String uploadDir;
 
