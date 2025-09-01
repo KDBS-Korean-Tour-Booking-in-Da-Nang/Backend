@@ -69,7 +69,6 @@ public class GoogleOAuth2Service {
                     .authenticated(true)
                     .user(userResponse)
                     .build();
-
         } catch (Exception e) {
             log.error("Error handling Google callback: ", e);
             throw new RuntimeException("Google authentication failed", e);
@@ -99,7 +98,6 @@ public class GoogleOAuth2Service {
         } catch (Exception e) {
             log.error("Error exchanging code for token: ", e);
         }
-
         throw new RuntimeException("Failed to exchange authorization code for access token");
     }
 
@@ -124,7 +122,6 @@ public class GoogleOAuth2Service {
         } catch (Exception e) {
             log.error("Error getting user info from Google: ", e);
         }
-
         throw new RuntimeException("Failed to get user info from Google");
     }
 

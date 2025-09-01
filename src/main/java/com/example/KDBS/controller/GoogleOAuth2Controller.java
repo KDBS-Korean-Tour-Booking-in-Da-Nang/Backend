@@ -33,7 +33,6 @@ public class GoogleOAuth2Controller {
     public void googleCallback(@RequestParam("code") String code, HttpServletResponse response) throws IOException {
         try {
             AuthenticationResponse authResponse = googleOAuth2Service.handleGoogleCallback(code);
-
             // Redirect to frontend with user data
             String frontendUrl = "http://localhost:3000/google/callback?" +
                     "token=" + URLEncoder.encode(authResponse.getToken(), StandardCharsets.UTF_8) +

@@ -19,7 +19,15 @@ public enum ErrorCode {
     TOO_MANY_OTP_REQUESTS(1013, "Too many OTP requests. Please try again later", HttpStatus.TOO_MANY_REQUESTS),
     OTP_EXPIRED(1014, "OTP has expired. Please request a new one", HttpStatus.BAD_REQUEST),
     PASSWORD_RESET_FAILED(1015, "Password reset failed. Please try again", HttpStatus.BAD_REQUEST),
-    BUSINESS_LICENSE_EXISTED(1016, "Business license has existed", HttpStatus.BAD_REQUEST);
+    BUSINESS_LICENSE_EXISTED(1016, "Business license has existed", HttpStatus.BAD_REQUEST),
+    POST_NOT_FOUND(1017, "Post not found", HttpStatus.NOT_FOUND),
+    CANNOT_SAVE_OWN_POST(1018, "Cannot save your own post", HttpStatus.BAD_REQUEST),
+    POST_ALREADY_SAVED(1019, "Post already saved", HttpStatus.BAD_REQUEST),
+    POST_NOT_SAVED(1020, "Post not saved", HttpStatus.NOT_FOUND),
+    USER_NOT_FOUND(1021, "User not found", HttpStatus.NOT_FOUND),
+    ALREADY_REPORTED(1022, "Already reported this target", HttpStatus.BAD_REQUEST),
+    REPORT_NOT_FOUND(1023, "Report not found", HttpStatus.NOT_FOUND),
+    COMMENT_NOT_FOUND(1024, "Comment not found", HttpStatus.NOT_FOUND);
 
     private int code;
     private String message;
