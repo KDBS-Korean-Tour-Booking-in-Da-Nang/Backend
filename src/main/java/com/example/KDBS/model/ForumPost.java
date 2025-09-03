@@ -54,6 +54,8 @@ public class ForumPost {
     @Builder.Default
     private List<ForumComment> comments = new ArrayList<>();
 
+
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
