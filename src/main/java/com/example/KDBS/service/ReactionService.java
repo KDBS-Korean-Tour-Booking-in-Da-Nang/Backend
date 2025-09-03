@@ -13,6 +13,7 @@ import com.example.KDBS.repository.ForumPostRepository;
 import com.example.KDBS.repository.ForumCommentRepository;
 import com.example.KDBS.repository.ReactionRepository;
 import com.example.KDBS.repository.UserRepository;
+import com.example.KDBS.repository.PostImgRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,8 +32,9 @@ public class ReactionService {
     private final ForumPostRepository forumPostRepository;
     private final ForumCommentRepository forumCommentRepository;
     private final UserRepository userRepository;
+    private final PostImgRepository postImgRepository;
 
-        @Transactional
+    @Transactional
     public ReactionResponse addOrUpdateReaction(ReactionRequest request, String userEmail) {
         System.out.println("fiding" + userEmail);
         User user = userRepository.findByEmail(userEmail)
@@ -46,7 +48,7 @@ public class ReactionService {
         // check user da react target
         Optional<Reaction> existingReaction = reactionRepository.findByUserAndTargetIdAndTargetType(
                 user, request.getTargetId(), request.getTargetType());
-        
+
         if (existingReaction.isPresent()) {
             Reaction reaction = existingReaction.get();
             // da react ->
@@ -68,7 +70,7 @@ public class ReactionService {
                     .targetType(request.getTargetType())
                     .reactionType(request.getReactionType())
                     .build();
-            
+
             Reaction savedReaction = reactionRepository.save(newReaction);
             updateTargetReactionCount(request.getTargetId(), request.getTargetType(), 1);
             return mapToResponse(savedReaction);
@@ -91,7 +93,7 @@ public class ReactionService {
         // Get reaction counts by type
         List<Object[]> reactionCounts = reactionRepository.countReactionsByType(targetId, targetType);
         Map<ReactionType, Long> reactionMap = new HashMap<>();
-        
+
         for (Object[] result : reactionCounts) {
             ReactionType type = (ReactionType) result[0];
             Long count = (Long) result[1];
@@ -141,6 +143,10 @@ public class ReactionService {
             if (!forumCommentRepository.existsById(targetId)) {
                 throw new RuntimeException("Comment not found");
             }
+        } else if (targetType == ReactionTargetType.IMG) {
+            if (!postImgRepository.existsById(targetId)) {
+                throw new RuntimeException("Image not found");
+            }
         }
     }
 
@@ -172,5 +178,29 @@ public class ReactionService {
                 .userAvatar(reaction.getUser().getAvatar())
                 .createdAt(reaction.getCreatedAt())
                 .build();
+    }
+
+    // New methods for simplified reaction handling
+    @Transactional
+    public ReactionResponse createReaction(ReactionRequest reactionRequest) {
+        return addOrUpdateReaction(reactionRequest, reactionRequest.getUserEmail());
+    }
+
+    @Transactional
+    public void removeReactionByRequest(ReactionRequest reactionRequest) {
+        removeReaction(reactionRequest.getTargetId(), reactionRequest.getTargetType(), reactionRequest.getUserEmail());
+    }
+
+    public Long getReactionCountByPost(Long postId) {
+        return reactionRepository.countByTargetIdAndTargetType(postId, ReactionTargetType.POST);
+    }
+
+    public Boolean hasUserReacted(Long postId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user == null)
+            return false;
+
+        return reactionRepository.existsByUserAndTargetIdAndTargetType(
+                user, postId, ReactionTargetType.POST);
     }
 }

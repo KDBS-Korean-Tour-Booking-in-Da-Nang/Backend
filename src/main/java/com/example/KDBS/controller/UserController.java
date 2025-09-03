@@ -6,9 +6,11 @@ import com.example.KDBS.dto.request.EmailVerificationRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
+import com.example.KDBS.dto.response.UserSuggestionResponse;
 import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.service.UserService;
 import com.example.KDBS.service.OTPService;
+import com.example.KDBS.service.UserSuggestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,9 @@ public class UserController {
 
     @Autowired
     private OTPService otpService;
+
+    @Autowired
+    private UserSuggestionService userSuggestionService;
 
     @PostMapping("/register")
     public ApiResponse<String> register(@RequestBody @Valid UserRegisterRequest request) throws IOException {
@@ -119,6 +124,15 @@ public class UserController {
         BusinessUploadStatusResponse status = userService.getBusinessUploadStatusByEmail(email);
         return ApiResponse.<BusinessUploadStatusResponse>builder()
                 .result(status)
+                .build();
+    }
+
+    @GetMapping("/suggestions")
+    public ApiResponse<List<UserSuggestionResponse>> getSuggestedUsers(
+            @RequestParam(defaultValue = "5") int limit) {
+        List<UserSuggestionResponse> suggestions = userSuggestionService.getSuggestedUsers(limit);
+        return ApiResponse.<List<UserSuggestionResponse>>builder()
+                .result(suggestions)
                 .build();
     }
 }

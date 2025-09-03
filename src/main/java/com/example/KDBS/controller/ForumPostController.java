@@ -62,18 +62,15 @@ public class ForumPostController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             // sort by createdAt(flexible), default = desc(newest)
-            @RequestParam(defaultValue = "createdAt,desc") String sort
-    ) {
+            @RequestParam(defaultValue = "createdAt,desc") String sort) {
         String[] parts = sort.split(",");
         String field = parts[0]; // tên field entity
-        Sort.Direction direction = parts.length > 1 && parts[1].equalsIgnoreCase("asc") ?
-                Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort.Direction direction = parts.length > 1 && parts[1].equalsIgnoreCase("asc") ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, field));
 
         return ResponseEntity.ok(postService.searchPosts(keyword, hashtags, pageable));
     }
-
-
 
 }

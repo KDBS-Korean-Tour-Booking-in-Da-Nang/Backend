@@ -23,4 +23,8 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
     List<Object[]> countReactionsByType(@Param("targetId") Long targetId, @Param("targetType") ReactionTargetType targetType);
 
     void deleteByUserAndTargetIdAndTargetType(User user, Long targetId, ReactionTargetType targetType);
+    
+    Long countByTargetIdAndTargetType(Long targetId, ReactionTargetType targetType);
+    
+    Boolean existsByUserAndTargetIdAndTargetType(User user, Long targetId, ReactionTargetType targetType);
 }

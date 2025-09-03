@@ -41,6 +41,12 @@ public class ForumComment {
     @JsonBackReference
     private ForumPost forumPost;
 
+    // Optional parent for replies (threaded comments)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_comment_id")
+    @JsonBackReference
+    private ForumComment parentComment;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
