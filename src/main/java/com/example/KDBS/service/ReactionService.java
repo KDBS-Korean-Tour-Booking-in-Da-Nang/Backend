@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -202,5 +203,46 @@ public class ReactionService {
 
         return reactionRepository.existsByUserAndTargetIdAndTargetType(
                 user, postId, ReactionTargetType.POST);
+    }
+
+    public List<ReactionResponse> getUserReactions(String userEmail, String reactionType) {
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user == null) {
+            return new ArrayList<>();
+        }
+
+        List<Reaction> reactions;
+        if (reactionType != null && !reactionType.isEmpty()) {
+            // Filter by reaction type (LIKE, DISLIKE)
+            reactions = reactionRepository.findByUserOrderByCreatedAtDesc(user);
+            reactions = reactions.stream()
+                    .filter(r -> r.getReactionType().name().equals(reactionType))
+                    .collect(Collectors.toList());
+        } else {
+            reactions = reactionRepository.findByUserOrderByCreatedAtDesc(user);
+        }
+
+        return reactions.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Keep original method for backward compatibility
+    public List<ReactionResponse> getUserReactionsByTargetType(String userEmail, ReactionTargetType targetType) {
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user == null) {
+            return new ArrayList<>();
+        }
+
+        List<Reaction> reactions;
+        if (targetType != null) {
+            reactions = reactionRepository.findByUserAndTargetTypeOrderByCreatedAtDesc(user, targetType);
+        } else {
+            reactions = reactionRepository.findByUserOrderByCreatedAtDesc(user);
+        }
+
+        return reactions.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 }

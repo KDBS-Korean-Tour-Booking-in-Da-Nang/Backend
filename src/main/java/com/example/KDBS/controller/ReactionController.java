@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("api/reactions")
 public class ReactionController {
@@ -96,5 +98,25 @@ public class ReactionController {
         ReactionSummaryResponse summary = reactionService.getReactionSummary(commentId, ReactionTargetType.COMMENT,
                 userEmail);
         return ResponseEntity.ok(summary);
+    }
+
+    // Get user's reactions by reaction type (LIKE, DISLIKE)
+    @GetMapping("/user/{userEmail}")
+    public ResponseEntity<List<ReactionResponse>> getUserReactions(
+            @PathVariable String userEmail,
+            @RequestParam(required = false) String reactionType) {
+        List<ReactionResponse> reactions = reactionService.getUserReactions(userEmail, reactionType);
+        return ResponseEntity.ok(reactions);
+    }
+
+    // Get user's reactions by target type (POST, COMMENT, IMG) - for backward
+    // compatibility
+    @GetMapping("/user/{userEmail}/by-target")
+    public ResponseEntity<List<ReactionResponse>> getUserReactionsByTargetType(
+            @PathVariable String userEmail,
+            @RequestParam(required = false) String targetType) {
+        ReactionTargetType type = targetType != null ? ReactionTargetType.valueOf(targetType) : null;
+        List<ReactionResponse> reactions = reactionService.getUserReactionsByTargetType(userEmail, type);
+        return ResponseEntity.ok(reactions);
     }
 }

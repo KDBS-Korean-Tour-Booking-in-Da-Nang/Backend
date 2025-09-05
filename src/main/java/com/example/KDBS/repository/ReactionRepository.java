@@ -14,17 +14,24 @@ import java.util.Optional;
 
 @Repository
 public interface ReactionRepository extends JpaRepository<Reaction, Long> {
-    
+
     Optional<Reaction> findByUserAndTargetIdAndTargetType(User user, Long targetId, ReactionTargetType targetType);
 
     List<Reaction> findByTargetIdAndTargetType(Long targetId, ReactionTargetType targetType);
-    
+
     @Query("SELECT r.reactionType, COUNT(r) FROM Reaction r WHERE r.targetId = :targetId AND r.targetType = :targetType GROUP BY r.reactionType")
-    List<Object[]> countReactionsByType(@Param("targetId") Long targetId, @Param("targetType") ReactionTargetType targetType);
+    List<Object[]> countReactionsByType(@Param("targetId") Long targetId,
+            @Param("targetType") ReactionTargetType targetType);
 
     void deleteByUserAndTargetIdAndTargetType(User user, Long targetId, ReactionTargetType targetType);
-    
+
     Long countByTargetIdAndTargetType(Long targetId, ReactionTargetType targetType);
-    
+
     Boolean existsByUserAndTargetIdAndTargetType(User user, Long targetId, ReactionTargetType targetType);
+
+    // Get all reactions by user
+    List<Reaction> findByUserOrderByCreatedAtDesc(User user);
+
+    // Get reactions by user and target type
+    List<Reaction> findByUserAndTargetTypeOrderByCreatedAtDesc(User user, ReactionTargetType targetType);
 }

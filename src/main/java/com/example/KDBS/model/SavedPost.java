@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 @Entity
 @Table(name = "saved_posts", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "post_id"})
+        @UniqueConstraint(columnNames = { "user_id", "post_id" })
 })
 public class SavedPost {
 

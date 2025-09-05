@@ -39,6 +39,8 @@ public class SecurityConfiguration {
             "/api/comments/**",
             "/api/reactions/**",
             "/api/hashtags/**",
+            "/api/saved-posts/**",
+            "/api/reports/**",
             "/api/users/suggestions"
     };
 
