@@ -9,103 +9,117 @@ import com.example.KDBS.model.User;
 import com.example.KDBS.repository.ForumCommentRepository;
 import com.example.KDBS.repository.ForumPostRepository;
 import com.example.KDBS.repository.UserRepository;
-import com.example.KDBS.utils.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class CommentService {
 
-    @Autowired
-    private ForumCommentRepository forumCommentRepository;
+        @Autowired
+        private ForumCommentRepository forumCommentRepository;
 
-    @Autowired
-    private ForumPostRepository forumPostRepository;
+        @Autowired
+        private UserRepository userRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+        @Autowired
+        private ForumPostRepository forumPostRepository;
 
-    @Autowired
-    private CommentMapper commentMapper;
+        @Autowired
+        private CommentMapper commentMapper;
 
-    @Value("${file.upload-dir}")
-    private String uploadDir;
+        @Transactional
+        public CommentResponse createComment(CommentRequest commentRequest) {
+                User user = userRepository.findByEmail(commentRequest.getUserEmail())
+                                .orElseThrow(() -> new RuntimeException(
+                                                "User not found with email: " + commentRequest.getUserEmail()));
 
-    @Transactional
-    public CommentResponse createComment(CommentRequest commentRequest) throws IOException {
-        ForumPost forumPost = forumPostRepository.findById(commentRequest.getPostId())
-                .orElseThrow(() -> new RuntimeException("Post not found with id: " + commentRequest.getPostId()));
+                ForumPost forumPost = forumPostRepository.findById(commentRequest.getForumPostId())
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Post not found with id: " + commentRequest.getForumPostId()));
 
-        User user = userRepository.findByEmail(commentRequest.getUserEmail())
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + commentRequest.getUserEmail()));
+                ForumComment comment = ForumComment.builder()
+                                .content(commentRequest.getContent())
+                                .imgPath(commentRequest.getImgPath())
+                                .user(user)
+                                .forumPost(forumPost)
+                                .react(0)
+                                .build();
 
-        ForumComment forumComment = commentMapper.toEntity(commentRequest);
-        forumComment.setUser(user);
-        forumComment.setForumPost(forumPost);
-        forumComment.setReact(0); // Initialize react count to 0
+                // If this is a reply, set parent comment
+                if (commentRequest.getParentCommentId() != null) {
+                        ForumComment parent = forumCommentRepository.findById(commentRequest.getParentCommentId())
+                                        .orElseThrow(() -> new RuntimeException("Parent comment not found with id: "
+                                                        + commentRequest.getParentCommentId()));
+                        comment.setParentComment(parent);
+                }
 
-        handleImage(commentRequest.getImgPath(), forumComment);
-
-        forumComment = forumCommentRepository.save(forumComment);
-        return commentMapper.toResponse(forumComment);
-    }
-
-    @Transactional
-    public CommentResponse updateComment(Long id, CommentRequest updateRequest) throws IOException {
-        ForumComment forumComment = forumCommentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Comment not found with id: " + id));
-
-        User user = userRepository.findByEmail(updateRequest.getUserEmail())
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + updateRequest.getUserEmail()));
-        if (forumComment.getUser().getUserId() != user.getUserId()) {
-            throw new RuntimeException("User not authorized to update this comment");
+                comment = forumCommentRepository.save(comment);
+                return commentMapper.toResponse(comment);
         }
 
-        ForumPost forumPost = forumPostRepository.findById(updateRequest.getPostId())
-                .orElseThrow(() -> new RuntimeException("Post not found with id: " + updateRequest.getPostId()));
-
-        ForumComment updatedComment = commentMapper.toEntity(updateRequest);
-        forumComment.setContent(updatedComment.getContent());
-        forumComment.setForumPost(forumPost);
-
-        forumComment.setImgPath(null);
-        handleImage(updateRequest.getImgPath(), forumComment);
-
-        forumComment = forumCommentRepository.save(forumComment);
-        return commentMapper.toResponse(forumComment);
-    }
-
-    @Transactional
-    public void deleteComment(Long id, String userEmail) {
-        ForumComment forumComment = forumCommentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Comment not found with id: " + id));
-
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
-        if (forumComment.getUser().getUserId() != user.getUserId()) {
-            throw new RuntimeException("User not authorized to delete this comment");
-        }
-
-        forumCommentRepository.delete(forumComment);
-    }
-
+        @Transactional(readOnly = true)
         public List<CommentResponse> getCommentsByPostId(Long postId) {
-        return forumCommentRepository.findByForumPost_ForumPostId(postId).stream()
-                .map(commentMapper::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    private void handleImage(MultipartFile imgFile, ForumComment forumComment) throws IOException {
-        if (imgFile != null) {
-            String imgPath = FileUtils.convertFileToPath(imgFile, uploadDir, "/comments/images");
-            forumComment.setImgPath(imgPath);
+                List<ForumComment> comments = forumCommentRepository.findByForumPost_ForumPostId(postId);
+                return comments.stream()
+                                .map(commentMapper::toResponse)
+                                .collect(Collectors.toList());
         }
-    }
+
+        @Transactional(readOnly = true)
+        public List<CommentResponse> getReplies(Long parentCommentId) {
+                List<ForumComment> replies = forumCommentRepository
+                                .findByParentComment_ForumCommentIdOrderByCreatedAtAsc(parentCommentId);
+                return replies.stream().map(commentMapper::toResponse).collect(Collectors.toList());
+        }
+
+        @Transactional
+        public void deleteComment(Long commentId, String userEmail) {
+                ForumComment comment = forumCommentRepository.findById(commentId)
+                                .orElseThrow(() -> new RuntimeException("Comment not found with id: " + commentId));
+
+                User user = userRepository.findByEmail(userEmail)
+                                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+
+                if (comment.getUser().getUserId() != user.getUserId()) {
+                        throw new RuntimeException("User not authorized to delete this comment");
+                }
+
+                forumCommentRepository.delete(comment);
+        }
+
+        @Transactional
+        public CommentResponse updateComment(Long id, CommentRequest updateRequest) {
+                ForumComment existing = forumCommentRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Comment not found with id: " + id));
+
+                User user = userRepository.findByEmail(updateRequest.getUserEmail())
+                                .orElseThrow(() -> new RuntimeException(
+                                                "User not found with email: " + updateRequest.getUserEmail()));
+
+                if (existing.getUser().getUserId() != user.getUserId()) {
+                        throw new RuntimeException("User not authorized to update this comment");
+                }
+
+                if (updateRequest.getContent() != null) {
+                        existing.setContent(updateRequest.getContent());
+                }
+
+                if (updateRequest.getImgPath() != null) {
+                        existing.setImgPath(updateRequest.getImgPath());
+                }
+
+                if (updateRequest.getForumPostId() != null) {
+                        ForumPost forumPost = forumPostRepository.findById(updateRequest.getForumPostId())
+                                        .orElseThrow(() -> new RuntimeException("Post not found with id: "
+                                                        + updateRequest.getForumPostId()));
+                        existing.setForumPost(forumPost);
+                }
+
+                ForumComment saved = forumCommentRepository.save(existing);
+                return commentMapper.toResponse(saved);
+        }
 }

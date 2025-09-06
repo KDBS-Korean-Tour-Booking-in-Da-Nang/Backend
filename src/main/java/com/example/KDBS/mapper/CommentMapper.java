@@ -1,23 +1,28 @@
 package com.example.KDBS.mapper;
 
-import com.example.KDBS.dto.request.CommentRequest;
 import com.example.KDBS.dto.response.CommentResponse;
 import com.example.KDBS.model.ForumComment;
-import org.mapstruct.*;
+import org.springframework.stereotype.Component;
 
-@Mapper(
-        componentModel = "spring",
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
-)
-public interface CommentMapper {
+@Component
+public class CommentMapper {
 
-    @Mapping(target = "forumCommentId", ignore = true)
-    @Mapping(target = "imgPath", ignore = true) // Set manually in service after file upload
-    @Mapping(target = "react", constant = "0") // Initial react count
-    @Mapping(target = "user", ignore = true) // Set manually in service
-    @Mapping(target = "forumPost", ignore = true) // Set manually in service
-    @Mapping(target = "createdAt", ignore = true) // Handled by @PrePersist
-    ForumComment toEntity(CommentRequest dto);
+    public CommentResponse toResponse(ForumComment comment) {
+        if (comment == null) {
+            return null;
+        }
 
-    CommentResponse toResponse(ForumComment entity);
+        return CommentResponse.builder()
+                .forumCommentId(comment.getForumCommentId())
+                .content(comment.getContent())
+                .imgPath(comment.getImgPath())
+                .react(comment.getReact())
+                .createdAt(comment.getCreatedAt())
+                .username(comment.getUser() != null ? comment.getUser().getUsername() : null)
+                .userAvatar(comment.getUser() != null ? comment.getUser().getAvatar() : null)
+                .forumPostId(comment.getForumPost() != null ? comment.getForumPost().getForumPostId() : null)
+                .parentCommentId(
+                        comment.getParentComment() != null ? comment.getParentComment().getForumCommentId() : null)
+                .build();
+    }
 }

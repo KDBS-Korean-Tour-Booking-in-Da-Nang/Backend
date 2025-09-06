@@ -17,4 +17,5 @@ public class PostResponse {
     private ReactionSummaryResponse reactions;
     private String username;
     private String userAvatar;
+    private String userEmail;
 }

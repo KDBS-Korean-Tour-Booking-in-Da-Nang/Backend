@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SavedPostResponse {
-    
+
     private Long savedPostId;
     private Long postId;
     private String postTitle;

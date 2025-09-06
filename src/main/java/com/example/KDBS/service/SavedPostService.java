@@ -21,111 +21,110 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SavedPostService {
 
-    private final SavedPostRepository savedPostRepository;
-    private final ForumPostRepository forumPostRepository;
-    private final UserRepository userRepository;
+        private final SavedPostRepository savedPostRepository;
+        private final ForumPostRepository forumPostRepository;
+        private final UserRepository userRepository;
 
-    @Transactional
-    public SavedPostResponse savePost(SavePostRequest request, String userEmail) {
-        // tim user
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        @Transactional
+        public SavedPostResponse savePost(SavePostRequest request, String userEmail) {
+                // tim user
+                User user = userRepository.findByEmail(userEmail)
+                                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        // tim post
-        ForumPost post = forumPostRepository.findById(request.getPostId())
-                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
+                // tim post
+                ForumPost post = forumPostRepository.findById(request.getPostId())
+                                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
 
-        // check post cua ban than
-        if (post.getUser().getUserId() == user.getUserId()) {
-            throw new AppException(ErrorCode.CANNOT_SAVE_OWN_POST);
+                // Allow users to save their own posts
+                // Removed validation: if (post.getUser().getUserId() == user.getUserId())
+
+                // check user da save post chua
+                if (savedPostRepository.findByUserAndPost(user, post).isPresent()) {
+                        throw new AppException(ErrorCode.POST_ALREADY_SAVED);
+                }
+
+                // Tạo saved post
+                SavedPost savedPost = SavedPost.builder()
+                                .user(user)
+                                .post(post)
+                                .note(request.getNote())
+                                .build();
+
+                SavedPost saved = savedPostRepository.save(savedPost);
+                return mapToResponse(saved);
         }
 
-        // check user da save post chua
-        if (savedPostRepository.findByUserAndPost(user, post).isPresent()) {
-            throw new AppException(ErrorCode.POST_ALREADY_SAVED);
+        @Transactional
+        public void unsavePost(Long postId, String userEmail) {
+                User user = userRepository.findByEmail(userEmail)
+                                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+                ForumPost post = forumPostRepository.findById(postId)
+                                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
+
+                SavedPost savedPost = savedPostRepository.findByUserAndPost(user, post)
+                                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_SAVED));
+
+                savedPostRepository.delete(savedPost);
         }
 
-        // Tạo saved post
-        SavedPost savedPost = SavedPost.builder()
-                .user(user)
-                .post(post)
-                .note(request.getNote())
-                .build();
+        @Transactional(readOnly = true)
+        public List<SavedPostResponse> getSavedPostsByUser(String userEmail) {
+                User user = userRepository.findByEmail(userEmail)
+                                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        SavedPost saved = savedPostRepository.save(savedPost);
-        return mapToResponse(saved);
-    }
+                List<SavedPost> savedPosts = savedPostRepository
+                                .findByUserIdOrderBySavedAtDesc((long) user.getUserId());
 
-    @Transactional
-    public void unsavePost(Long postId, String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                return savedPosts.stream()
+                                .map(this::mapToResponse)
+                                .collect(Collectors.toList());
+        }
 
-        ForumPost post = forumPostRepository.findById(postId)
-                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
+        @Transactional(readOnly = true)
+        public boolean isPostSavedByUser(Long postId, String userEmail) {
+                User user = userRepository.findByEmail(userEmail)
+                                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        SavedPost savedPost = savedPostRepository.findByUserAndPost(user, post)
-                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_SAVED));
+                return savedPostRepository.findByUserIdAndPostId((long) user.getUserId(), postId).isPresent();
+        }
 
-        savedPostRepository.delete(savedPost);
-    }
+        @Transactional(readOnly = true)
+        public Long getSaveCountByPost(Long postId) {
+                return savedPostRepository.countByPostId(postId);
+        }
 
-    @Transactional(readOnly = true)
-    public List<SavedPostResponse> getSavedPostsByUser(String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        @Transactional(readOnly = true)
+        public Long getSaveCountByUser(String userEmail) {
+                User user = userRepository.findByEmail(userEmail)
+                                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        List<SavedPost> savedPosts = savedPostRepository.findByUserIdOrderBySavedAtDesc((long) user.getUserId());
-        
-        return savedPosts.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
+                return savedPostRepository.countByUserId((long) user.getUserId());
+        }
 
-    @Transactional(readOnly = true)
-    public boolean isPostSavedByUser(Long postId, String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        @Transactional(readOnly = true)
+        public List<String> getUsersWhoSavedPost(Long postId) {
+                List<SavedPost> savedPosts = savedPostRepository.findByPostIdOrderBySavedAtDesc(postId);
 
-        return savedPostRepository.findByUserIdAndPostId((long) user.getUserId(), postId).isPresent();
-    }
+                return savedPosts.stream()
+                                .map(sp -> sp.getUser().getUsername())
+                                .collect(Collectors.toList());
+        }
 
-    @Transactional(readOnly = true)
-    public Long getSaveCountByPost(Long postId) {
-        return savedPostRepository.countByPostId(postId);
-    }
+        private SavedPostResponse mapToResponse(SavedPost savedPost) {
+                ForumPost post = savedPost.getPost();
+                User postAuthor = post.getUser();
 
-    @Transactional(readOnly = true)
-    public Long getSaveCountByUser(String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        return savedPostRepository.countByUserId((long) user.getUserId());
-    }
-
-    @Transactional(readOnly = true)
-    public List<String> getUsersWhoSavedPost(Long postId) {
-        List<SavedPost> savedPosts = savedPostRepository.findByPostIdOrderBySavedAtDesc(postId);
-        
-        return savedPosts.stream()
-                .map(sp -> sp.getUser().getUsername())
-                .collect(Collectors.toList());
-    }
-
-    private SavedPostResponse mapToResponse(SavedPost savedPost) {
-        ForumPost post = savedPost.getPost();
-        User postAuthor = post.getUser();
-
-        return SavedPostResponse.builder()
-                .savedPostId(savedPost.getSavedPostId())
-                .postId(post.getForumPostId())
-                .postTitle(post.getTitle())
-                .postContent(post.getContent())
-                .postAuthor(postAuthor.getUsername())
-                .postAuthorAvatar(postAuthor.getAvatar())
-                .postCreatedAt(post.getCreatedAt())
-                .note(savedPost.getNote())
-                .savedAt(savedPost.getSavedAt())
-                .build();
-    }
+                return SavedPostResponse.builder()
+                                .savedPostId(savedPost.getSavedPostId())
+                                .postId(post.getForumPostId())
+                                .postTitle(post.getTitle())
+                                .postContent(post.getContent())
+                                .postAuthor(postAuthor.getUsername())
+                                .postAuthorAvatar(postAuthor.getAvatar())
+                                .postCreatedAt(post.getCreatedAt())
+                                .note(savedPost.getNote())
+                                .savedAt(savedPost.getSavedAt())
+                                .build();
+        }
 }
