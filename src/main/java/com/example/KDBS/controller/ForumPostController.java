@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -71,6 +70,22 @@ public class ForumPostController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, field));
 
         return ResponseEntity.ok(postService.searchPosts(keyword, hashtags, pageable));
+    }
+
+    @GetMapping("/my-posts")
+    public ResponseEntity<Page<PostResponse>> getMyPosts(
+            @RequestHeader("User-Email") String userEmail,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt,desc") String sort) {
+        String[] parts = sort.split(",");
+        String field = parts[0];
+        Sort.Direction direction = parts.length > 1 && parts[1].equalsIgnoreCase("asc") ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, field));
+
+        return ResponseEntity.ok(postService.getPostsByUser(userEmail, pageable));
     }
 
 }
