@@ -36,11 +36,16 @@ public class SecurityConfiguration {
             "/api/auth/forgot-password/request", "/api/auth/forgot-password/reset",
             "/api/auth/forgot-password/verify-otp",
             "/api/posts/**",
-            "/api/comments/**"
+            "/api/comments/**",
+            "/api/reactions/**",
+            "/api/hashtags/**",
+            "/api/saved-posts/**",
+            "/api/reports/**",
+            "/api/users/suggestions"
     };
 
     private final String[] PUBLIC_RESOURCES = {
-            "/", "/index.html", "/google-login.html", "/css/**", "/js/**", "/images/**"
+            "/", "/index.html", "/google-login.html", "/css/**", "/js/**", "/images/**", "/uploads/**"
     };
 
     private String signature = "OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";

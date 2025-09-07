@@ -136,7 +136,6 @@ public class PostService {
         }
     }
 
-
     private void handleHashtags(List<String> hashtags, ForumPost forumPost) {
         if (hashtags != null && !hashtags.isEmpty()) {
             // clear old hashtags

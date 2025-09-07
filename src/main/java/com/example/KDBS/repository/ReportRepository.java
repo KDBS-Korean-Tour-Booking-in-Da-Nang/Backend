@@ -17,7 +17,13 @@ import java.util.List;
 public interface ReportRepository extends JpaRepository<Report, Long> {
     // get all report with phan trang
     Page<Report> findAllByOrderByReportedAtDesc(Pageable pageable);
+
     // thong ke report
     @Query(value = "SELECT status, COUNT(*) as count FROM reports GROUP BY status", nativeQuery = true)
     List<Object[]> getReportStatsByStatus();
+
+    // check user da report target chua
+    @Query("SELECT COUNT(r) > 0 FROM Report r WHERE r.reporter.userId = :userId AND r.targetType = :targetType AND r.targetId = :targetId")
+    boolean existsByReporterAndTargetTypeAndTargetId(@Param("userId") Long userId,
+            @Param("targetType") ReportTargetType targetType, @Param("targetId") Long targetId);
 }

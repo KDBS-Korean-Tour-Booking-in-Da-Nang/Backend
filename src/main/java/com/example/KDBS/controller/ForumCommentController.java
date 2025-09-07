@@ -18,7 +18,7 @@ public class ForumCommentController {
     private CommentService commentService;
 
     @PostMapping
-    public ResponseEntity<CommentResponse> createComment(@ModelAttribute CommentRequest commentRequest) throws IOException {
+    public ResponseEntity<CommentResponse> createComment(@RequestBody CommentRequest commentRequest) {
         CommentResponse response = commentService.createComment(commentRequest);
         return ResponseEntity.ok(response);
     }
@@ -26,7 +26,7 @@ public class ForumCommentController {
     @PutMapping("/{id}")
     public ResponseEntity<CommentResponse> updateComment(
             @PathVariable Long id,
-            @ModelAttribute CommentRequest updateRequest) throws IOException {
+            @RequestBody CommentRequest updateRequest) {
         CommentResponse response = commentService.updateComment(id, updateRequest);
         return ResponseEntity.ok(response);
     }
@@ -42,6 +42,12 @@ public class ForumCommentController {
     @GetMapping("/post/{postId}")
     public ResponseEntity<List<CommentResponse>> getCommentsByPost(@PathVariable Long postId) {
         List<CommentResponse> responses = commentService.getCommentsByPostId(postId);
+        return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/{commentId}/replies")
+    public ResponseEntity<List<CommentResponse>> getReplies(@PathVariable Long commentId) {
+        List<CommentResponse> responses = commentService.getReplies(commentId);
         return ResponseEntity.ok(responses);
     }
 }
