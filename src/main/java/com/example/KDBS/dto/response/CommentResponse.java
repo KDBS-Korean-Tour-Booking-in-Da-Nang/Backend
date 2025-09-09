@@ -19,6 +19,8 @@ public class CommentResponse {
     private LocalDateTime createdAt;
     private String username;
     private String userAvatar;
+    private String userEmail;
+    private Integer userId;
     private Long forumPostId;
     private Long parentCommentId;
 }
