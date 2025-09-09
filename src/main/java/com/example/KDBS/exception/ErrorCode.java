@@ -27,7 +27,9 @@ public enum ErrorCode {
     USER_NOT_FOUND(1021, "User not found", HttpStatus.NOT_FOUND),
     ALREADY_REPORTED(1022, "Already reported this target", HttpStatus.BAD_REQUEST),
     REPORT_NOT_FOUND(1023, "Report not found", HttpStatus.NOT_FOUND),
-    COMMENT_NOT_FOUND(1024, "Comment not found", HttpStatus.NOT_FOUND);
+    COMMENT_NOT_FOUND(1024, "Comment not found", HttpStatus.NOT_FOUND),
+    EMAIL_PENDING_VERIFICATION(1025,"Email pending verification",HttpStatus.BAD_REQUEST),
+    USER_IS_UNVERIFIED(1026,"User is unverified",HttpStatus.BAD_REQUEST);
 
     private int code;
     private String message;

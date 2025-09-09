@@ -36,7 +36,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -65,23 +67,35 @@ public class UserService {
     private String uploadDir;
 
     public String createUser(UserRegisterRequest request) throws IOException {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new AppException(ErrorCode.EMAIL_EXISTED);
+        Optional<User> existing = userRepository.findByEmail(request.getEmail());
+
+        if (existing.isPresent()) {
+            User user = existing.get();
+
+            if (user.getStatus() == Status.UNVERIFIED) {
+                // Nếu chưa hết hạn → resend OTP
+                if (user.getCreatedAt().isAfter(LocalDateTime.now().minusDays(3))) {
+                    otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
+                    return "Email already registered but not verified. OTP resent.";
+                } else {
+                    // Nếu hết hạn → xóa user cũ
+                    userRepository.delete(user);
+                }
+            } else {
+                throw new AppException(ErrorCode.EMAIL_EXISTED);
+            }
         }
 
-        // Generate and send OTP for email verification
-        try {
-            otpService.generateAndSendOTP(request.getEmail(), OTPPurpose.VERIFY_EMAIL);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to send OTP. Please try again.");
-        }
-
+        // Tạo user mới với status UNVERIFIED
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.USER);
-        user.setStatus(Status.UNBANNED);
+        user.setStatus(Status.UNVERIFIED);
+        user.setCreatedAt(LocalDateTime.now());
 
         userRepository.save(user);
+
+        otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
 
         return "Registration successful. Please check your email for verification code.";
     }
