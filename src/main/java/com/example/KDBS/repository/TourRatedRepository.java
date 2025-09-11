@@ -1,9 +1,9 @@
 package com.example.KDBS.repository;
 
-import com.example.KDBS.model.PostImg;
+import com.example.KDBS.model.TourRated;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface PostImgRepository extends JpaRepository<PostImg, Long> {
+public interface TourRatedRepository extends JpaRepository<TourRated, Long> {
 }

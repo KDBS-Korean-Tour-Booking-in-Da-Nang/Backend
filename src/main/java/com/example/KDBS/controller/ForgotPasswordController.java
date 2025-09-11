@@ -55,8 +55,6 @@ public class ForgotPasswordController {
         }
     }
 
-
-
     @PostMapping("/verify-otp")
     public ApiResponse<Boolean> verifyOTP(@RequestParam String email, @RequestParam String otpCode) {
         try {
