@@ -15,6 +15,7 @@ public interface CommentMapper {
     @Mapping(target = "createdAt", source = "createdAt")
     @Mapping(target = "username", source = "user.username")
     @Mapping(target = "userAvatar", source = "user.avatar")
+    @Mapping(target = "userEmail", source = "user.email")
     @Mapping(target = "forumPostId", source = "forumPost.forumPostId")
     @Mapping(target = "parentCommentId", source = "parentComment.forumCommentId")
     CommentResponse toResponse(ForumComment comment);
