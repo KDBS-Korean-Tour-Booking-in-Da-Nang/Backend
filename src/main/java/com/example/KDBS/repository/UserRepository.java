@@ -1,11 +1,13 @@
 package com.example.KDBS.repository;
 
+import com.example.KDBS.enums.Status;
 import com.example.KDBS.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,6 +17,9 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     boolean existsByEmail(String userEmail);
 
-    @Query(value = "SELECT * FROM User ORDER BY RAND() LIMIT :limit", nativeQuery = true)
+    @Query(value = "SELECT * FROM user ORDER BY RAND() LIMIT :limit", nativeQuery = true)
     List<User> findRandomUsers(@Param("limit") int limit);
+
+    List<User> findByStatusAndCreatedAtBefore(Status status, LocalDateTime time);
+
 }
