@@ -20,14 +20,28 @@ public enum ErrorCode {
     OTP_EXPIRED(1014, "OTP has expired. Please request a new one", HttpStatus.BAD_REQUEST),
     PASSWORD_RESET_FAILED(1015, "Password reset failed. Please try again", HttpStatus.BAD_REQUEST),
     BUSINESS_LICENSE_EXISTED(1016, "Business license has existed", HttpStatus.BAD_REQUEST),
-    POST_NOT_FOUND(1017, "Post not found", HttpStatus.NOT_FOUND),
+    POST_NOT_FOUND(1017, "Post not found with id: %s", HttpStatus.NOT_FOUND),
     CANNOT_SAVE_OWN_POST(1018, "Cannot save your own post", HttpStatus.BAD_REQUEST),
     POST_ALREADY_SAVED(1019, "Post already saved", HttpStatus.BAD_REQUEST),
     POST_NOT_SAVED(1020, "Post not saved", HttpStatus.NOT_FOUND),
     USER_NOT_FOUND(1021, "User not found", HttpStatus.NOT_FOUND),
     ALREADY_REPORTED(1022, "Already reported this target", HttpStatus.BAD_REQUEST),
     REPORT_NOT_FOUND(1023, "Report not found", HttpStatus.NOT_FOUND),
-    COMMENT_NOT_FOUND(1024, "Comment not found", HttpStatus.NOT_FOUND);
+    COMMENT_NOT_FOUND(1024, "Comment not found with id: %s", HttpStatus.NOT_FOUND),
+    EMAIL_PENDING_VERIFICATION(1025,"Email pending verification",HttpStatus.BAD_REQUEST),
+    USER_IS_UNVERIFIED(1026,"User is unverified",HttpStatus.BAD_REQUEST),
+    STAFF_CANNOT_DELETE_ADMIN_POSTS(1027,"Staff cannot delete admin post",HttpStatus.BAD_REQUEST),
+    USER_OR_COMPANY_CAN_ONLY_DELETE_THEIR_OWN_POSTS(1028,"User or Company can only delete their own posts",HttpStatus.BAD_REQUEST),
+    YOU_DO_NOT_HAVE_PERMISSION_TO_DELETE_THIS_POST(1029,"You do not have permission to delete this post.",HttpStatus.BAD_REQUEST),
+    POST_NOT_FOUND_AFTER_SAVING(1030,"Post not found after saving",HttpStatus.BAD_REQUEST),
+    POST_OWNER_CAN_ONLY_UPDATE_THEIR_OWN_POSTS(1031, "Post owner can only update their own posts", HttpStatus.BAD_REQUEST),
+    PARENT_COMMENT_NOT_FOUND(1032, "Parent comment not found with id: %s", HttpStatus.BAD_REQUEST),
+    STAFF_CANNOT_DELETE_ADMIN_COMMENTS(1033, "Staff cannot delete admin comments", HttpStatus.BAD_REQUEST),
+    USER_OR_COMPANY_CAN_ONLY_DELETE_THEIR_OWN_COMMENTS(1034, "User or Company can only delete their own comments", HttpStatus.BAD_REQUEST),
+    YOU_DO_NOT_HAVE_PERMISSION_TO_DELETE_THIS_COMMENT(1035, "You do not have permission to delete this comment", HttpStatus.BAD_REQUEST),
+    COMMENT_OWNER_CAN_ONLY_UPDATE_THEIR_OWN_COMMENTS(1036, "Comment owner can only update their own comments", HttpStatus.BAD_REQUEST),
+    ;
+
 
     private int code;
     private String message;

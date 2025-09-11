@@ -24,6 +24,7 @@ import lombok.experimental.NonFinal;
 import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -62,6 +63,9 @@ public class AuthenticationService {
                 () -> new AppException(ErrorCode.EMAIL_NOT_EXISTED)
 
         );
+        if (Status.UNVERIFIED.name().equalsIgnoreCase(user.getStatus().name())) {
+            throw new AppException(ErrorCode.EMAIL_NOT_EXISTED);
+        }
         if (Status.BANNED.name().equalsIgnoreCase(user.getStatus().name())) {
             throw new AppException(ErrorCode.USER_IS_BANNED);
         }
@@ -80,18 +84,6 @@ public class AuthenticationService {
                 .build();
 
     }
-    // //phan xu ly google
-    // public User saveOAuth2User(String email, String name) {
-    // return userRepository.findByUserEmail(email).orElseGet(() -> {
-    // User newUser = User.builder()
-    // .email(email)
-    // .username(name)
-    // .status(Status.UNBANNED.name())
-    // .role(Role.USER.name())
-    // .build();
-    // return userRepository.save(newUser);
-    // });
-    // }
 
     public String generateToken(User user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
