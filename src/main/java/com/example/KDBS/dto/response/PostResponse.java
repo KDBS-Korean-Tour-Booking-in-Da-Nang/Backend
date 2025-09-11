@@ -13,4 +13,9 @@ public class PostResponse {
     private List<PostImgResponse> images;
     private List<HashtagResponse> hashtags;
     private LocalDateTime createdAt;
+    private ReactionSummaryResponse reactions;
+    private Long saveCount;
+    private String username;
+    private String userAvatar;
+    private String userEmail;
 }

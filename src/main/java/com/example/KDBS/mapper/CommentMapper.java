@@ -1,23 +1,21 @@
 package com.example.KDBS.mapper;
 
-import com.example.KDBS.dto.request.CommentRequest;
 import com.example.KDBS.dto.response.CommentResponse;
 import com.example.KDBS.model.ForumComment;
-import org.mapstruct.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-@Mapper(
-        componentModel = "spring",
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
-)
+@Mapper(componentModel = "spring")
 public interface CommentMapper {
 
-    @Mapping(target = "forumCommentId", ignore = true)
-    @Mapping(target = "imgPath", ignore = true) // Set manually in service after file upload
-    @Mapping(target = "react", constant = "0") // Initial react count
-    @Mapping(target = "user", ignore = true) // Set manually in service
-    @Mapping(target = "forumPost", ignore = true) // Set manually in service
-    @Mapping(target = "createdAt", ignore = true) // Handled by @PrePersist
-    ForumComment toEntity(CommentRequest dto);
-
-    CommentResponse toResponse(ForumComment entity);
+    @Mapping(target = "forumCommentId", source = "forumCommentId")
+    @Mapping(target = "content", source = "content")
+    @Mapping(target = "imgPath", source = "imgPath")
+    @Mapping(target = "react", source = "react")
+    @Mapping(target = "createdAt", source = "createdAt")
+    @Mapping(target = "username", source = "user.username")
+    @Mapping(target = "userAvatar", source = "user.avatar")
+    @Mapping(target = "forumPostId", source = "forumPost.forumPostId")
+    @Mapping(target = "parentCommentId", source = "parentComment.forumCommentId")
+    CommentResponse toResponse(ForumComment comment);
 }

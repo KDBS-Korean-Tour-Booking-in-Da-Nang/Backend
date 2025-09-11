@@ -2,9 +2,15 @@ package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.BusinessLicenseRequest;
 import com.example.KDBS.dto.request.UserRegisterRequest;
+import com.example.KDBS.dto.request.EmailVerificationRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
+import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
+import com.example.KDBS.dto.response.UserSuggestionResponse;
+import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.service.UserService;
+import com.example.KDBS.service.OTPService;
+import com.example.KDBS.service.UserSuggestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +33,12 @@ public class UserController {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
+    @Autowired
+    private OTPService otpService;
+
+    @Autowired
+    private UserSuggestionService userSuggestionService;
+
     @PostMapping("/register")
     public ApiResponse<String> register(@RequestBody @Valid UserRegisterRequest request) throws IOException {
         return ApiResponse.<String>builder()
@@ -34,8 +46,52 @@ public class UserController {
                 .build();
     }
 
+    @PostMapping("/sendOTP")
+    public ApiResponse<Void> sendOTP(@RequestBody @Valid EmailVerificationRequest request) {
+        try {
+            otpService.generateAndSendOTP(request.getEmail(), OTPPurpose.VERIFY_EMAIL);
+            return ApiResponse.<Void>builder()
+                    .message("OTP sent successfully to your email")
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<Void>builder()
+                    .message("Failed to send OTP: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @PostMapping("/verify-email")
+    public ApiResponse<Boolean> verifyEmail(@RequestBody @Valid EmailVerificationRequest request) {
+        try {
+            boolean isValid = otpService.verifyOTP(request.getEmail(), request.getOtpCode(), OTPPurpose.VERIFY_EMAIL);
+            return ApiResponse.<Boolean>builder()
+                    .result(isValid)
+                    .message(isValid ? "Email verified successfully" : "Invalid OTP")
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<Boolean>builder()
+                    .result(false)
+                    .message("Failed to verify email: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @PostMapping("/regenerate-otp")
+    public ApiResponse<Void> regenerateOTP(@RequestBody @Valid EmailVerificationRequest request) {
+        try {
+            otpService.generateAndSendOTP(request.getEmail(), OTPPurpose.VERIFY_EMAIL);
+            return ApiResponse.<Void>builder()
+                    .message("New OTP sent successfully to your email")
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<Void>builder()
+                    .message("Failed to regenerate OTP: " + e.getMessage())
+                    .build();
+        }
+    }
+
     @GetMapping
-    public ApiResponse<List<UserResponse>> getAllUsers(){
+    public ApiResponse<List<UserResponse>> getAllUsers() {
         return ApiResponse.<List<UserResponse>>builder()
                 .result(userService.getAllUsers())
                 .build();
@@ -60,5 +116,22 @@ public class UserController {
         userService.processAndSaveIdCard(request);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/business-upload-status")
+    public ApiResponse<BusinessUploadStatusResponse> getBusinessUploadStatus(@RequestParam("email") String email) {
+        BusinessUploadStatusResponse status = userService.getBusinessUploadStatusByEmail(email);
+        return ApiResponse.<BusinessUploadStatusResponse>builder()
+                .result(status)
+                .build();
+    }
+
+    @GetMapping("/suggestions")
+    public ApiResponse<List<UserSuggestionResponse>> getSuggestedUsers(
+            @RequestParam(defaultValue = "5") int limit) {
+        List<UserSuggestionResponse> suggestions = userSuggestionService.getSuggestedUsers(limit);
+        return ApiResponse.<List<UserSuggestionResponse>>builder()
+                .result(suggestions)
+                .build();
     }
 }

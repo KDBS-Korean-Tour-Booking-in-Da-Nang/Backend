@@ -5,6 +5,8 @@ import com.example.KDBS.dto.request.IntrospectRequest;
 import com.example.KDBS.dto.request.LogOutRequest;
 import com.example.KDBS.dto.response.AuthenticationResponse;
 import com.example.KDBS.dto.response.IntrospectResponse;
+import com.example.KDBS.dto.response.UserResponse;
+import com.example.KDBS.mapper.UserMapper;
 import com.example.KDBS.model.InvalidateToken;
 import com.example.KDBS.model.User;
 import com.example.KDBS.enums.Status;
@@ -21,11 +23,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import org.springframework.beans.factory.annotation.Value;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.text.ParseException;
 import java.time.Instant;
@@ -43,7 +43,9 @@ public class AuthenticationService {
     private UserRepository userRepository;
     @Autowired
     private InvalidateTokenRepository invalidtokenrepository;
-    protected static final String signature ="OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";
+    @Autowired
+    private UserMapper userMapper;
+    protected static final String signature = "OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -60,30 +62,36 @@ public class AuthenticationService {
                 () -> new AppException(ErrorCode.EMAIL_NOT_EXISTED)
 
         );
-        if(Status.UNBANNED.name().equalsIgnoreCase(user.getStatus().name())){
+        if (Status.BANNED.name().equalsIgnoreCase(user.getStatus().name())) {
             throw new AppException(ErrorCode.USER_IS_BANNED);
         }
         boolean authenticated = passwordEncoder.matches(authenticationRequest.getPassword(), user.getPassword());
         if (!authenticated)
             throw new AppException(ErrorCode.LOGIN_FAILED);
-        var token =generateToken(user);
+        var token = generateToken(user);
+
+        // Convert User to UserResponse
+        UserResponse userResponse = userMapper.toUserResponse(user);
+
         return AuthenticationResponse.builder()
                 .token(token)
-                .authenticated(true).build();
+                .authenticated(true)
+                .user(userResponse)
+                .build();
 
     }
-//    //phan xu ly google
-//    public User saveOAuth2User(String email, String name) {
-//        return userRepository.findByUserEmail(email).orElseGet(() -> {
-//            User newUser = User.builder()
-//                    .email(email)
-//                    .username(name)
-//                    .status(Status.UNBANNED.name())
-//                    .role(Role.USER.name())
-//                    .build();
-//            return userRepository.save(newUser);
-//        });
-//    }
+    // //phan xu ly google
+    // public User saveOAuth2User(String email, String name) {
+    // return userRepository.findByUserEmail(email).orElseGet(() -> {
+    // User newUser = User.builder()
+    // .email(email)
+    // .username(name)
+    // .status(Status.UNBANNED.name())
+    // .role(Role.USER.name())
+    // .build();
+    // return userRepository.save(newUser);
+    // });
+    // }
 
     public String generateToken(User user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
@@ -93,8 +101,8 @@ public class AuthenticationService {
                 .issueTime(new Date())
                 .expirationTime(new Date(Instant.now().plus(VALID_DURATION, ChronoUnit.HOURS).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
-                .claim("userId",user.getUserId())
-                .claim("scope",buildScope(user))
+                .claim("userId", user.getUserId())
+                .claim("scope", buildScope(user))
                 .build();
         Payload payload = new Payload(claimsSet.toJSONObject());
         JWSObject jwsObject = new JWSObject(header, payload);
@@ -105,8 +113,9 @@ public class AuthenticationService {
             throw new RuntimeException(e);
         }
     }
+
     public String buildScope(User user) {
-        if (!StringUtils.isEmpty(user.getRole())) {
+        if (user.getRole() != null && !user.getRole().toString().isEmpty()) {
             return "" + user.getRole();
         }
         return "";
@@ -133,16 +142,17 @@ public class AuthenticationService {
 
         Date expiryTime = (isRefresh)
                 ? new Date(signedJWT
-                .getJWTClaimsSet()
-                .getIssueTime()
-                .toInstant()
-                .plus(REFRESHABLE_DURATION, ChronoUnit.SECONDS)
-                .toEpochMilli())
+                        .getJWTClaimsSet()
+                        .getIssueTime()
+                        .toInstant()
+                        .plus(REFRESHABLE_DURATION, ChronoUnit.SECONDS)
+                        .toEpochMilli())
                 : signedJWT.getJWTClaimsSet().getExpirationTime();
 
         var verified = signedJWT.verify(verifier);
 
-        if (!(verified && expiryTime.after(new Date()))) throw new AppException(ErrorCode.UNAUTHENTICATED);
+        if (!(verified && expiryTime.after(new Date())))
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
 
         if (invalidtokenrepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
             throw new AppException(ErrorCode.UNAUTHENTICATED);
@@ -157,8 +167,7 @@ public class AuthenticationService {
             String jit = signToken.getJWTClaimsSet().getJWTID();
             Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
 
-            InvalidateToken invalidatedToken =
-                    InvalidateToken.builder().id(jit).expiryTime(expiryTime).build();
+            InvalidateToken invalidatedToken = InvalidateToken.builder().id(jit).expiryTime(expiryTime).build();
 
             invalidtokenrepository.save(invalidatedToken);
         } catch (AppException exception) {
@@ -166,6 +175,5 @@ public class AuthenticationService {
 
         }
     }
-
 
 }
