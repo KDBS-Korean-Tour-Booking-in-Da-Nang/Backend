@@ -58,6 +58,13 @@
 			<version>5.5.13.4</version>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>1.21.2</version>
+		</dependency>
+
 		<!-- Removed conflicting Hibernate 5.x dependencies - Spring Boot 3.5.4 manages Hibernate 6.x automatically -->
 
 		<dependency>

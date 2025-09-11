@@ -94,7 +94,6 @@ public class UserController {
         }
     }
 
-
     @PostMapping("/regenerate-otp")
     public ApiResponse<Void> regenerateOTP(@RequestBody @Valid EmailVerificationRequest request) {
         try {
