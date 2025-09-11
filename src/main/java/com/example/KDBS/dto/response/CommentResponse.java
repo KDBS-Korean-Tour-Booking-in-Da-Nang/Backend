@@ -20,7 +20,6 @@ public class CommentResponse {
     private String username;
     private String userAvatar;
     private String userEmail;
-    private Integer userId;
     private Long forumPostId;
     private Long parentCommentId;
 }
