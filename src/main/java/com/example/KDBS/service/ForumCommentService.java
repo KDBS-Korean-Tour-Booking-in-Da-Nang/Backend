@@ -2,6 +2,8 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.CommentRequest;
 import com.example.KDBS.dto.response.CommentResponse;
+import com.example.KDBS.exception.AppException;
+import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.CommentMapper;
 import com.example.KDBS.model.ForumComment;
 import com.example.KDBS.model.ForumPost;
@@ -17,7 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class CommentService {
+public class ForumCommentService {
 
         @Autowired
         private ForumCommentRepository forumCommentRepository;
@@ -34,12 +36,10 @@ public class CommentService {
         @Transactional
         public CommentResponse createComment(CommentRequest commentRequest) {
                 User user = userRepository.findByEmail(commentRequest.getUserEmail())
-                                .orElseThrow(() -> new RuntimeException(
-                                                "User not found with email: " + commentRequest.getUserEmail()));
+                                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
                 ForumPost forumPost = forumPostRepository.findById(commentRequest.getForumPostId())
-                                .orElseThrow(() -> new RuntimeException(
-                                                "Post not found with id: " + commentRequest.getForumPostId()));
+                                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
 
                 ForumComment comment = ForumComment.builder()
                                 .content(commentRequest.getContent())
@@ -52,8 +52,8 @@ public class CommentService {
                 // If this is a reply, set parent comment
                 if (commentRequest.getParentCommentId() != null) {
                         ForumComment parent = forumCommentRepository.findById(commentRequest.getParentCommentId())
-                                        .orElseThrow(() -> new RuntimeException("Parent comment not found with id: "
-                                                        + commentRequest.getParentCommentId()));
+                                        .orElseThrow(() -> new AppException(
+                                                ErrorCode.PARENT_COMMENT_NOT_FOUND, commentRequest.getParentCommentId()));;
                         comment.setParentComment(parent);
                 }
 
@@ -79,33 +79,23 @@ public class CommentService {
         @Transactional
         public void deleteComment(Long commentId, String userEmail) {
                 ForumComment comment = forumCommentRepository.findById(commentId)
-                                .orElseThrow(() -> new RuntimeException("Comment not found with id: " + commentId));
+                        .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND, commentId));
 
-                User user = userRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
-
-                if (comment.getUser().getUserId() != user.getUserId()) {
-                        throw new RuntimeException("User not authorized to delete this comment");
-                }
-
+                // Xóa comment trực tiếp, quyền đã được kiểm tra ở Controller qua @PreAuthorize
                 forumCommentRepository.delete(comment);
         }
 
         @Transactional
         public CommentResponse updateComment(Long id, CommentRequest updateRequest) {
                 ForumComment existing = forumCommentRepository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Comment not found with id: " + id));
+                        .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND, id));
 
                 User user = userRepository.findByEmail(updateRequest.getUserEmail())
-                                .orElseThrow(() -> new RuntimeException(
-                                                "User not found with email: " + updateRequest.getUserEmail()));
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
+                // Chỉ cho phép chủ sở hữu update
                 if (existing.getUser().getUserId() != user.getUserId()) {
-                        throw new RuntimeException("User not authorized to update this comment");
-                }
-
-                if (updateRequest.getContent() != null) {
-                        existing.setContent(updateRequest.getContent());
+                        throw new AppException(ErrorCode.COMMENT_OWNER_CAN_ONLY_UPDATE_THEIR_OWN_COMMENTS);
                 }
 
                 if (updateRequest.getImgPath() != null) {
@@ -114,8 +104,7 @@ public class CommentService {
 
                 if (updateRequest.getForumPostId() != null) {
                         ForumPost forumPost = forumPostRepository.findById(updateRequest.getForumPostId())
-                                        .orElseThrow(() -> new RuntimeException("Post not found with id: "
-                                                        + updateRequest.getForumPostId()));
+                                        .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND, updateRequest.getForumPostId()));
                         existing.setForumPost(forumPost);
                 }
 

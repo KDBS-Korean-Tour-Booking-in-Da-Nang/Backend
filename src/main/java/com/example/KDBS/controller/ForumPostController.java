@@ -2,13 +2,14 @@ package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.PostRequest;
 import com.example.KDBS.dto.response.PostResponse;
-import com.example.KDBS.service.PostService;
+import com.example.KDBS.service.ForumPostService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -19,39 +20,42 @@ import java.util.List;
 public class ForumPostController {
 
     @Autowired
-    private PostService postService;
+    private ForumPostService forumPostService;
 
     @PostMapping
+    @PreAuthorize("isAuthenticated() and @forumPostSecurity.canCreatePost(#postRequest.userEmail)")
     public ResponseEntity<PostResponse> createPost(@ModelAttribute PostRequest postRequest) throws IOException {
         // @ModelAttribute is needed since you're uploading MultipartFile(s)
-        PostResponse response = postService.createPost(postRequest);
+        PostResponse response = forumPostService.createPost(postRequest);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("isAuthenticated() and @forumPostSecurity.canUpdatePost(#id, #updateRequest.userEmail, @forumPostRepository)")
     public ResponseEntity<PostResponse> updatePost(
             @PathVariable Long id,
             @ModelAttribute PostRequest updateRequest) throws IOException {
-        PostResponse response = postService.updatePost(id, updateRequest);
+        PostResponse response = forumPostService.updatePost(id, updateRequest);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated() and @forumPostSecurity.canDeletePost(#id, #userEmail)")
     public ResponseEntity<Void> deletePost(
             @PathVariable Long id,
             @RequestParam String userEmail) {
-        postService.deletePost(id, userEmail);
+        forumPostService.deletePost(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
     public ResponseEntity<List<PostResponse>> getAllPosts() {
-        return ResponseEntity.ok(postService.getAllPosts());
+        return ResponseEntity.ok(forumPostService.getAllPosts());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PostResponse> getPostById(@PathVariable Long id) {
-        return ResponseEntity.ok(postService.getPostById(id));
+        return ResponseEntity.ok(forumPostService.getPostById(id));
     }
 
     @GetMapping("/search")
@@ -69,7 +73,7 @@ public class ForumPostController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, field));
 
-        return ResponseEntity.ok(postService.searchPosts(keyword, hashtags, pageable));
+        return ResponseEntity.ok(forumPostService.searchPosts(keyword, hashtags, pageable));
     }
 
     @GetMapping("/my-posts")
@@ -85,7 +89,7 @@ public class ForumPostController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, field));
 
-        return ResponseEntity.ok(postService.getPostsByUser(userEmail, pageable));
+        return ResponseEntity.ok(forumPostService.getPostsByUser(userEmail, pageable));
     }
 
 }

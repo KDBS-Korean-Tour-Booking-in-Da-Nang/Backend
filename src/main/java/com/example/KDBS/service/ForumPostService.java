@@ -4,6 +4,8 @@ import com.example.KDBS.dto.request.PostRequest;
 import com.example.KDBS.dto.response.PostResponse;
 import com.example.KDBS.dto.response.ReactionSummaryResponse;
 import com.example.KDBS.enums.ReactionTargetType;
+import com.example.KDBS.exception.AppException;
+import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.PostMapper;
 import com.example.KDBS.model.*;
 import com.example.KDBS.repository.*;
@@ -23,7 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-public class PostService {
+public class ForumPostService {
 
     @Autowired
     private ForumPostRepository forumPostRepository;
@@ -55,7 +57,8 @@ public class PostService {
     @Transactional
     public PostResponse createPost(PostRequest postRequest) throws IOException {
         User user = userRepository.findByEmail(postRequest.getUserEmail())
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + postRequest.getUserEmail()));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
         ForumPost forumPost = postMapper.toEntity(postRequest);
         forumPost.setUser(user);
         forumPost = forumPostRepository.save(forumPost);
@@ -64,18 +67,18 @@ public class PostService {
         handleHashtags(postRequest.getHashtags(), forumPost);
 
         return postMapper.toResponse(forumPostRepository.findById(forumPost.getForumPostId())
-                .orElseThrow(() -> new RuntimeException("Post not found after saving")));
+                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND_AFTER_SAVING)));
     }
 
     @Transactional
     public PostResponse updatePost(Long id, PostRequest updateRequest) throws IOException {
         ForumPost forumPost = forumPostRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND, id));
 
         User user = userRepository.findByEmail(updateRequest.getUserEmail())
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + updateRequest.getUserEmail()));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         if (forumPost.getUser().getUserId() != (user.getUserId())) {
-            throw new RuntimeException("User not authorized to update this post");
+            throw new AppException(ErrorCode.POST_OWNER_CAN_ONLY_UPDATE_THEIR_OWN_POSTS);
         }
 
         ForumPost updatedPost = postMapper.toEntity(updateRequest);
@@ -93,22 +96,12 @@ public class PostService {
     }
 
     @Transactional
-    public void deletePost(Long id, String userEmail) {
-        ForumPost forumPost = forumPostRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
-
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
-        if (forumPost.getUser().getUserId() != (user.getUserId())) {
-            throw new RuntimeException("User not authorized to delete this post");
-        }
-
-        // Delete all related saved posts first to avoid foreign key constraint issues
-        // This allows users to delete their posts even if they have been saved by
-        // others
+    public void deletePost(Long id) {
+        // Xóa các saved posts liên quan trước
         deleteRelatedSavedPosts(id);
 
-        forumPostRepository.delete(forumPost);
+        // Xóa bài
+        forumPostRepository.deleteById(id);
     }
 
     @Transactional(readOnly = true)
