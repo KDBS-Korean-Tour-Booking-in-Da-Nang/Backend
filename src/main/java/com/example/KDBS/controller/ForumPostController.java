@@ -23,7 +23,7 @@ public class ForumPostController {
     private ForumPostService forumPostService;
 
     @PostMapping
-    @PreAuthorize("isAuthenticated() and @forumPostSecurity.canCreatePost(#postRequest.userEmail)")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PostResponse> createPost(@ModelAttribute PostRequest postRequest) throws IOException {
         // @ModelAttribute is needed since you're uploading MultipartFile(s)
         PostResponse response = forumPostService.createPost(postRequest);
@@ -31,7 +31,7 @@ public class ForumPostController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("isAuthenticated() and @forumPostSecurity.canUpdatePost(#id, #updateRequest.userEmail, @forumPostRepository)")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PostResponse> updatePost(
             @PathVariable Long id,
             @ModelAttribute PostRequest updateRequest) throws IOException {

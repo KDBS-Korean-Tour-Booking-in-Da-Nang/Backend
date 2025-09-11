@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -19,7 +20,7 @@ public class ForumCommentController {
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<CommentResponse> createComment(@RequestBody CommentRequest commentRequest) {
+    public ResponseEntity<CommentResponse> createComment(@RequestBody CommentRequest commentRequest) throws IOException {
         CommentResponse response = forumCommentService.createComment(commentRequest);
         return ResponseEntity.ok(response);
     }
@@ -28,17 +29,17 @@ public class ForumCommentController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CommentResponse> updateComment(
             @PathVariable Long id,
-            @RequestBody CommentRequest updateRequest) {
+            @RequestBody CommentRequest updateRequest) throws IOException{
         CommentResponse response = forumCommentService.updateComment(id, updateRequest);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated() and @forumCommentSecurity.canDeleteComment(#id, #userEmail)")
     public ResponseEntity<Void> deleteComment(
             @PathVariable Long id,
             @RequestParam String userEmail) {
-        forumCommentService.deleteComment(id, userEmail);
+        forumCommentService.deleteComment(id);
         return ResponseEntity.noContent().build();
     }
 

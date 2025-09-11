@@ -77,7 +77,7 @@ public class ForumCommentService {
         }
 
         @Transactional
-        public void deleteComment(Long commentId, String userEmail) {
+        public void deleteComment(Long commentId) {
                 ForumComment comment = forumCommentRepository.findById(commentId)
                         .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND, commentId));
 
