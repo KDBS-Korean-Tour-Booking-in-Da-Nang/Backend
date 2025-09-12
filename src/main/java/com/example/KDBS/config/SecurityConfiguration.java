@@ -22,6 +22,8 @@ import java.util.Arrays;
 
 import java.util.Arrays;
 
+import java.util.Arrays;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -41,7 +43,8 @@ public class SecurityConfiguration {
             "/api/hashtags/**",
             "/api/saved-posts/**",
             "/api/reports/**",
-            "/api/users/suggestions"
+            "/api/users/suggestions",
+            "/api/tour/**"
     };
 
     private final String[] PUBLIC_RESOURCES = {
@@ -64,8 +67,7 @@ public class SecurityConfiguration {
             return configuration;
         })).authorizeHttpRequests(
                 authorizationManagerRequestMatcherRegistry -> authorizationManagerRequestMatcherRegistry
-                        .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
-                        .permitAll()
+                        .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.PUT, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.DELETE, PUBLIC_ENDPOINTS).permitAll()
