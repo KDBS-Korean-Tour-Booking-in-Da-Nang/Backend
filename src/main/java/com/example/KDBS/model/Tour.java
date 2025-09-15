@@ -50,7 +50,7 @@ public class Tour {
     @Column(name = "tour_type")
     private String tourType;
 
-    @Column(name = "tour_schedule")
+    @Column(name = "tour_schedule", columnDefinition = "TEXT")
     private String tourSchedule;
 
     private Integer amount;
@@ -63,6 +63,19 @@ public class Tour {
 
     @Column(name = "baby_price", precision = 10, scale = 2)
     private BigDecimal babyPrice;
+
+    // Additional fields from FE wizard
+    @Column(name = "booking_deadline")
+    private LocalDateTime bookingDeadline;
+
+    @Column(name = "surcharge_policy", columnDefinition = "TEXT")
+    private String surchargePolicy; // HTML content
+
+    @Column(name = "cancellation_policy", columnDefinition = "TEXT")
+    private String cancellationPolicy; // HTML content
+
+    @Column(name = "surcharges", columnDefinition = "TEXT")
+    private String surcharges; // JSON array of surcharge objects
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tour_status", length = 50)

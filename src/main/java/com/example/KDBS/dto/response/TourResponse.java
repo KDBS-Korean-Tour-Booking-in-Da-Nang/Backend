@@ -8,6 +8,9 @@ import java.util.List;
 
 @Data
 public class TourResponse {
+    private Long tourId;
+    private Integer companyId;
+    private String companyEmail;
     private String tourName;
     private String tourDescription;
     private String tourImgPath;

@@ -21,6 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +53,11 @@ public class TourService {
 
     /** Handle TinyMCE inline image uploads */
     public String saveEditorImage(MultipartFile file) throws IOException {
-        return FileUtils.convertFileToPath(file, uploadDir, "/tours/content");
+        String relativePath = FileUtils.convertFileToPath(file, uploadDir, "/tours/content");
+        // Extract filename from path like "/uploads/tours/content/filename.jpg"
+        String filename = relativePath.substring(relativePath.lastIndexOf('/') + 1);
+        // Return full URL for frontend
+        return "/api/tour/content-image/" + filename;
     }
 
     /** Create a tour with required banner image and extract content images */
@@ -67,21 +74,33 @@ public class TourService {
         Tour tour = tourMapper.toEntity(request);
         tour.setCompanyId(company.getUserId());
         tour.setTourStatus(TourStatus.NOT_APPROVED);
+        
         tour.setTourImgPath(FileUtils.convertFileToPath(tourImg, uploadDir, "/tours/thumbnails"));
 
         tourRepository.save(tour);
         saveContents(request, tour);
+        
         // Fetch the tour with contents to ensure they are included in the response
         Tour savedTour = tourRepository.findByIdWithContents(tour.getTourId())
                 .orElseThrow(() -> new IllegalStateException("Failed to retrieve saved tour"));
-        return tourMapper.toResponse(savedTour);
+        
+        TourResponse response = tourMapper.toResponse(savedTour);
+        // Set company email
+        response.setCompanyEmail(company.getEmail());
+        return response;
     }
 
     /** Get all tours */
     public List<TourResponse> getAllTours() {
         return tourRepository.findAllWithContents()
                 .stream()
-                .map(tourMapper::toResponse)
+                .map(tour -> {
+                    TourResponse response = tourMapper.toResponse(tour);
+                    // Set company email
+                    userRepository.findById(tour.getCompanyId())
+                            .ifPresent(company -> response.setCompanyEmail(company.getEmail()));
+                    return response;
+                })
                 .toList();
     }
 
@@ -89,7 +108,11 @@ public class TourService {
     public TourResponse getTourById(Long id) {
         Tour tour = tourRepository.findByIdWithContents(id)
                 .orElseThrow(() -> new IllegalArgumentException("Tour not found: " + id));
-        return tourMapper.toResponse(tour);
+        TourResponse response = tourMapper.toResponse(tour);
+        // Set company email
+        userRepository.findById(tour.getCompanyId())
+                .ifPresent(company -> response.setCompanyEmail(company.getEmail()));
+        return response;
     }
 
     /** Update tour */
@@ -121,7 +144,11 @@ public class TourService {
         // Fetch the tour with contents to ensure they are included in the response
         Tour fetchedTour = tourRepository.findByIdWithContents(saved.getTourId())
                 .orElseThrow(() -> new IllegalStateException("Failed to retrieve updated tour"));
-        return tourMapper.toResponse(fetchedTour);
+        TourResponse response = tourMapper.toResponse(fetchedTour);
+        // Set company email
+        userRepository.findById(fetchedTour.getCompanyId())
+                .ifPresent(company -> response.setCompanyEmail(company.getEmail()));
+        return response;
     }
 
     /** Delete tour and cascade its contents & images */
@@ -131,6 +158,48 @@ public class TourService {
             throw new IllegalArgumentException("Tour not found: " + id);
         }
         tourRepository.deleteById(id);
+    }
+
+    /** Get tour image by filename */
+    public byte[] getTourImage(String filename) throws IOException {
+        Path imagePath = Paths.get(uploadDir, "tours", "thumbnails", filename);
+        if (!Files.exists(imagePath)) {
+            throw new IOException("Image not found: " + filename);
+        }
+        return Files.readAllBytes(imagePath);
+    }
+
+    /** Get content image by filename */
+    public byte[] getContentImage(String filename) throws IOException {
+        Path imagePath = Paths.get(uploadDir, "tours", "content", filename);
+        if (!Files.exists(imagePath)) {
+            throw new IOException("Content image not found: " + filename);
+        }
+        return Files.readAllBytes(imagePath);
+    }
+
+    /** Update tour status */
+    @Transactional
+    public TourResponse updateTourStatus(Long id, String status) {
+        Tour tour = tourRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Tour not found: " + id));
+
+        try {
+            TourStatus newStatus = TourStatus.valueOf(status.toUpperCase());
+            tour.setTourStatus(newStatus);
+            tourRepository.save(tour);
+
+            // Fetch the tour with contents to ensure they are included in the response
+            Tour fetchedTour = tourRepository.findByIdWithContents(tour.getTourId())
+                    .orElseThrow(() -> new IllegalStateException("Failed to retrieve updated tour"));
+            TourResponse response = tourMapper.toResponse(fetchedTour);
+            // Set company email
+            userRepository.findById(fetchedTour.getCompanyId())
+                    .ifPresent(company -> response.setCompanyEmail(company.getEmail()));
+            return response;
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid status: " + status);
+        }
     }
 
     /** Helper to save nested content + extract image paths */
