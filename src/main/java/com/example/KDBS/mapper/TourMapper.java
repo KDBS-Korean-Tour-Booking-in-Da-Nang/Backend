@@ -12,6 +12,7 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface TourMapper {
     // Map Tour entity -> TourResponse DTO
+    @Mapping(target = "id", source = "tourId")
     @Mapping(target = "contents", source = "contents")
     @Mapping(target = "tourStatus", source = "tourStatus")
     TourResponse toResponse(Tour tour);
