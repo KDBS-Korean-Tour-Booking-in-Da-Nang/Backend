@@ -22,6 +22,10 @@ import java.util.Arrays;
 
 import java.util.Arrays;
 
+import java.util.Arrays;
+
+import java.util.Arrays;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -41,7 +45,8 @@ public class SecurityConfiguration {
             "/api/hashtags/**",
             "/api/saved-posts/**",
             "/api/reports/**",
-            "/api/users/suggestions"
+            "/api/users/suggestions",
+            "/api/tour/**"
     };
 
     private final String[] PUBLIC_RESOURCES = {

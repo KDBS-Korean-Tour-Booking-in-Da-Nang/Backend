@@ -20,7 +20,8 @@ public class ForumCommentController {
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<CommentResponse> createComment(@RequestBody CommentRequest commentRequest) throws IOException {
+    public ResponseEntity<CommentResponse> createComment(@RequestBody CommentRequest commentRequest)
+            throws IOException {
         CommentResponse response = forumCommentService.createComment(commentRequest);
         return ResponseEntity.ok(response);
     }
@@ -29,7 +30,7 @@ public class ForumCommentController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CommentResponse> updateComment(
             @PathVariable Long id,
-            @RequestBody CommentRequest updateRequest) throws IOException{
+            @RequestBody CommentRequest updateRequest) throws IOException {
         CommentResponse response = forumCommentService.updateComment(id, updateRequest);
         return ResponseEntity.ok(response);
     }
