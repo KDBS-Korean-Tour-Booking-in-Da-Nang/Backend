@@ -24,7 +24,7 @@ public class VNPayController {
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
 
-    @Value("${momo.frontend-url}")
+    @Value("${vnpay.frontend-url}")
     private String frontendUrl;
 
     public VNPayController(VNPayService vnpayService, UserRepository userRepository, TransactionRepository transactionRepository) {
