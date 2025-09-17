@@ -77,13 +77,7 @@ public class Tour {
     @Column(name = "booking_deadline")
     private LocalDateTime bookingDeadline;
 
-    @Lob
-    @Column(name = "surcharge_policy", columnDefinition = "TEXT")
-    private String surchargePolicy;
-
-    @Lob
-    @Column(name = "cancellation_policy", columnDefinition = "TEXT")
-    private String cancellationPolicy;
+    // Policies are consolidated into tourDescription. Legacy columns removed.
 
     // JSON string of surcharges configured from Step 3
     @Lob

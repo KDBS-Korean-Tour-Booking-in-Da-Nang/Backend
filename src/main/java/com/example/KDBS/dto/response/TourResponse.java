@@ -24,8 +24,6 @@ public class TourResponse {
     private TourStatus tourStatus;
     private LocalDateTime createdAt;
     private LocalDateTime bookingDeadline;
-    private String surchargePolicy;
-    private String cancellationPolicy;
     private String surcharges;
     private List<TourContentResponse> contents;
 
@@ -33,5 +31,6 @@ public class TourResponse {
     public static class TourContentResponse {
         private String tourContentTitle;
         private String tourContentDescription;
+        private List<String> images;
     }
 }

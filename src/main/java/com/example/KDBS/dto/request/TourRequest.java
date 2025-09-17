@@ -29,10 +29,8 @@ public class TourRequest {
     private BigDecimal childrenPrice;
     private BigDecimal babyPrice;
 
-    // New pricing/policy fields
+    // New pricing fields
     private LocalDateTime bookingDeadline;
-    private String surchargePolicy;
-    private String cancellationPolicy;
     private String surcharges; // JSON string from UI
 
     private List<TourContentRequest> contents;
