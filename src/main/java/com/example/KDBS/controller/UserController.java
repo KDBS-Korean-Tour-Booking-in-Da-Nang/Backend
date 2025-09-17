@@ -6,9 +6,16 @@ import com.example.KDBS.dto.request.EmailVerificationRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
+import com.example.KDBS.dto.response.UserSuggestionResponse;
 import com.example.KDBS.enums.OTPPurpose;
+import com.example.KDBS.enums.Status;
+import com.example.KDBS.exception.AppException;
+import com.example.KDBS.exception.ErrorCode;
+import com.example.KDBS.model.User;
+import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.service.UserService;
 import com.example.KDBS.service.OTPService;
+import com.example.KDBS.service.UserSuggestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,11 +35,17 @@ import java.util.List;
 public class UserController {
     @Autowired
     private UserService userService;
+
     @Value("${file.upload-dir}")
     private String uploadDir;
 
     @Autowired
     private OTPService otpService;
+
+    @Autowired
+    private UserSuggestionService userSuggestionService;
+    @Autowired
+    private UserRepository userRepository;
 
     @PostMapping("/register")
     public ApiResponse<String> register(@RequestBody @Valid UserRegisterRequest request) throws IOException {
@@ -59,6 +72,16 @@ public class UserController {
     public ApiResponse<Boolean> verifyEmail(@RequestBody @Valid EmailVerificationRequest request) {
         try {
             boolean isValid = otpService.verifyOTP(request.getEmail(), request.getOtpCode(), OTPPurpose.VERIFY_EMAIL);
+
+            if (isValid) {
+                // Update status = UNBANNED
+                User user = userRepository.findByEmail(request.getEmail())
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+                user.setStatus(Status.UNBANNED);
+                userRepository.save(user);
+            }
+
             return ApiResponse.<Boolean>builder()
                     .result(isValid)
                     .message(isValid ? "Email verified successfully" : "Invalid OTP")
@@ -118,6 +141,15 @@ public class UserController {
         BusinessUploadStatusResponse status = userService.getBusinessUploadStatusByEmail(email);
         return ApiResponse.<BusinessUploadStatusResponse>builder()
                 .result(status)
+                .build();
+    }
+
+    @GetMapping("/suggestions")
+    public ApiResponse<List<UserSuggestionResponse>> getSuggestedUsers(
+            @RequestParam(defaultValue = "5") int limit) {
+        List<UserSuggestionResponse> suggestions = userSuggestionService.getSuggestedUsers(limit);
+        return ApiResponse.<List<UserSuggestionResponse>>builder()
+                .result(suggestions)
                 .build();
     }
 }

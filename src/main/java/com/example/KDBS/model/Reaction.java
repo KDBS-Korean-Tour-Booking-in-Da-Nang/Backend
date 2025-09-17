@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @Entity
 @Table(name = "reactions", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "target_id", "target_type"})
+        @UniqueConstraint(columnNames = { "user_id", "target_id", "target_type" })
 })
 public class Reaction {
 
@@ -25,7 +25,7 @@ public class Reaction {
     private Long reactionId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "reaction_type", nullable = false)
+    @Column(name = "reaction_type", nullable = false, length = 10)
     private ReactionType reactionType;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,8 +37,8 @@ public class Reaction {
     private Long targetId; // ID cua post hoac comment
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "target_type", nullable = false)
-    private ReactionTargetType targetType; // POST hoac COMMENT
+    @Column(name = "target_type", nullable = false, length = 10)
+    private ReactionTargetType targetType; // POST hoac COMMENT hoac IMG
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

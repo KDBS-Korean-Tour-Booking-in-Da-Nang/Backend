@@ -14,11 +14,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReactionResponse {
-    
     private Long reactionId;
     private ReactionType reactionType;
-    private ReactionTargetType targetType;
     private Long targetId;
+    private ReactionTargetType targetType;
     private String username;
     private String userAvatar;
     private LocalDateTime createdAt;

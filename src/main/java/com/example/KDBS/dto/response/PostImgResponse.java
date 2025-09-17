@@ -6,5 +6,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class PostImgResponse {
+    private Long postImgId;
     private String imgPath;
 }

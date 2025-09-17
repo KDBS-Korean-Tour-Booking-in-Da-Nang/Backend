@@ -4,7 +4,6 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import com.example.KDBS.dto.response.ReactionSummaryResponse;
 
 @Data
 public class PostResponse {
@@ -15,6 +14,8 @@ public class PostResponse {
     private List<HashtagResponse> hashtags;
     private LocalDateTime createdAt;
     private ReactionSummaryResponse reactions;
+    private Long saveCount;
     private String username;
     private String userAvatar;
+    private String userEmail;
 }

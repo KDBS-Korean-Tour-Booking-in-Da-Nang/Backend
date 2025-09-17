@@ -16,9 +16,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.client.RestTemplate;
-
-import java.util.Arrays;
 
 import java.util.Arrays;
 
@@ -36,11 +33,17 @@ public class SecurityConfiguration {
             "/api/auth/forgot-password/request", "/api/auth/forgot-password/reset",
             "/api/auth/forgot-password/verify-otp",
             "/api/posts/**",
-            "/api/comments/**"
+            "/api/comments/**",
+            "/api/reactions/**",
+            "/api/hashtags/**",
+            "/api/saved-posts/**",
+            "/api/reports/**",
+            "/api/users/suggestions",
+            "/api/tour/**"
     };
 
     private final String[] PUBLIC_RESOURCES = {
-            "/", "/index.html", "/google-login.html", "/css/**", "/js/**", "/images/**"
+            "/", "/index.html", "/google-login.html", "/css/**", "/js/**", "/images/**", "/uploads/**"
     };
 
     private String signature = "OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";
@@ -59,8 +62,7 @@ public class SecurityConfiguration {
             return configuration;
         })).authorizeHttpRequests(
                 authorizationManagerRequestMatcherRegistry -> authorizationManagerRequestMatcherRegistry
-                        .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
-                        .permitAll()
+                        .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.PUT, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.DELETE, PUBLIC_ENDPOINTS).permitAll()

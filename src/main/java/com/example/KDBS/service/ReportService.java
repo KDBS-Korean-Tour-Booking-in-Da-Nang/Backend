@@ -26,7 +26,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +43,13 @@ public class ReportService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         // check target exits
         validateTarget(request.getTargetType(), request.getTargetId());
+
+        // check user da report target nay chua
+        if (reportRepository.existsByReporterAndTargetTypeAndTargetId((long) user.getUserId(), request.getTargetType(),
+                request.getTargetId())) {
+            throw new AppException(ErrorCode.ALREADY_REPORTED);
+        }
+
         // tao report
         Report report = Report.builder()
                 .reporter(user)
@@ -56,7 +62,6 @@ public class ReportService {
         Report savedReport = reportRepository.save(report);
         return mapToResponse(savedReport);
     }
-
 
     @Transactional
     public ReportResponse updateReportStatus(Long reportId, UpdateReportRequest request, String adminEmail) {
@@ -78,13 +83,11 @@ public class ReportService {
         return mapToResponse(updatedReport);
     }
 
-
     @Transactional(readOnly = true)
     public Page<ReportSummaryResponse> getAllReports(Pageable pageable) {
         Page<Report> reports = reportRepository.findAllByOrderByReportedAtDesc(pageable);
         return reports.map(this::mapToSummaryResponse);
     }
-    
 
     @Transactional(readOnly = true)
     public Map<ReportStatus, Long> getReportStatsByStatus() {
@@ -94,7 +97,7 @@ public class ReportService {
         for (ReportStatus status : ReportStatus.values()) {
             result.put(status, 0L);
         }
-        
+
         for (Object[] stat : stats) {
             String statusStr = (String) stat[0];
             Long count = ((Number) stat[1]).longValue();
@@ -105,10 +108,18 @@ public class ReportService {
                 // Bỏ qua status không hợp lệ
             }
         }
-        
+
         return result;
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasUserReported(String userEmail, ReportTargetType targetType, Long targetId) {
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user == null) {
+            return false;
+        }
+        return reportRepository.existsByReporterAndTargetTypeAndTargetId((long) user.getUserId(), targetType, targetId);
+    }
 
     private void validateTarget(ReportTargetType targetType, Long targetId) {
         switch (targetType) {
@@ -124,7 +135,6 @@ public class ReportService {
                 break;
         }
     }
-
 
     private ReportResponse mapToResponse(Report report) {
         String targetTitle = getTargetTitle(report.getTargetType(), report.getTargetId());
@@ -148,7 +158,6 @@ public class ReportService {
                 .build();
     }
 
-
     private ReportSummaryResponse mapToSummaryResponse(Report report) {
         String targetTitle = getTargetTitle(report.getTargetType(), report.getTargetId());
         String targetAuthor = getTargetAuthor(report.getTargetType(), report.getTargetId());
@@ -167,7 +176,6 @@ public class ReportService {
                 .build();
     }
 
-
     private String getTargetTitle(ReportTargetType targetType, Long targetId) {
         try {
             switch (targetType) {
@@ -176,7 +184,9 @@ public class ReportService {
                     return post != null ? post.getTitle() : "Post not found";
                 case COMMENT:
                     ForumComment comment = forumCommentRepository.findById(targetId).orElse(null);
-                    return comment != null ? comment.getContent().substring(0, Math.min(comment.getContent().length(), 100)) + "..." : "Comment not found";
+                    return comment != null
+                            ? comment.getContent().substring(0, Math.min(comment.getContent().length(), 100)) + "..."
+                            : "Comment not found";
                 default:
                     return "Unknown target";
             }
@@ -184,7 +194,6 @@ public class ReportService {
             return "Error loading target";
         }
     }
-
 
     private String getTargetAuthor(ReportTargetType targetType, Long targetId) {
         try {
