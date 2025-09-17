@@ -73,6 +73,23 @@ public class Tour {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    // Optional additional fields
+    @Column(name = "booking_deadline")
+    private LocalDateTime bookingDeadline;
+
+    @Lob
+    @Column(name = "surcharge_policy", columnDefinition = "TEXT")
+    private String surchargePolicy;
+
+    @Lob
+    @Column(name = "cancellation_policy", columnDefinition = "TEXT")
+    private String cancellationPolicy;
+
+    // JSON string of surcharges configured from Step 3
+    @Lob
+    @Column(name = "surcharges", columnDefinition = "TEXT")
+    private String surcharges;
+
     @PrePersist
     protected void onCreate() {
         // set default if not provided

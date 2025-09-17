@@ -23,6 +23,10 @@ public class TourResponse {
     private BigDecimal babyPrice;
     private TourStatus tourStatus;
     private LocalDateTime createdAt;
+    private LocalDateTime bookingDeadline;
+    private String surchargePolicy;
+    private String cancellationPolicy;
+    private String surcharges;
     private List<TourContentResponse> contents;
 
     @Data
