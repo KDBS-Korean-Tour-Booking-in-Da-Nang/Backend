@@ -23,11 +23,14 @@ public class TourResponse {
     private BigDecimal babyPrice;
     private TourStatus tourStatus;
     private LocalDateTime createdAt;
+    private LocalDateTime bookingDeadline;
+    private String surcharges;
     private List<TourContentResponse> contents;
 
     @Data
     public static class TourContentResponse {
         private String tourContentTitle;
         private String tourContentDescription;
+        private List<String> images;
     }
 }
