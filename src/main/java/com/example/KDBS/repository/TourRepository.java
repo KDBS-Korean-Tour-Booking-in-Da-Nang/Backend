@@ -10,9 +10,9 @@ import java.util.Optional;
 
 @Repository
 public interface TourRepository extends JpaRepository<Tour, Long> {
-    @Query("SELECT t FROM Tour t LEFT JOIN FETCH t.contents c WHERE t.tourId = :id")
+    @Query("SELECT t FROM Tour t LEFT JOIN FETCH t.contents WHERE t.tourId = :id")
     Optional<Tour> findByIdWithContents(Long id);
 
-    @Query("SELECT t FROM Tour t")
+    @Query("SELECT t FROM Tour t LEFT JOIN FETCH t.contents")
     List<Tour> findAllWithContents();
 }

@@ -4,15 +4,10 @@ import com.example.KDBS.dto.request.TourRequest;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.TourContent;
-import com.example.KDBS.model.TourContentImg;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
-import org.mapstruct.Named;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface TourMapper {
@@ -25,14 +20,7 @@ public interface TourMapper {
     // Explicit mapping for TourContent to TourContentResponse
     @Mapping(target = "tourContentTitle", source = "tourContentTitle")
     @Mapping(target = "tourContentDescription", source = "tourContentDescription")
-    @Mapping(target = "images", source = "images", qualifiedByName = "mapImages")
     TourResponse.TourContentResponse toContentResponse(TourContent content);
-
-    @Named("mapImages")
-    default List<String> mapImages(List<TourContentImg> images) {
-        if (images == null) return null;
-        return images.stream().map(TourContentImg::getImgPath).collect(Collectors.toList());
-    }
 
     // Request -> Entity (for create)
     @Mapping(target = "tourId", ignore = true)

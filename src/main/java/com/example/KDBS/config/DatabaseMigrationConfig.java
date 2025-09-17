@@ -69,10 +69,8 @@ public class DatabaseMigrationConfig {
                 }
             }
 
-            // Check and add new tour fields if they don't exist (no longer adds legacy policy columns)
+            // Check and add new tour fields if they don't exist
             addTourFieldsIfNotExist();
-            // Drop legacy policy columns if they exist
-            dropLegacyPolicyColumnsIfExist();
             
             // Fix existing columns that need to be TEXT
             fixTourScheduleColumn();
@@ -127,6 +125,8 @@ public class DatabaseMigrationConfig {
             // Only add fields that are actually needed
             String[] newFields = {
                 "booking_deadline DATETIME",
+                "surcharge_policy TEXT",
+                "cancellation_policy TEXT",
                 "surcharges TEXT"
             };
 
@@ -144,24 +144,6 @@ public class DatabaseMigrationConfig {
             }
         } catch (Exception e) {
             log.error("Error adding tour fields: {}", e.getMessage());
-        }
-    }
-    
-    private void dropLegacyPolicyColumnsIfExist() {
-        try {
-            String[] legacyFields = { "surcharge_policy", "cancellation_policy" };
-            for (String fieldName : legacyFields) {
-                String checkSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
-                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tours' AND COLUMN_NAME = '" + fieldName + "'";
-                int count = jdbcTemplate.queryForObject(checkSql, Integer.class);
-                if (count > 0) {
-                    log.info("Dropping legacy field from tours table: {}", fieldName);
-                    jdbcTemplate.execute("ALTER TABLE tours DROP COLUMN " + fieldName);
-                    log.info("Dropped field {} from tours table", fieldName);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error dropping legacy tour policy fields: {}", e.getMessage());
         }
     }
     
