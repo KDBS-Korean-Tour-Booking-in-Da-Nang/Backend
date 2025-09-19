@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -29,9 +28,7 @@ public class TourRequest {
     private BigDecimal childrenPrice;
     private BigDecimal babyPrice;
 
-    // New pricing fields
-    private LocalDateTime bookingDeadline;
-    private String surcharges; // JSON string from UI
+    // Removed fields: bookingDeadline, surcharges
 
     private List<TourContentRequest> contents;
 
@@ -40,5 +37,8 @@ public class TourRequest {
         private String tourContentTitle; // HTML
         private String tourContentDescription; // HTML
         private List<String> images; // image paths
+        // Presentation preferences from wizard Step 2
+        private String dayColor; // e.g. #10b981
+        private String titleAlignment; // left | center | right
     }
 }

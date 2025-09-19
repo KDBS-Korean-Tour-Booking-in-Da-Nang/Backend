@@ -23,8 +23,6 @@ public class TourResponse {
     private BigDecimal babyPrice;
     private TourStatus tourStatus;
     private LocalDateTime createdAt;
-    private LocalDateTime bookingDeadline;
-    private String surcharges;
     private List<TourContentResponse> contents;
 
     @Data
@@ -32,5 +30,7 @@ public class TourResponse {
         private String tourContentTitle;
         private String tourContentDescription;
         private List<String> images;
+        private String dayColor;
+        private String titleAlignment;
     }
 }

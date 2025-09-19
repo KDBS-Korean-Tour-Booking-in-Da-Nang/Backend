@@ -73,16 +73,7 @@ public class Tour {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    // Optional additional fields
-    @Column(name = "booking_deadline")
-    private LocalDateTime bookingDeadline;
-
     // Policies are consolidated into tourDescription. Legacy columns removed.
-
-    // JSON string of surcharges configured from Step 3
-    @Lob
-    @Column(name = "surcharges", columnDefinition = "TEXT")
-    private String surcharges;
 
     @PrePersist
     protected void onCreate() {

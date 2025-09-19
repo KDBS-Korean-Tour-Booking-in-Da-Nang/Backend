@@ -25,12 +25,15 @@ public interface TourMapper {
     // Explicit mapping for TourContent to TourContentResponse
     @Mapping(target = "tourContentTitle", source = "tourContentTitle")
     @Mapping(target = "tourContentDescription", source = "tourContentDescription")
+    @Mapping(target = "dayColor", source = "dayColor")
+    @Mapping(target = "titleAlignment", source = "titleAlignment")
     @Mapping(target = "images", source = "images", qualifiedByName = "mapImages")
     TourResponse.TourContentResponse toContentResponse(TourContent content);
 
     @Named("mapImages")
     default List<String> mapImages(List<TourContentImg> images) {
-        if (images == null) return null;
+        if (images == null)
+            return null;
         return images.stream().map(TourContentImg::getImgPath).collect(Collectors.toList());
     }
 
