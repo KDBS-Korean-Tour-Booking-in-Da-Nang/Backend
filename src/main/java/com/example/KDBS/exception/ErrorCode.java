@@ -46,6 +46,11 @@ public enum ErrorCode {
             HttpStatus.BAD_REQUEST),
     COMMENT_OWNER_CAN_ONLY_UPDATE_THEIR_OWN_COMMENTS(1036, "Comment owner can only update their own comments",
             HttpStatus.BAD_REQUEST),
+    TOUR_NOT_FOUND(1037, "Tour not found", HttpStatus.NOT_FOUND),
+    BOOKING_NOT_FOUND(1038, "Booking not found", HttpStatus.NOT_FOUND),
+    INVALID_GUEST_COUNT(1039, "Guest count does not match the provided guest information", HttpStatus.BAD_REQUEST),
+    BOOKING_ALREADY_PAID(1040, "Booking has already been paid", HttpStatus.BAD_REQUEST),
+    BOOKING_PAYMENT_FAILED(1041, "Booking payment failed", HttpStatus.BAD_REQUEST),
             ;
 
     private int code;

@@ -1,7 +1,6 @@
 package com.example.KDBS.controller;
 
 import com.example.KDBS.model.Transaction;
-import com.example.KDBS.model.User;
 import com.example.KDBS.repository.TransactionRepository;
 import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.service.VNPayService;
@@ -40,11 +39,12 @@ public class VNPayController {
             String userEmail = request.get("userEmail").toString();
             String orderInfo = request.get("orderInfo").toString();
 
-            //Fetch user details
-            User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found"));
-            if (user == null) throw new Exception();
+            //Validate user exists
+            if (!userRepository.findByEmail(userEmail).isPresent()) {
+                throw new RuntimeException("User not found");
+            }
 
-            Map<String, Object> result = vnpayService.createPayment(user, amount, orderInfo);
+            Map<String, Object> result = vnpayService.createPayment(userEmail, amount, orderInfo);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest()

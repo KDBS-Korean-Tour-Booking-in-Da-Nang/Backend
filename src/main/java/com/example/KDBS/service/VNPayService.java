@@ -2,9 +2,14 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.enums.PaymentMethod;
 import com.example.KDBS.enums.TransactionStatus;
+import com.example.KDBS.model.Booking;
 import com.example.KDBS.model.Transaction;
+import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.User;
+import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TransactionRepository;
+import com.example.KDBS.repository.TourRepository;
+import com.example.KDBS.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -34,18 +39,38 @@ public class VNPayService {
     private String vnpReturnUrl;
 
     private final TransactionRepository transactionRepository;
-//    private final UserService userService;
+    private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
+    private final TourRepository tourRepository;
+    private final EmailService emailService;
 
-    public VNPayService(TransactionRepository transactionRepository) {
+    public VNPayService(TransactionRepository transactionRepository, UserRepository userRepository, 
+                       BookingRepository bookingRepository, TourRepository tourRepository, EmailService emailService) {
         this.transactionRepository = transactionRepository;
-//        this.userService = userService;
+        this.userRepository = userRepository;
+        this.bookingRepository = bookingRepository;
+        this.tourRepository = tourRepository;
+        this.emailService = emailService;
     }
 
-    public Map<String, Object> createPayment(User user, BigDecimal amount, String orderInfo) {
+    public Map<String, Object> createPayment(String userEmail, BigDecimal amount, String orderInfo) {
         try{
             String transactionId = UUID.randomUUID().toString();
             String orderId = "TXN" + System.currentTimeMillis() + "_" + new Random().nextInt(1000);
 
+            // Find user by email or create a temporary user
+            User user = userRepository.findByEmail(userEmail).orElse(null);
+            if (user == null) {
+                // Create a minimal user for booking transactions
+                user = new User();
+                user.setEmail(userEmail);
+                user.setUsername("booking_user_" + System.currentTimeMillis());
+                user.setPassword("temp_password");
+                user.setPhone("0000000000");
+                user.setCccd("000000000000");
+                user = userRepository.save(user);
+            }
+            
             Transaction transaction = new Transaction(transactionId, orderId, amount, user, orderInfo );
             transaction.setStatus(TransactionStatus.PENDING);
             transaction.setPaymentMethod(PaymentMethod.VNPAY);
@@ -113,7 +138,8 @@ public class VNPayService {
 
             return result;
         } catch (Exception e){
-            throw new RuntimeException("Error creating VNPay payment URL", e);
+            log.error("Error creating VNPay payment URL: {}", e.getMessage(), e);
+            throw new RuntimeException("Error creating VNPay payment URL: " + e.getMessage(), e);
         }
     }
 
@@ -146,7 +172,7 @@ public class VNPayService {
         String responseCode = vnpParams.get("vnp_ResponseCode");
         String bankCode = vnpParams.get("vnp_BankCode");
         String payDate = vnpParams.get("vnp_PayDate");
-        String message = vnpParams.get("vnp_Message");
+        // String message = vnpParams.get("vnp_Message"); // Not used currently
 
         // Find and update transaction
         Optional<Transaction> transactionOpt = transactionRepository.findByOrderId(orderId);
@@ -155,6 +181,14 @@ public class VNPayService {
             if (signValue.equals(vnpSecureHash)) {
                 if ("00".equals(responseCode)) {
                     transaction.setStatus(TransactionStatus.SUCCESS);
+                    
+                    // Send booking confirmation email when payment is successful
+                    try {
+                        sendBookingConfirmationEmailIfNeeded(transaction);
+                    } catch (Exception e) {
+                        log.error("Failed to send booking confirmation email for transaction: {}", orderId, e);
+                        // Don't fail the transaction if email fails
+                    }
                 } else {
                     transaction.setStatus(TransactionStatus.FAILED);
                 }
@@ -185,5 +219,36 @@ public class VNPayService {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+    }
+
+    /**
+     * Gửi email xác nhận booking nếu transaction liên quan đến booking
+     */
+    private void sendBookingConfirmationEmailIfNeeded(Transaction transaction) {
+        try {
+            // Extract booking ID from orderInfo if it's a booking payment
+            // Format: "Booking payment for booking ID: {bookingId}"
+            String orderInfo = transaction.getOrderInfo();
+            if (orderInfo != null && orderInfo.contains("Booking payment for booking ID:")) {
+                String bookingIdStr = orderInfo.replace("Booking payment for booking ID:", "").trim();
+                Long bookingId = Long.parseLong(bookingIdStr);
+                
+                // Get booking and tour information
+                Booking booking = bookingRepository.findById(bookingId).orElse(null);
+                if (booking != null) {
+                    Tour tour = tourRepository.findById(booking.getTourId()).orElse(null);
+                    if (tour != null) {
+                        emailService.sendBookingConfirmationEmail(booking, tour);
+                        log.info("Booking confirmation email sent for booking ID: {} after successful payment", bookingId);
+                    } else {
+                        log.warn("Tour not found for booking ID: {}", bookingId);
+                    }
+                } else {
+                    log.warn("Booking not found for ID: {}", bookingId);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error sending booking confirmation email for transaction: {}", transaction.getOrderId(), e);
+        }
     }
 }
