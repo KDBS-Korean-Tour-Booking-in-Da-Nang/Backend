@@ -1,7 +1,6 @@
 package com.example.KDBS.controller;
 
 import com.example.KDBS.model.Transaction;
-import com.example.KDBS.model.User;
 import com.example.KDBS.repository.TransactionRepository;
 import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.service.VNPayService;
@@ -27,31 +26,32 @@ public class VNPayController {
     @Value("${vnpay.frontend-url}")
     private String frontendUrl;
 
-    public VNPayController(VNPayService vnpayService, UserRepository userRepository, TransactionRepository transactionRepository) {
+    public VNPayController(VNPayService vnpayService, UserRepository userRepository,
+            TransactionRepository transactionRepository) {
         this.vnpayService = vnpayService;
         this.userRepository = userRepository;
         this.transactionRepository = transactionRepository;
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Map<String, Object>> createPayment(@RequestBody Map<String, Object> request){
+    public ResponseEntity<Map<String, Object>> createPayment(@RequestBody Map<String, Object> request) {
         try {
             BigDecimal amount = new BigDecimal(request.get("amount").toString());
             String userEmail = request.get("userEmail").toString();
             String orderInfo = request.get("orderInfo").toString();
 
-            //Fetch user details
-            User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found"));
-            if (user == null) throw new Exception();
+            // Validate user exists
+            if (!userRepository.findByEmail(userEmail).isPresent()) {
+                throw new RuntimeException("User not found");
+            }
 
-            Map<String, Object> result = vnpayService.createPayment(user, amount, orderInfo);
+            Map<String, Object> result = vnpayService.createPayment(userEmail, amount, orderInfo);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(Map.of(
                             "success", false,
-                            "message", "Invalid request data: " + e.getMessage()
-                    ));
+                            "message", "Invalid request data: " + e.getMessage()));
         }
     }
 
@@ -89,7 +89,6 @@ public class VNPayController {
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
-
 
     @GetMapping("/transaction/{orderId}")
     public ResponseEntity<?> getTransaction(@PathVariable String orderId) {
