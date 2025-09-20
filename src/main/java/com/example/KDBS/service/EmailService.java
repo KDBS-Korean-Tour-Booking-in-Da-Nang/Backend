@@ -192,7 +192,7 @@ public class EmailService {
                         overflow: hidden;
                     }
                     .header {
-                        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                        background: linear-gradient(135deg, #28a745 0%%, #20c997 100%%);
                         color: white;
                         padding: 30px;
                         text-align: center;
@@ -315,7 +315,7 @@ public class EmailService {
                         overflow: hidden;
                     }
                     .header {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
                         color: white;
                         padding: 30px;
                         text-align: center;
@@ -329,7 +329,7 @@ public class EmailService {
                         padding: 30px;
                     }
                     .otp-code {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
                         color: white;
                         font-size: 32px;
                         font-weight: bold;

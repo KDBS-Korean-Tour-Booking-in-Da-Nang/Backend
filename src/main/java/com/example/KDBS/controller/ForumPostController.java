@@ -1,7 +1,7 @@
 package com.example.KDBS.controller;
 
-import com.example.KDBS.dto.request.PostRequest;
-import com.example.KDBS.dto.response.PostResponse;
+import com.example.KDBS.dto.request.ForumPostRequest;
+import com.example.KDBS.dto.response.ForumPostResponse;
 import com.example.KDBS.service.ForumPostService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,18 +24,18 @@ public class ForumPostController {
 
         @PostMapping
         @PreAuthorize("isAuthenticated()")
-        public ResponseEntity<PostResponse> createPost(@ModelAttribute PostRequest postRequest) throws IOException {
+        public ResponseEntity<ForumPostResponse> createPost(@ModelAttribute ForumPostRequest forumPostRequest) throws IOException {
                 // @ModelAttribute is needed since you're uploading MultipartFile(s)
-                PostResponse response = forumPostService.createPost(postRequest);
+                ForumPostResponse response = forumPostService.createPost(forumPostRequest);
                 return ResponseEntity.ok(response);
         }
 
         @PutMapping("/{id}")
         @PreAuthorize("isAuthenticated()")
-        public ResponseEntity<PostResponse> updatePost(
+        public ResponseEntity<ForumPostResponse> updatePost(
                         @PathVariable Long id,
-                        @ModelAttribute PostRequest updateRequest) throws IOException {
-                PostResponse response = forumPostService.updatePost(id, updateRequest);
+                        @ModelAttribute ForumPostRequest updateRequest) throws IOException {
+                ForumPostResponse response = forumPostService.updatePost(id, updateRequest);
                 return ResponseEntity.ok(response);
         }
 
@@ -49,17 +49,17 @@ public class ForumPostController {
         }
 
         @GetMapping
-        public ResponseEntity<List<PostResponse>> getAllPosts() {
+        public ResponseEntity<List<ForumPostResponse>> getAllPosts() {
                 return ResponseEntity.ok(forumPostService.getAllPosts());
         }
 
         @GetMapping("/{id}")
-        public ResponseEntity<PostResponse> getPostById(@PathVariable Long id) {
+        public ResponseEntity<ForumPostResponse> getPostById(@PathVariable Long id) {
                 return ResponseEntity.ok(forumPostService.getPostById(id));
         }
 
         @GetMapping("/search")
-        public ResponseEntity<Page<PostResponse>> searchPosts(
+        public ResponseEntity<Page<ForumPostResponse>> searchPosts(
                         @RequestParam(required = false) String keyword,
                         @RequestParam(required = false) List<String> hashtags,
                         @RequestParam(defaultValue = "0") int page,
@@ -77,7 +77,7 @@ public class ForumPostController {
         }
 
         @GetMapping("/my-posts")
-        public ResponseEntity<Page<PostResponse>> getMyPosts(
+        public ResponseEntity<Page<ForumPostResponse>> getMyPosts(
                         @RequestHeader("User-Email") String userEmail,
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "10") int size,

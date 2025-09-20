@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SavePostRequest {
+public class SavedPostRequest {
 
     @NotNull(message = "Post ID is required")
     private Long postId;

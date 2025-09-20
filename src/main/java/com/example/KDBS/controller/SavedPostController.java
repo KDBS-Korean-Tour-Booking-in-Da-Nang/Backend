@@ -1,6 +1,6 @@
 package com.example.KDBS.controller;
 
-import com.example.KDBS.dto.request.SavePostRequest;
+import com.example.KDBS.dto.request.SavedPostRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.SavedPostResponse;
 import com.example.KDBS.service.SavedPostService;
@@ -23,7 +23,7 @@ public class SavedPostController {
         @PostMapping("/save")
         @PreAuthorize("isAuthenticated()")
         public ApiResponse<SavedPostResponse> savePost(
-                        @RequestBody @Valid SavePostRequest request,
+                        @RequestBody @Valid SavedPostRequest request,
                         @RequestHeader("User-Email") String userEmail) {
 
                 SavedPostResponse response = savedPostService.savePost(request, userEmail);

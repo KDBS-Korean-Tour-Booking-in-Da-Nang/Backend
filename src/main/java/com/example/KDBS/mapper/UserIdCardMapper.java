@@ -17,5 +17,5 @@ public interface UserIdCardMapper {
     @Mapping(source = "addressEntities.district", target = "district")
     @Mapping(source = "addressEntities.ward", target = "ward")
     @Mapping(source = "addressEntities.street", target = "street")
-    UserIdCard toEntity(IdCardApiResponse dto);
+    UserIdCard toUserIdCard(IdCardApiResponse dto);
 }
