@@ -29,5 +29,8 @@ public class TourResponse {
     public static class TourContentResponse {
         private String tourContentTitle;
         private String tourContentDescription;
+        private List<String> images;
+        private String dayColor;
+        private String titleAlignment;
     }
 }

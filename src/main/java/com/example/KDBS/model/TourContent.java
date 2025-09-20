@@ -13,7 +13,10 @@ import java.util.List;
 
 @Entity
 @Table(name = "tour_content")
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class TourContent {
 
     @Id
@@ -22,10 +25,17 @@ public class TourContent {
     private Long tourContentId;
 
     @Column(name = "tour_content_title", columnDefinition = "LONGTEXT")
-    private String tourContentTitle;        // HTML rich text
+    private String tourContentTitle; // HTML rich text
 
     @Column(name = "tour_content_description", columnDefinition = "LONGTEXT")
-    private String tourContentDescription;  // HTML rich text
+    private String tourContentDescription; // HTML rich text
+
+    // Optional presentation preferences for rendering on FE
+    @Column(name = "day_color", length = 20)
+    private String dayColor;
+
+    @Column(name = "title_alignment", length = 10)
+    private String titleAlignment; // left | center | right
 
     @ManyToOne
     @JoinColumn(name = "tour_id", nullable = false)

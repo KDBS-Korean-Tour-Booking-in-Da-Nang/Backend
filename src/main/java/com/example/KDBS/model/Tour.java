@@ -73,6 +73,8 @@ public class Tour {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    // Policies are consolidated into tourDescription. Legacy columns removed.
+
     @PrePersist
     protected void onCreate() {
         // set default if not provided
