@@ -37,10 +37,10 @@ public class TourService {
     private String uploadDir;
 
     public TourService(TourRepository tourRepository,
-                       TourContentRepository tourContentRepository,
-                       TourContentImgRepository tourContentImgRepository,
-                       UserRepository userRepository,
-                       TourMapper tourMapper) {
+            TourContentRepository tourContentRepository,
+            TourContentImgRepository tourContentImgRepository,
+            UserRepository userRepository,
+            TourMapper tourMapper) {
         this.tourRepository = tourRepository;
         this.tourContentRepository = tourContentRepository;
         this.tourContentImgRepository = tourContentImgRepository;
@@ -104,7 +104,8 @@ public class TourService {
 
         // Optional new main image
         if (tourImg != null && !tourImg.isEmpty()) {
-            String newPath = FileUtils.convertFileToPath(tourImg, uploadDir, "tours/thumbnails");
+            // Ensure leading slash so returned path is "/uploads/tours/thumbnails/..."
+            String newPath = FileUtils.convertFileToPath(tourImg, uploadDir, "/tours/thumbnails");
             existing.setTourImgPath(newPath);
         }
 
@@ -135,7 +136,8 @@ public class TourService {
 
     /** Helper to save nested content + extract image paths */
     private void saveContents(TourRequest request, Tour tour) {
-        if (request.getContents() == null) return;
+        if (request.getContents() == null)
+            return;
 
         // Initialize tour contents if null
         if (tour.getContents() == null) {

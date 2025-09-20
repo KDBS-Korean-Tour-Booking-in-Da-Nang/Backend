@@ -6,6 +6,7 @@ import com.example.KDBS.dto.response.SavedPostResponse;
 import com.example.KDBS.service.SavedPostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class SavedPostController {
 
         // save post
         @PostMapping("/save")
+        @PreAuthorize("isAuthenticated()")
         public ApiResponse<SavedPostResponse> savePost(
                         @RequestBody @Valid SavePostRequest request,
                         @RequestHeader("User-Email") String userEmail) {
@@ -34,6 +36,7 @@ public class SavedPostController {
 
         // unsave post
         @DeleteMapping("/unsave/{postId}")
+        @PreAuthorize("isAuthenticated()")
         public ApiResponse<Void> unsavePost(
                         @PathVariable Long postId,
                         @RequestHeader("User-Email") String userEmail) {

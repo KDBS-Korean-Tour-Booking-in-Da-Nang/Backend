@@ -32,7 +32,8 @@ public class Tour {
     @Column(name = "tour_name")
     private String tourName;
 
-    @Column(name = "tour_description") // plain text
+    @Lob
+    @Column(name = "tour_description", columnDefinition = "MEDIUMTEXT")
     private String tourDescription;
 
     @Column(name = "tour_img_path")
@@ -50,7 +51,8 @@ public class Tour {
     @Column(name = "tour_type")
     private String tourType;
 
-    @Column(name = "tour_schedule")
+    // Store potentially long JSON/stringified schedule
+    @Column(name = "tour_schedule", columnDefinition = "TEXT")
     private String tourSchedule;
 
     private Integer amount;
