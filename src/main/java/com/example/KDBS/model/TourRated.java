@@ -1,6 +1,7 @@
 package com.example.KDBS.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,10 +9,20 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "tour_rated")
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Table(
+        name = "tour_rated",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"tour_id", "user_id"}) // ✅ đảm bảo 1 user chỉ đánh giá 1 tour
+        }
+)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class TourRated {
 
     @Id
@@ -19,8 +30,10 @@ public class TourRated {
     @Column(name = "tour_rated_id")
     private Long tourRatedId;
 
-    @Column(name = "user_id")
-    private Long userId;
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonBackReference
+    private User user;
 
     @ManyToOne
     @JoinColumn(name = "tour_id", nullable = false)
@@ -39,4 +52,5 @@ public class TourRated {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
 }

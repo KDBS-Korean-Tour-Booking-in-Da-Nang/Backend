@@ -1,5 +1,7 @@
 package com.example.KDBS.service;
 
+import com.example.KDBS.exception.AppException;
+import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.model.Transaction;
 import com.example.KDBS.repository.TransactionRepository;
 import com.example.KDBS.repository.UserRepository;
@@ -28,6 +30,6 @@ public class TransactionService {
     public List<Transaction> getAllTransactionsByUserEmail(String userEmail) {
         return userRepository.findByEmail(userEmail)
                 .map(transactionRepository::findByUser)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED,userEmail));
     }
 }

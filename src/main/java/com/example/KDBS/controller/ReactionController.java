@@ -7,6 +7,7 @@ import com.example.KDBS.enums.ReactionTargetType;
 import com.example.KDBS.service.ReactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +22,7 @@ public class ReactionController {
     private ReactionService reactionService;
 
     @PostMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ReactionResponse> createReaction(@RequestBody ReactionRequest reactionRequest) {
         ReactionResponse response = reactionService.createReaction(reactionRequest);
         return ResponseEntity.ok(response);
@@ -28,6 +30,7 @@ public class ReactionController {
 
     // Compatibility with the provided API spec
     @PostMapping("/add")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ReactionResponse> addReactionLegacy(
             @RequestHeader(value = "User-Email", required = false) String userEmail,
             @RequestBody ReactionRequest body) {
@@ -47,6 +50,7 @@ public class ReactionController {
     }
 
     @DeleteMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> removeReaction(@RequestBody ReactionRequest reactionRequest) {
         reactionService.removeReactionByRequest(reactionRequest);
         return ResponseEntity.noContent().build();
@@ -55,6 +59,7 @@ public class ReactionController {
     // Compatibility remove endpoint as spec: POST
     // /api/reactions/{targetType}/{targetId}
     @PostMapping("/{targetType}/{targetId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> removeReactionLegacy(
             @PathVariable ReactionTargetType targetType,
             @PathVariable Long targetId,

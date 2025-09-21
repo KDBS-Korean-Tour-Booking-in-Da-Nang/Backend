@@ -1,7 +1,7 @@
 package com.example.KDBS.service;
 
-import com.example.KDBS.dto.request.CommentRequest;
-import com.example.KDBS.dto.response.CommentResponse;
+import com.example.KDBS.dto.request.ForumCommentRequest;
+import com.example.KDBS.dto.response.ForumCommentResponse;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.CommentMapper;
@@ -34,46 +34,46 @@ public class ForumCommentService {
         private CommentMapper commentMapper;
 
         @Transactional
-        public CommentResponse createComment(CommentRequest commentRequest) {
-                User user = userRepository.findByEmail(commentRequest.getUserEmail())
+        public ForumCommentResponse createComment(ForumCommentRequest forumCommentRequest) {
+                User user = userRepository.findByEmail(forumCommentRequest.getUserEmail())
                                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-                ForumPost forumPost = forumPostRepository.findById(commentRequest.getForumPostId())
+                ForumPost forumPost = forumPostRepository.findById(forumCommentRequest.getForumPostId())
                                 .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
 
                 ForumComment comment = ForumComment.builder()
-                                .content(commentRequest.getContent())
-                                .imgPath(commentRequest.getImgPath())
+                                .content(forumCommentRequest.getContent())
+                                .imgPath(forumCommentRequest.getImgPath())
                                 .user(user)
                                 .forumPost(forumPost)
                                 .react(0)
                                 .build();
 
                 // If this is a reply, set parent comment
-                if (commentRequest.getParentCommentId() != null) {
-                        ForumComment parent = forumCommentRepository.findById(commentRequest.getParentCommentId())
+                if (forumCommentRequest.getParentCommentId() != null) {
+                        ForumComment parent = forumCommentRepository.findById(forumCommentRequest.getParentCommentId())
                                         .orElseThrow(() -> new AppException(
-                                                ErrorCode.PARENT_COMMENT_NOT_FOUND, commentRequest.getParentCommentId()));;
+                                                ErrorCode.PARENT_COMMENT_NOT_FOUND, forumCommentRequest.getParentCommentId()));;
                         comment.setParentComment(parent);
                 }
 
                 comment = forumCommentRepository.save(comment);
-                return commentMapper.toResponse(comment);
+                return commentMapper.toCommentResponse(comment);
         }
 
         @Transactional(readOnly = true)
-        public List<CommentResponse> getCommentsByPostId(Long postId) {
+        public List<ForumCommentResponse> getCommentsByPostId(Long postId) {
                 List<ForumComment> comments = forumCommentRepository.findByForumPost_ForumPostId(postId);
                 return comments.stream()
-                                .map(commentMapper::toResponse)
+                                .map(commentMapper::toCommentResponse)
                                 .collect(Collectors.toList());
         }
 
         @Transactional(readOnly = true)
-        public List<CommentResponse> getReplies(Long parentCommentId) {
+        public List<ForumCommentResponse> getReplies(Long parentCommentId) {
                 List<ForumComment> replies = forumCommentRepository
                                 .findByParentComment_ForumCommentIdOrderByCreatedAtAsc(parentCommentId);
-                return replies.stream().map(commentMapper::toResponse).collect(Collectors.toList());
+                return replies.stream().map(commentMapper::toCommentResponse).collect(Collectors.toList());
         }
 
         @Transactional
@@ -86,7 +86,7 @@ public class ForumCommentService {
         }
 
         @Transactional
-        public CommentResponse updateComment(Long id, CommentRequest updateRequest) {
+        public ForumCommentResponse updateComment(Long id, ForumCommentRequest updateRequest) {
                 ForumComment existing = forumCommentRepository.findById(id)
                         .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND, id));
 
@@ -109,6 +109,6 @@ public class ForumCommentService {
                 }
 
                 ForumComment saved = forumCommentRepository.save(existing);
-                return commentMapper.toResponse(saved);
+                return commentMapper.toCommentResponse(saved);
         }
 }

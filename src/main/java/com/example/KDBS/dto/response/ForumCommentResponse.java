@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommentResponse {
+public class ForumCommentResponse {
     private Long forumCommentId;
     private String content;
     private String imgPath;
