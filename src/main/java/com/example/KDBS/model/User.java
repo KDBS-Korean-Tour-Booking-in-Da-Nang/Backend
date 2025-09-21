@@ -63,6 +63,7 @@ public class User {
     private Status status;
 
     @Column(name = "role", length = 255)
+    @Enumerated(EnumType.STRING)
     private Role role;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
