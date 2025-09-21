@@ -5,11 +5,7 @@ import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.TourContent;
 import com.example.KDBS.model.TourContentImg;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
-import org.mapstruct.Named;
+import org.mapstruct.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,7 +16,7 @@ public interface TourMapper {
     @Mapping(target = "id", source = "tourId")
     @Mapping(target = "contents", source = "contents")
     @Mapping(target = "tourStatus", source = "tourStatus")
-    TourResponse toResponse(Tour tour);
+    TourResponse toTourResponse(Tour tour);
 
     // Explicit mapping for TourContent to TourContentResponse
     @Mapping(target = "tourContentTitle", source = "tourContentTitle")
@@ -43,13 +39,13 @@ public interface TourMapper {
     @Mapping(target = "tourStatus", constant = "NOT_APPROVED")
     @Mapping(target = "contents", ignore = true)
     @Mapping(target = "ratings", ignore = true)
-    Tour toEntity(TourRequest request);
+    Tour toTour(TourRequest request);
 
     // Map nested request -> entity
     @Mapping(target = "tourContentId", ignore = true)
     @Mapping(target = "tour", ignore = true)
     @Mapping(target = "images", ignore = true)
-    TourContent toContentEntity(TourRequest.TourContentRequest req);
+    TourContent toTourContent(TourRequest.TourContentRequest req);
 
     // Update entity from request
     @Mapping(target = "tourId", ignore = true)
@@ -57,5 +53,5 @@ public interface TourMapper {
     @Mapping(target = "tourStatus", ignore = true)
     @Mapping(target = "contents", ignore = true)
     @Mapping(target = "ratings", ignore = true)
-    void updateEntityFromRequest(TourRequest request, @MappingTarget Tour tour);
+    void updateTourFromRequest(TourRequest request, @MappingTarget Tour tour);
 }

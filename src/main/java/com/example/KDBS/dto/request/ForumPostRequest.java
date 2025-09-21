@@ -7,10 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class PostRequest {
+public class ForumPostRequest {
     private String userEmail;
     private String title;
     private String content;
-    private List<MultipartFile> imageUrls = new ArrayList<>();
+    private List<MultipartFile> images = new ArrayList<>();
     private List<String> hashtags = new ArrayList<>();
 }

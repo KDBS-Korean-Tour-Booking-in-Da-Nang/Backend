@@ -1,7 +1,7 @@
 package com.example.KDBS.service;
 
-import com.example.KDBS.dto.request.PostRequest;
-import com.example.KDBS.dto.response.PostResponse;
+import com.example.KDBS.dto.request.ForumPostRequest;
+import com.example.KDBS.dto.response.ForumPostResponse;
 import com.example.KDBS.dto.response.ReactionSummaryResponse;
 import com.example.KDBS.enums.ReactionTargetType;
 import com.example.KDBS.exception.AppException;
@@ -55,23 +55,23 @@ public class ForumPostService {
     private String uploadDir;
 
     @Transactional
-    public PostResponse createPost(PostRequest postRequest) throws IOException {
-        User user = userRepository.findByEmail(postRequest.getUserEmail())
+    public ForumPostResponse createPost(ForumPostRequest forumPostRequest) throws IOException {
+        User user = userRepository.findByEmail(forumPostRequest.getUserEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        ForumPost forumPost = postMapper.toEntity(postRequest);
+        ForumPost forumPost = postMapper.toForumPost(forumPostRequest);
         forumPost.setUser(user);
         forumPost = forumPostRepository.save(forumPost);
 
-        handleImages(postRequest.getImageUrls(), forumPost);
-        handleHashtags(postRequest.getHashtags(), forumPost);
+        handleImages(forumPostRequest.getImages(), forumPost);
+        handleHashtags(forumPostRequest.getHashtags(), forumPost);
 
-        return postMapper.toResponse(forumPostRepository.findById(forumPost.getForumPostId())
+        return postMapper.toPostResponse(forumPostRepository.findById(forumPost.getForumPostId())
                 .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND_AFTER_SAVING)));
     }
 
     @Transactional
-    public PostResponse updatePost(Long id, PostRequest updateRequest) throws IOException {
+    public ForumPostResponse updatePost(Long id, ForumPostRequest updateRequest) throws IOException {
         ForumPost forumPost = forumPostRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND, id));
 
@@ -81,18 +81,18 @@ public class ForumPostService {
             throw new AppException(ErrorCode.POST_OWNER_CAN_ONLY_UPDATE_THEIR_OWN_POSTS);
         }
 
-        ForumPost updatedPost = postMapper.toEntity(updateRequest);
+        ForumPost updatedPost = postMapper.toForumPost(updateRequest);
         forumPost.setContent(updatedPost.getContent());
         forumPost.setTitle(updatedPost.getTitle());
 
         postImgRepository.deleteAll(forumPost.getImages());
         postHashtagRepository.deleteAll(forumPost.getHashtags());
 
-        handleImages(updateRequest.getImageUrls(), forumPost);
+        handleImages(updateRequest.getImages(), forumPost);
         handleHashtags(updateRequest.getHashtags(), forumPost);
 
         forumPost = forumPostRepository.save(forumPost);
-        return postMapper.toResponse(forumPost);
+        return postMapper.toPostResponse(forumPost);
     }
 
     @Transactional
@@ -105,17 +105,17 @@ public class ForumPostService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostResponse> getAllPosts() {
+    public List<ForumPostResponse> getAllPosts() {
         return forumPostRepository.findAll().stream()
-                .map(postMapper::toResponse)
+                .map(postMapper::toPostResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public PostResponse getPostById(Long id) {
+    public ForumPostResponse getPostById(Long id) {
         ForumPost forumPost = forumPostRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
-        return postMapper.toResponse(forumPost);
+        return postMapper.toPostResponse(forumPost);
     }
 
     private void handleImages(List<MultipartFile> images, ForumPost forumPost) throws IOException {
@@ -178,7 +178,7 @@ public class ForumPostService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PostResponse> searchPosts(String keyword, List<String> hashtags, Pageable pageable) {
+    public Page<ForumPostResponse> searchPosts(String keyword, List<String> hashtags, Pageable pageable) {
         List<String> normalizedTags = null;
         if (hashtags != null && !hashtags.isEmpty()) {
             // Normalize hashtag to lowercase
@@ -186,7 +186,7 @@ public class ForumPostService {
         }
 
         return forumPostRepository.searchPosts(keyword, normalizedTags, pageable)
-                .map(postMapper::toResponse);
+                .map(postMapper::toPostResponse);
     }
 
     /**
@@ -211,14 +211,14 @@ public class ForumPostService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PostResponse> getPostsByUser(String userEmail, Pageable pageable) {
+    public Page<ForumPostResponse> getPostsByUser(String userEmail, Pageable pageable) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
 
         Page<ForumPost> posts = forumPostRepository.findByUserOrderByCreatedAtDesc(user, pageable);
 
         return posts.map(post -> {
-            PostResponse response = postMapper.toResponse(post);
+            ForumPostResponse response = postMapper.toPostResponse(post);
 
             // Get reaction summary
             ReactionSummaryResponse reactionSummary = reactionService.getReactionSummary(

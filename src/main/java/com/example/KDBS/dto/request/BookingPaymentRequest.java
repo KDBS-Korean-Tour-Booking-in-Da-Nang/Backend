@@ -7,13 +7,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SavePostRequest {
+@Builder
+public class BookingPaymentRequest {
 
-    @NotNull(message = "Post ID is required")
-    private Long postId;
+    @NotNull(message = "Booking ID is required")
+    private Long bookingId;
 
-    private String note; // note
+    @NotNull(message = "User email is required")
+    private String userEmail;
 }

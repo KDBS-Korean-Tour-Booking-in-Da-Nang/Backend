@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class PostImgResponse {
+public class ForumPostImgResponse {
     private Long postImgId;
     private String imgPath;
 }

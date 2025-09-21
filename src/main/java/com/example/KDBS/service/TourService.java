@@ -3,6 +3,8 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.request.TourRequest;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.enums.TourStatus;
+import com.example.KDBS.exception.AppException;
+import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.TourMapper;
 import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.TourContent;
@@ -17,6 +19,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -57,14 +61,13 @@ public class TourService {
     @Transactional
     public TourResponse createTour(TourRequest request, MultipartFile tourImg) throws IOException {
         if (tourImg == null || tourImg.isEmpty()) {
-            throw new IllegalArgumentException("Main tour image (tourImg) is required");
+            throw new AppException(ErrorCode.MAIN_TOUR_IMAGE_IS_REQUIRED);
         }
 
         var company = userRepository.findByEmail(request.getCompanyEmail())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Company email not found: " + request.getCompanyEmail()));
+                .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND_WITH_EMAIL,request.getCompanyEmail()));
 
-        Tour tour = tourMapper.toEntity(request);
+        Tour tour = tourMapper.toTour(request);
         tour.setCompanyId(company.getUserId());
         tour.setTourStatus(TourStatus.NOT_APPROVED);
         tour.setTourImgPath(FileUtils.convertFileToPath(tourImg, uploadDir, "/tours/thumbnails"));
@@ -73,34 +76,42 @@ public class TourService {
         saveContents(request, tour);
         // Fetch the tour with contents to ensure they are included in the response
         Tour savedTour = tourRepository.findByIdWithContents(tour.getTourId())
-                .orElseThrow(() -> new IllegalStateException("Failed to retrieve saved tour"));
-        return tourMapper.toResponse(savedTour);
+                .orElseThrow(() -> new AppException(ErrorCode.MAIN_TOUR_IMAGE_IS_REQUIRED));
+        return tourMapper.toTourResponse(savedTour);
     }
 
     /** Get all tours */
     public List<TourResponse> getAllTours() {
         return tourRepository.findAllWithContents()
                 .stream()
-                .map(tourMapper::toResponse)
+                .map(tourMapper::toTourResponse)
                 .toList();
     }
 
     /** Get one tour */
     public TourResponse getTourById(Long id) {
         Tour tour = tourRepository.findByIdWithContents(id)
-                .orElseThrow(() -> new IllegalArgumentException("Tour not found: " + id));
-        return tourMapper.toResponse(tour);
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND,id));
+        return tourMapper.toTourResponse(tour);
     }
+
+    /** Search tours */
+    public Page<TourResponse> searchTours(String keyword, Pageable pageable) {
+        String normalized = (keyword == null) ? null : keyword.toLowerCase();
+        return tourRepository.searchByKeyword(normalized, pageable)
+                .map(tourMapper::toTourResponse);
+    }
+
 
     /** Update tour */
     @Transactional
     public TourResponse updateTour(Long id, TourRequest request, MultipartFile tourImg) throws IOException {
         // Load existing tour
         Tour existing = tourRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Tour not found: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND,id));
 
         // Update basic fields
-        tourMapper.updateEntityFromRequest(request, existing);
+        tourMapper.updateTourFromRequest(request, existing);
 
         // Optional new main image
         if (tourImg != null && !tourImg.isEmpty()) {
@@ -121,15 +132,15 @@ public class TourService {
         Tour saved = tourRepository.save(existing);
         // Fetch the tour with contents to ensure they are included in the response
         Tour fetchedTour = tourRepository.findByIdWithContents(saved.getTourId())
-                .orElseThrow(() -> new IllegalStateException("Failed to retrieve updated tour"));
-        return tourMapper.toResponse(fetchedTour);
+                .orElseThrow(() -> new AppException(ErrorCode.FAILED_TO_RETRIVE_UPDATED_TOUR));
+        return tourMapper.toTourResponse(fetchedTour);
     }
 
     /** Delete tour and cascade its contents & images */
     @Transactional
     public void deleteTour(Long id) {
         if (!tourRepository.existsById(id)) {
-            throw new IllegalArgumentException("Tour not found: " + id);
+            throw new AppException(ErrorCode.TOUR_NOT_FOUND,id);
         }
         tourRepository.deleteById(id);
     }
@@ -145,7 +156,7 @@ public class TourService {
         }
 
         for (TourRequest.TourContentRequest c : request.getContents()) {
-            TourContent content = tourMapper.toContentEntity(c);
+            TourContent content = tourMapper.toTourContent(c);
             content.setTour(tour);
             tourContentRepository.save(content);
             tour.getContents().add(content);

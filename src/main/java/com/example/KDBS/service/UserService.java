@@ -21,7 +21,6 @@ import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.utils.FileUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -30,9 +29,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -55,9 +51,9 @@ public class UserService {
     @Autowired
     private OTPService otpService;
     @Autowired
-    BusinessLicenseRepository businessLicenseRepository;
+    private BusinessLicenseRepository businessLicenseRepository;
     @Autowired
-    UserIdCardRepository userIdCardRepository;
+    private UserIdCardRepository userIdCardRepository;
 
     private static final String API_URL = "https://api.fpt.ai/vision/idr/vnm";
     private static final String API_KEY = "0Ka4zpceIGAxLIlQ1f89RIaXbLaSHSVd";
@@ -134,7 +130,7 @@ public class UserService {
         IdCardApiResponse frontData = callFptApi(request.getFrontImageData());
 
         // Use mapper
-        UserIdCard entity = userIdCardMapper.toEntity(frontData);
+        UserIdCard entity = userIdCardMapper.toUserIdCard(frontData);
         entity.setUser(userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found")));
         entity.setFrontImagePath(frontPath);

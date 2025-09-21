@@ -31,6 +31,7 @@ public enum ErrorCode {
     EMAIL_PENDING_VERIFICATION(1025, "Email pending verification", HttpStatus.BAD_REQUEST),
     USER_IS_UNVERIFIED(1026, "User is unverified", HttpStatus.BAD_REQUEST),
     STAFF_CANNOT_DELETE_ADMIN_POSTS(1027, "Staff cannot delete admin post", HttpStatus.BAD_REQUEST),
+
     USER_OR_COMPANY_CAN_ONLY_DELETE_THEIR_OWN_POSTS(1028, "User or Company can only delete their own posts",
             HttpStatus.BAD_REQUEST),
     YOU_DO_NOT_HAVE_PERMISSION_TO_DELETE_THIS_POST(1029, "You do not have permission to delete this post.",
@@ -46,6 +47,16 @@ public enum ErrorCode {
             HttpStatus.BAD_REQUEST),
     COMMENT_OWNER_CAN_ONLY_UPDATE_THEIR_OWN_COMMENTS(1036, "Comment owner can only update their own comments",
             HttpStatus.BAD_REQUEST),
+    BOOKING_NOT_FOUND(1038, "Booking not found", HttpStatus.NOT_FOUND),
+    INVALID_GUEST_COUNT(1039, "Guest count does not match the provided guest information", HttpStatus.BAD_REQUEST),
+    BOOKING_ALREADY_PAID(1040, "Booking has already been paid", HttpStatus.BAD_REQUEST),
+    BOOKING_PAYMENT_FAILED(1041, "Booking payment failed", HttpStatus.BAD_REQUEST),
+    TOUR_NOT_FOUND(1042, "Tour not found with id: %s", HttpStatus.NOT_FOUND),
+    COMPANY_NOT_FOUND_WITH_EMAIL(1043, "Company not found with email: %s", HttpStatus.NOT_FOUND),
+    MAIN_TOUR_IMAGE_IS_REQUIRED(1044, "Main tour image (tourImg) is requried", HttpStatus.NOT_FOUND),
+    FAILED_TO_RETRIVE_SAVED_TOUR(1045, "Failed to retrieve saved tour", HttpStatus.NOT_FOUND),
+    FAILED_TO_RETRIVE_UPDATED_TOUR(1046, "Failed to retrieve updated tour", HttpStatus.NOT_FOUND),
+    IMAGE_NOT_FOUND(1047, "Image not found", HttpStatus.NOT_FOUND),
             ;
 
     private int code;
