@@ -1,6 +1,7 @@
 package com.example.KDBS.mapper;
 
 import com.example.KDBS.dto.request.TourRequest;
+import com.example.KDBS.dto.response.TourPreviewResponse;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.TourContent;
@@ -17,6 +18,9 @@ public interface TourMapper {
     @Mapping(target = "contents", source = "contents")
     @Mapping(target = "tourStatus", source = "tourStatus")
     TourResponse toTourResponse(Tour tour);
+
+    //Map Tour entity -> TourPreviewResponse DTO
+    TourPreviewResponse toTourPreviewResponse(Tour tour);
 
     // Explicit mapping for TourContent to TourContentResponse
     @Mapping(target = "tourContentTitle", source = "tourContentTitle")
