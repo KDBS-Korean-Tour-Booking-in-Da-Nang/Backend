@@ -21,27 +21,23 @@ import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.utils.FileUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
-@RestController
-@RequestMapping("/api/users")
-@RequiredArgsConstructor
-@CrossOrigin("*")
+@Service
 public class UserService {
 
     @Autowired
@@ -55,9 +51,9 @@ public class UserService {
     @Autowired
     private OTPService otpService;
     @Autowired
-    BusinessLicenseRepository businessLicenseRepository;
+    private BusinessLicenseRepository businessLicenseRepository;
     @Autowired
-    UserIdCardRepository userIdCardRepository;
+    private UserIdCardRepository userIdCardRepository;
 
     private static final String API_URL = "https://api.fpt.ai/vision/idr/vnm";
     private static final String API_KEY = "0Ka4zpceIGAxLIlQ1f89RIaXbLaSHSVd";
@@ -65,23 +61,35 @@ public class UserService {
     private String uploadDir;
 
     public String createUser(UserRegisterRequest request) throws IOException {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new AppException(ErrorCode.EMAIL_EXISTED);
+        Optional<User> existing = userRepository.findByEmail(request.getEmail());
+
+        if (existing.isPresent()) {
+            User user = existing.get();
+
+            if (user.getStatus() == Status.UNVERIFIED) {
+                // Nếu chưa hết hạn → resend OTP
+                if (user.getCreatedAt().isAfter(LocalDateTime.now().minusDays(3))) {
+                    otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
+                    return "Email already registered but not verified. OTP resent.";
+                } else {
+                    // Nếu hết hạn → xóa user cũ
+                    userRepository.delete(user);
+                }
+            } else {
+                throw new AppException(ErrorCode.EMAIL_EXISTED);
+            }
         }
 
-        // Generate and send OTP for email verification
-        try {
-            otpService.generateAndSendOTP(request.getEmail(), OTPPurpose.VERIFY_EMAIL);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to send OTP. Please try again.");
-        }
-
+        // Tạo user mới với status UNVERIFIED
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.USER);
-        user.setStatus(Status.UNBANNED);
+        user.setStatus(Status.UNVERIFIED);
+        user.setCreatedAt(LocalDateTime.now());
 
         userRepository.save(user);
+
+        otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
 
         return "Registration successful. Please check your email for verification code.";
     }
@@ -122,7 +130,7 @@ public class UserService {
         IdCardApiResponse frontData = callFptApi(request.getFrontImageData());
 
         // Use mapper
-        UserIdCard entity = userIdCardMapper.toEntity(frontData);
+        UserIdCard entity = userIdCardMapper.toUserIdCard(frontData);
         entity.setUser(userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found")));
         entity.setFrontImagePath(frontPath);

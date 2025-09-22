@@ -5,6 +5,8 @@ import com.example.KDBS.dto.response.ReactionResponse;
 import com.example.KDBS.dto.response.ReactionSummaryResponse;
 import com.example.KDBS.enums.ReactionTargetType;
 import com.example.KDBS.enums.ReactionType;
+import com.example.KDBS.exception.AppException;
+import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.model.ForumPost;
 import com.example.KDBS.model.ForumComment;
 import com.example.KDBS.model.Reaction;
@@ -15,6 +17,7 @@ import com.example.KDBS.repository.ReactionRepository;
 import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.repository.PostImgRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,11 +32,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ReactionService {
 
-    private final ReactionRepository reactionRepository;
-    private final ForumPostRepository forumPostRepository;
-    private final ForumCommentRepository forumCommentRepository;
-    private final UserRepository userRepository;
-    private final PostImgRepository postImgRepository;
+    @Autowired
+    private ReactionRepository reactionRepository;
+    @Autowired
+    private ForumPostRepository forumPostRepository;
+    @Autowired
+    private ForumCommentRepository forumCommentRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private PostImgRepository postImgRepository;
 
     @Transactional
     public ReactionResponse addOrUpdateReaction(ReactionRequest request, String userEmail) {
@@ -138,15 +146,15 @@ public class ReactionService {
     private void validateTargetExists(Long targetId, ReactionTargetType targetType) {
         if (targetType == ReactionTargetType.POST) {
             if (!forumPostRepository.existsById(targetId)) {
-                throw new RuntimeException("Post not found");
+                throw new AppException(ErrorCode.POST_NOT_FOUND);
             }
         } else if (targetType == ReactionTargetType.COMMENT) {
             if (!forumCommentRepository.existsById(targetId)) {
-                throw new RuntimeException("Comment not found");
+                throw new AppException(ErrorCode.COMMENT_NOT_FOUND);
             }
         } else if (targetType == ReactionTargetType.IMG) {
             if (!postImgRepository.existsById(targetId)) {
-                throw new RuntimeException("Image not found");
+                throw new AppException(ErrorCode.IMAGE_NOT_FOUND);
             }
         }
     }

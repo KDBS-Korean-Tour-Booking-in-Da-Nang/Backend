@@ -8,6 +8,7 @@ import com.example.KDBS.enums.ReportStatus;
 import com.example.KDBS.enums.ReportTargetType;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
+import com.example.KDBS.mapper.ReportMapper;
 import com.example.KDBS.model.ForumComment;
 import com.example.KDBS.model.ForumPost;
 import com.example.KDBS.model.Report;
@@ -17,6 +18,8 @@ import com.example.KDBS.repository.ForumPostRepository;
 import com.example.KDBS.repository.ReportRepository;
 import com.example.KDBS.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.units.qual.A;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -31,10 +34,16 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ReportService {
 
-    private final ReportRepository reportRepository;
-    private final UserRepository userRepository;
-    private final ForumPostRepository forumPostRepository;
-    private final ForumCommentRepository forumCommentRepository;
+    @Autowired
+    private ReportRepository reportRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private ForumPostRepository forumPostRepository;
+    @Autowired
+    private ForumCommentRepository forumCommentRepository;
+    @Autowired
+    private ReportMapper reportMapper;
 
     @Transactional
     public ReportResponse createReport(ReportRequest request, String userEmail) {
@@ -51,16 +60,16 @@ public class ReportService {
         }
 
         // tao report
-        Report report = Report.builder()
-                .reporter(user)
-                .targetType(request.getTargetType())
-                .targetId(request.getTargetId())
-                .reasons(request.getReasons())
-                .description(request.getDescription())
-                .build();
+        Report report = reportMapper.toEntity(request);
+        report.setReporter(user);
 
         Report savedReport = reportRepository.save(report);
-        return mapToResponse(savedReport);
+        ReportResponse response = reportMapper.toResponse(savedReport);
+
+        response.setTargetTitle(getTargetTitle(savedReport.getTargetType(), savedReport.getTargetId()));
+        response.setTargetAuthor(getTargetAuthor(savedReport.getTargetType(), savedReport.getTargetId()));
+
+        return response;
     }
 
     @Transactional
@@ -80,13 +89,13 @@ public class ReportService {
         }
 
         Report updatedReport = reportRepository.save(report);
-        return mapToResponse(updatedReport);
+        return reportMapper.toResponse(updatedReport);
     }
 
     @Transactional(readOnly = true)
     public Page<ReportSummaryResponse> getAllReports(Pageable pageable) {
         Page<Report> reports = reportRepository.findAllByOrderByReportedAtDesc(pageable);
-        return reports.map(this::mapToSummaryResponse);
+        return reports.map(reportMapper::toSummaryResponse);
     }
 
     @Transactional(readOnly = true)
@@ -134,46 +143,6 @@ public class ReportService {
                 }
                 break;
         }
-    }
-
-    private ReportResponse mapToResponse(Report report) {
-        String targetTitle = getTargetTitle(report.getTargetType(), report.getTargetId());
-        String targetAuthor = getTargetAuthor(report.getTargetType(), report.getTargetId());
-
-        return ReportResponse.builder()
-                .reportId(report.getReportId())
-                .reporterUsername(report.getReporter().getUsername())
-                .reporterEmail(report.getReporter().getEmail())
-                .targetType(report.getTargetType())
-                .targetId(report.getTargetId())
-                .targetTitle(targetTitle)
-                .targetAuthor(targetAuthor)
-                .reasons(report.getReasons())
-                .description(report.getDescription())
-                .status(report.getStatus())
-                .adminNote(report.getAdminNote())
-                .reportedAt(report.getReportedAt())
-                .resolvedAt(report.getResolvedAt())
-                .resolvedByUsername(report.getResolvedBy() != null ? report.getResolvedBy().getUsername() : null)
-                .build();
-    }
-
-    private ReportSummaryResponse mapToSummaryResponse(Report report) {
-        String targetTitle = getTargetTitle(report.getTargetType(), report.getTargetId());
-        String targetAuthor = getTargetAuthor(report.getTargetType(), report.getTargetId());
-
-        return ReportSummaryResponse.builder()
-                .reportId(report.getReportId())
-                .targetType(report.getTargetType())
-                .targetId(report.getTargetId())
-                .targetTitle(targetTitle)
-                .targetAuthor(targetAuthor)
-                .reporterUsername(report.getReporter().getUsername())
-                .reasons(String.join(", ", report.getReasons()))
-                .status(report.getStatus())
-                .reportedAt(report.getReportedAt())
-                .reportCount(0L)
-                .build();
     }
 
     private String getTargetTitle(ReportTargetType targetType, Long targetId) {

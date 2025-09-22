@@ -1,11 +1,12 @@
 package com.example.KDBS.controller;
 
-import com.example.KDBS.dto.request.SavePostRequest;
+import com.example.KDBS.dto.request.SavedPostRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.SavedPostResponse;
 import com.example.KDBS.service.SavedPostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,8 +21,9 @@ public class SavedPostController {
 
         // save post
         @PostMapping("/save")
+        @PreAuthorize("isAuthenticated()")
         public ApiResponse<SavedPostResponse> savePost(
-                        @RequestBody @Valid SavePostRequest request,
+                        @RequestBody @Valid SavedPostRequest request,
                         @RequestHeader("User-Email") String userEmail) {
 
                 SavedPostResponse response = savedPostService.savePost(request, userEmail);
@@ -34,6 +36,7 @@ public class SavedPostController {
 
         // unsave post
         @DeleteMapping("/unsave/{postId}")
+        @PreAuthorize("isAuthenticated()")
         public ApiResponse<Void> unsavePost(
                         @PathVariable Long postId,
                         @RequestHeader("User-Email") String userEmail) {

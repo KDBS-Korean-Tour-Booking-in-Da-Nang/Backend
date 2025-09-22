@@ -18,7 +18,16 @@ public class DatabaseMigrationConfig {
     @PostConstruct
     public void migrateDatabase() {
         try {
-            log.info("Checking database migration status...");
+            // Create migration tracking table if it doesn't exist
+            createMigrationTableIfNotExists();
+
+            // Check if migration already completed
+            if (isMigrationCompleted()) {
+                log.debug("Database migration already completed, skipping...");
+                return;
+            }
+
+            log.info("Starting database migration...");
 
             // Check if target_type column needs to be updated
             String checkColumnSql = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS " +
@@ -60,10 +69,160 @@ public class DatabaseMigrationConfig {
                 }
             }
 
-            log.info("Database migration check completed");
+            // Drop removed tour fields and legacy policy columns if they exist
+            dropRemovedTourFieldsIfExist();
+            // Drop legacy policy columns if they exist
+            dropLegacyPolicyColumnsIfExist();
+
+            // Fix existing columns that need to be TEXT
+            fixTourScheduleColumn();
+
+            // Ensure new presentation columns exist on tour_content
+            addTourContentPresentationColumns();
+
+            // Mark migration as completed
+            markMigrationCompleted();
+            log.info("Database migration completed successfully");
 
         } catch (Exception e) {
             log.error("Error during database migration: {}", e.getMessage());
+        }
+    }
+
+    private void createMigrationTableIfNotExists() {
+        try {
+            String createTableSql = """
+                    CREATE TABLE IF NOT EXISTS db_migrations (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        migration_name VARCHAR(255) NOT NULL,
+                        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE KEY unique_migration (migration_name)
+                    )
+                    """;
+            jdbcTemplate.execute(createTableSql);
+        } catch (Exception e) {
+            log.error("Error creating migration table: {}", e.getMessage());
+        }
+    }
+
+    private boolean isMigrationCompleted() {
+        try {
+            String checkSql = "SELECT COUNT(*) FROM db_migrations WHERE migration_name = 'tour_fields_migration'";
+            int count = jdbcTemplate.queryForObject(checkSql, Integer.class);
+            return count > 0;
+        } catch (Exception e) {
+            log.debug("Migration status check failed, will proceed with migration: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private void markMigrationCompleted() {
+        try {
+            String insertSql = "INSERT IGNORE INTO db_migrations (migration_name) VALUES ('tour_fields_migration')";
+            jdbcTemplate.execute(insertSql);
+        } catch (Exception e) {
+            log.error("Error marking migration as completed: {}", e.getMessage());
+        }
+    }
+
+    private void dropRemovedTourFieldsIfExist() {
+        try {
+            String[] removedFields = { "booking_deadline", "surcharges" };
+            for (String fieldName : removedFields) {
+                String checkSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tours' AND COLUMN_NAME = '" + fieldName
+                        + "'";
+                int count = jdbcTemplate.queryForObject(checkSql, Integer.class);
+                if (count > 0) {
+                    log.info("Dropping removed field from tours table: {}", fieldName);
+                    jdbcTemplate.execute("ALTER TABLE tours DROP COLUMN " + fieldName);
+                    log.info("Dropped field {} from tours table", fieldName);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error dropping removed tour fields: {}", e.getMessage());
+        }
+    }
+
+    private void dropLegacyPolicyColumnsIfExist() {
+        try {
+            String[] legacyFields = { "surcharge_policy", "cancellation_policy" };
+            for (String fieldName : legacyFields) {
+                String checkSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tours' AND COLUMN_NAME = '" + fieldName
+                        + "'";
+                int count = jdbcTemplate.queryForObject(checkSql, Integer.class);
+                if (count > 0) {
+                    log.info("Dropping legacy field from tours table: {}", fieldName);
+                    jdbcTemplate.execute("ALTER TABLE tours DROP COLUMN " + fieldName);
+                    log.info("Dropped field {} from tours table", fieldName);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error dropping legacy tour policy fields: {}", e.getMessage());
+        }
+    }
+
+    private void fixTourScheduleColumn() {
+        try {
+            // Check if tour_schedule column exists and its current data type
+            String checkColumnSql = "SELECT DATA_TYPE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tours' AND COLUMN_NAME = 'tour_schedule'";
+
+            try {
+                var result = jdbcTemplate.queryForMap(checkColumnSql);
+                String dataType = (String) result.get("DATA_TYPE");
+                Object maxLength = result.get("CHARACTER_MAXIMUM_LENGTH");
+
+                log.info("tour_schedule column current type: {}, max length: {}", dataType, maxLength);
+
+                // If it's VARCHAR with limited length, alter it to TEXT
+                if ("varchar".equalsIgnoreCase(dataType) && maxLength != null) {
+                    log.info("Altering tour_schedule column from VARCHAR to TEXT");
+                    jdbcTemplate.execute("ALTER TABLE tours MODIFY COLUMN tour_schedule TEXT");
+                    log.info("Successfully altered tour_schedule column to TEXT");
+                } else if ("text".equalsIgnoreCase(dataType)) {
+                    log.info("tour_schedule column is already TEXT type");
+                } else {
+                    log.info("tour_schedule column type is: {}, no change needed", dataType);
+                }
+            } catch (Exception e) {
+                log.warn("Could not check tour_schedule column: {}", e.getMessage());
+            }
+        } catch (Exception e) {
+            log.error("Error fixing tour_schedule column: {}", e.getMessage());
+        }
+    }
+
+    private void addTourContentPresentationColumns() {
+        try {
+            // Check and add day_color
+            String checkDayColor = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tour_content' AND COLUMN_NAME = 'day_color'";
+            int dayColorCount = 0;
+            try {
+                dayColorCount = jdbcTemplate.queryForObject(checkDayColor, Integer.class);
+            } catch (Exception ignored) {
+            }
+            if (dayColorCount == 0) {
+                jdbcTemplate.execute("ALTER TABLE tour_content ADD COLUMN day_color VARCHAR(20)");
+                log.info("Added column tour_content.day_color");
+            }
+
+            // Check and add title_alignment
+            String checkTitleAlign = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tour_content' AND COLUMN_NAME = 'title_alignment'";
+            int titleAlignCount = 0;
+            try {
+                titleAlignCount = jdbcTemplate.queryForObject(checkTitleAlign, Integer.class);
+            } catch (Exception ignored) {
+            }
+            if (titleAlignCount == 0) {
+                jdbcTemplate.execute("ALTER TABLE tour_content ADD COLUMN title_alignment VARCHAR(10)");
+                log.info("Added column tour_content.title_alignment");
+            }
+        } catch (Exception e) {
+            log.error("Error ensuring tour_content presentation columns: {}", e.getMessage());
         }
     }
 }

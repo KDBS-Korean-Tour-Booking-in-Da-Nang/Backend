@@ -1,10 +1,11 @@
 package com.example.KDBS.controller;
 
-import com.example.KDBS.dto.request.CommentRequest;
-import com.example.KDBS.dto.response.CommentResponse;
-import com.example.KDBS.service.CommentService;
+import com.example.KDBS.dto.request.ForumCommentRequest;
+import com.example.KDBS.dto.response.ForumCommentResponse;
+import com.example.KDBS.service.ForumCommentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -15,39 +16,43 @@ import java.util.List;
 public class ForumCommentController {
 
     @Autowired
-    private CommentService commentService;
+    private ForumCommentService forumCommentService;
 
     @PostMapping
-    public ResponseEntity<CommentResponse> createComment(@RequestBody CommentRequest commentRequest) {
-        CommentResponse response = commentService.createComment(commentRequest);
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ForumCommentResponse> createComment(@RequestBody ForumCommentRequest forumCommentRequest)
+            throws IOException {
+        ForumCommentResponse response = forumCommentService.createComment(forumCommentRequest);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CommentResponse> updateComment(
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ForumCommentResponse> updateComment(
             @PathVariable Long id,
-            @RequestBody CommentRequest updateRequest) {
-        CommentResponse response = commentService.updateComment(id, updateRequest);
+            @RequestBody ForumCommentRequest updateRequest) throws IOException {
+        ForumCommentResponse response = forumCommentService.updateComment(id, updateRequest);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated() and @forumCommentSecurity.canDeleteComment(#id, #userEmail)")
     public ResponseEntity<Void> deleteComment(
             @PathVariable Long id,
             @RequestParam String userEmail) {
-        commentService.deleteComment(id, userEmail);
+        forumCommentService.deleteComment(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/post/{postId}")
-    public ResponseEntity<List<CommentResponse>> getCommentsByPost(@PathVariable Long postId) {
-        List<CommentResponse> responses = commentService.getCommentsByPostId(postId);
+    public ResponseEntity<List<ForumCommentResponse>> getCommentsByPost(@PathVariable Long postId) {
+        List<ForumCommentResponse> responses = forumCommentService.getCommentsByPostId(postId);
         return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/{commentId}/replies")
-    public ResponseEntity<List<CommentResponse>> getReplies(@PathVariable Long commentId) {
-        List<CommentResponse> responses = commentService.getReplies(commentId);
+    public ResponseEntity<List<ForumCommentResponse>> getReplies(@PathVariable Long commentId) {
+        List<ForumCommentResponse> responses = forumCommentService.getReplies(commentId);
         return ResponseEntity.ok(responses);
     }
 }
