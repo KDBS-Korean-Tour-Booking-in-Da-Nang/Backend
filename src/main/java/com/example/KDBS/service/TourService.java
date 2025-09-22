@@ -1,6 +1,7 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.TourRequest;
+import com.example.KDBS.dto.response.TourPreviewResponse;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.enums.TourStatus;
 import com.example.KDBS.exception.AppException;
@@ -93,6 +94,13 @@ public class TourService {
         Tour tour = tourRepository.findByIdWithContents(id)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND,id));
         return tourMapper.toTourResponse(tour);
+    }
+
+    //**Get tours for preview */
+    public TourPreviewResponse getTourPreviewById(Long id) {
+        Tour tour = tourRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND, id ));
+        return tourMapper.toTourPreviewResponse(tour);
     }
 
     /** Search tours */
