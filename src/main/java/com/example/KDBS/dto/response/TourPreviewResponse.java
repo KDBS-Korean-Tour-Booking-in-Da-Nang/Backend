@@ -8,4 +8,5 @@ public class TourPreviewResponse {
     private String tourName;
     private String tourDescription;
     private String tourImgPath;
+    private String tourUrl;
 }
