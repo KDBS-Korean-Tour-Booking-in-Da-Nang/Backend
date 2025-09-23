@@ -1,7 +1,5 @@
 package com.example.KDBS.dto.response;
 
-import com.example.KDBS.enums.Gender;
-import com.example.KDBS.enums.GuestType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,18 +31,4 @@ public class BookingResponse {
     private Integer totalGuests;
     private LocalDateTime createdAt;
     private List<GuestResponse> guests;
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class GuestResponse {
-        private Long guestId;
-        private String fullName;
-        private LocalDate birthDate;
-        private Gender gender;
-        private String idNumber;
-        private String nationality;
-        private GuestType guestType;
-    }
 }

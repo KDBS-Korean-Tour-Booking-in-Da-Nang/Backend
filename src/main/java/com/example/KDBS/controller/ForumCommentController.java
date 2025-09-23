@@ -55,4 +55,9 @@ public class ForumCommentController {
         List<ForumCommentResponse> responses = forumCommentService.getReplies(commentId);
         return ResponseEntity.ok(responses);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ForumCommentResponse> getCommentById(@PathVariable Long id) {
+        return ResponseEntity.ok(forumCommentService.getCommentById(id));
+    }
 }

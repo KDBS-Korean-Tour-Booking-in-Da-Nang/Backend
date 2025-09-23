@@ -3,7 +3,7 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.request.BookingRequest;
 import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
-import com.example.KDBS.enums.Gender;
+import com.example.KDBS.dto.response.GuestResponse;
 import com.example.KDBS.enums.GuestType;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
@@ -15,13 +15,10 @@ import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TourRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -130,6 +127,23 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
+    public List<GuestResponse> getAllGuestsByBookingId(Long bookingId) {
+        List<BookingGuest> guests = bookingGuestRepository.findByBookingId(bookingId);
+
+        return guests.stream()
+                .map(g -> GuestResponse.builder()
+                        .guestId(g.getGuestId())
+                        .fullName(g.getFullName())
+                        .birthDate(g.getBirthDate())
+                        .gender(g.getGender())
+                        .idNumber(g.getIdNumber())
+                        .nationality(g.getNationality())
+                        .guestType(g.getGuestType())
+                        .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public BigDecimal calculateBookingTotal(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
@@ -192,8 +206,8 @@ public class BookingService {
     }
 
     private BookingResponse mapToResponse(Booking booking, Tour tour) {
-        List<BookingResponse.GuestResponse> guestResponses = booking.getGuests().stream()
-                .map(guest -> BookingResponse.GuestResponse.builder()
+        List<GuestResponse> guestResponses = booking.getGuests().stream()
+                .map(guest -> GuestResponse.builder()
                         .guestId(guest.getGuestId())
                         .fullName(guest.getFullName())
                         .birthDate(guest.getBirthDate())
