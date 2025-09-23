@@ -38,6 +38,9 @@ public class TourService {
     private final UserRepository userRepository;
     private final TourMapper tourMapper;
 
+    @Value("${vnpay.frontend-url}")
+    private String frontendUrl;
+
     @Value("${file.upload-dir}")
     private String uploadDir;
 
@@ -100,7 +103,9 @@ public class TourService {
     public TourPreviewResponse getTourPreviewById(Long id) {
         Tour tour = tourRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND, id ));
-        return tourMapper.toTourPreviewResponse(tour);
+        TourPreviewResponse tourPreviewResponse = tourMapper.toTourPreviewResponse(tour);
+        tourPreviewResponse.setTourUrl(frontendUrl + "/tour/" + tour.getTourId());
+        return tourPreviewResponse;
     }
 
     /** Search tours */
