@@ -10,6 +10,7 @@ import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.model.Booking;
 import com.example.KDBS.model.BookingGuest;
 import com.example.KDBS.model.Tour;
+import com.example.KDBS.model.Transaction;
 import com.example.KDBS.repository.BookingGuestRepository;
 import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TourRepository;
@@ -239,7 +240,7 @@ public class BookingService {
     }
 
     /**
-     * Gửi email xác nhận booking
+     * Gửi email xác nhận booking, for testing purposes
      */
     @Transactional(readOnly = true)
     public void sendBookingConfirmationEmail(Long bookingId) {
@@ -249,7 +250,44 @@ public class BookingService {
         Tour tour = tourRepository.findById(booking.getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
-        emailService.sendBookingConfirmationEmail(booking, tour);
+        emailService.sendBookingConfirmationEmailAsync(booking, tour);
         log.info("Booking confirmation email sent manually for booking ID: {}", bookingId);
+    }
+
+    /**
+     * Gửi email xác nhận booking nếu transaction liên quan đến booking
+     */
+    public void sendBookingConfirmationEmailIfNeeded(Transaction transaction) {
+        try {
+            // Extract booking ID from orderInfo if it's a booking payment
+            // Format: "Booking payment for booking ID: {bookingId}"
+            String orderInfo = transaction.getOrderInfo();
+            if (orderInfo != null && orderInfo.contains("Booking payment for booking ID:")) {
+
+                //Get booking ID by parsing orderInfo replace and split then get first part and trim
+                //Example: "Booking payment for booking ID: 123 | Tour: Amazing Tour - 2 guests on 2023-10-15"
+                String bookingIdStr = orderInfo.replace("Booking payment for booking ID:", "")
+                        .split("\\|")[0]
+                        .trim();
+                Long bookingId = Long.parseLong(bookingIdStr);
+
+                // Get booking and tour information
+                Booking booking = bookingRepository.findByIdWithGuests(bookingId).orElse(null);
+                if (booking != null) {
+                    Tour tour = tourRepository.findById(booking.getTourId()).orElse(null);
+                    if (tour != null) {
+                        emailService.sendBookingConfirmationEmailAsync(booking, tour);
+                        log.info("Booking confirmation email sent for booking ID: {} after successful payment",
+                                bookingId);
+                    } else {
+                        log.warn("Tour not found for booking ID: {}", bookingId);
+                    }
+                } else {
+                    log.warn("Booking not found for ID: {}", bookingId);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error sending booking confirmation email for transaction: {}", transaction.getOrderId(), e);
+        }
     }
 }

@@ -50,14 +50,14 @@ public class ForgotPasswordService {
         }
 
         // verify otp
-        try {
-            otpService.verifyOTP(request.getEmail(), request.getOtpCode(), OTPPurpose.FORGOT_PASSWORD);
-        } catch (AppException e) {
-            if (ErrorCode.OTP_INVALID.equals(e.getErrorCode())) {
-                throw new AppException(ErrorCode.OTP_INVALID);
-            }
-            throw e;
-        }
+//        try {
+//            otpService.verifyOTP(request.getEmail(), request.getOtpCode(), OTPPurpose.FORGOT_PASSWORD);
+//        } catch (AppException e) {
+//            if (ErrorCode.OTP_INVALID.equals(e.getErrorCode())) {
+//                throw new AppException(ErrorCode.OTP_INVALID);
+//            }
+//            throw e;
+//        }
 
         // set password moi
         String encodedPassword = passwordEncoder.encode(request.getNewPassword());
@@ -68,7 +68,7 @@ public class ForgotPasswordService {
         emailService.sendPasswordResetSuccessEmail(request.getEmail(), user.getUsername());
 
         // xoa otp cu
-        otpService.invalidateOTPs(request.getEmail(), OTPPurpose.FORGOT_PASSWORD);
+//        otpService.invalidateOTPs(request.getEmail(), OTPPurpose.FORGOT_PASSWORD);
 
         log.info("Password reset successfully for email: {}", request.getEmail());
     }
