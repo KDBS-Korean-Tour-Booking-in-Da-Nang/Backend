@@ -1,6 +1,7 @@
 package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.TourRequest;
+import com.example.KDBS.dto.response.TourPreviewResponse;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.service.TourService;
 import jakarta.servlet.FilterChain;
@@ -71,6 +72,12 @@ public class TourController {
     @GetMapping("/{id}")
     public ResponseEntity<TourResponse> getTour(@PathVariable Long id) {
         return ResponseEntity.ok(tourService.getTourById(id));
+    }
+
+    /** Get tours for preview /api/tour/preview/{id}*/
+    @GetMapping("/preview/{id}")
+    public ResponseEntity<TourPreviewResponse> getPreviewTourById(@PathVariable Long id) {
+        return ResponseEntity.ok(tourService.getTourPreviewById(id));
     }
 
     @GetMapping("/search")

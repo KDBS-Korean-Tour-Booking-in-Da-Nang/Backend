@@ -36,24 +36,25 @@ public class ForumCommentService {
         @Transactional
         public ForumCommentResponse createComment(ForumCommentRequest forumCommentRequest) {
                 User user = userRepository.findByEmail(forumCommentRequest.getUserEmail())
-                                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
                 ForumPost forumPost = forumPostRepository.findById(forumCommentRequest.getForumPostId())
-                                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
+                        .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
 
                 ForumComment comment = ForumComment.builder()
-                                .content(forumCommentRequest.getContent())
-                                .imgPath(forumCommentRequest.getImgPath())
-                                .user(user)
-                                .forumPost(forumPost)
-                                .react(0)
-                                .build();
+                        .content(forumCommentRequest.getContent())
+                        .imgPath(forumCommentRequest.getImgPath())
+                        .user(user)
+                        .forumPost(forumPost)
+                        .react(0)
+                        .build();
 
                 // If this is a reply, set parent comment
                 if (forumCommentRequest.getParentCommentId() != null) {
                         ForumComment parent = forumCommentRepository.findById(forumCommentRequest.getParentCommentId())
-                                        .orElseThrow(() -> new AppException(
-                                                ErrorCode.PARENT_COMMENT_NOT_FOUND, forumCommentRequest.getParentCommentId()));;
+                                .orElseThrow(() -> new AppException(
+                                        ErrorCode.PARENT_COMMENT_NOT_FOUND, forumCommentRequest.getParentCommentId()));
+                        ;
                         comment.setParentComment(parent);
                 }
 
@@ -65,14 +66,14 @@ public class ForumCommentService {
         public List<ForumCommentResponse> getCommentsByPostId(Long postId) {
                 List<ForumComment> comments = forumCommentRepository.findByForumPost_ForumPostId(postId);
                 return comments.stream()
-                                .map(commentMapper::toCommentResponse)
-                                .collect(Collectors.toList());
+                        .map(commentMapper::toCommentResponse)
+                        .collect(Collectors.toList());
         }
 
         @Transactional(readOnly = true)
         public List<ForumCommentResponse> getReplies(Long parentCommentId) {
                 List<ForumComment> replies = forumCommentRepository
-                                .findByParentComment_ForumCommentIdOrderByCreatedAtAsc(parentCommentId);
+                        .findByParentComment_ForumCommentIdOrderByCreatedAtAsc(parentCommentId);
                 return replies.stream().map(commentMapper::toCommentResponse).collect(Collectors.toList());
         }
 
@@ -104,11 +105,18 @@ public class ForumCommentService {
 
                 if (updateRequest.getForumPostId() != null) {
                         ForumPost forumPost = forumPostRepository.findById(updateRequest.getForumPostId())
-                                        .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND, updateRequest.getForumPostId()));
+                                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND, updateRequest.getForumPostId()));
                         existing.setForumPost(forumPost);
                 }
 
                 ForumComment saved = forumCommentRepository.save(existing);
                 return commentMapper.toCommentResponse(saved);
+        }
+
+        @Transactional(readOnly = true)
+        public ForumCommentResponse getCommentById(Long commentId) {
+                ForumComment comment = forumCommentRepository.findById(commentId)
+                        .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND, commentId));
+                return commentMapper.toCommentResponse(comment);
         }
 }
