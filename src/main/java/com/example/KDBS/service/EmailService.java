@@ -104,7 +104,7 @@ public class EmailService {
                     .append("<div class=\"guest-details\">")
                     .append("Ngày sinh: ").append(guest.getBirthDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
                     .append(" | Giới tính: ").append(guest.getGender() != null ? guest.getGender().name() : "Chưa xác định")
-                    .append(" | Loại: ").append(guest.getGuestType().name())
+                    .append(" | Loại: ").append(guest.getBookingGuestType().name())
                     .append(" | CMND/CCCD: ").append(guest.getIdNumber() != null ? guest.getIdNumber() : "Chưa cung cấp")
                     .append(" | Quốc tịch: ").append(guest.getNationality() != null ? guest.getNationality() : "Chưa cung cấp")
                     .append("</div>")

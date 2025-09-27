@@ -1,5 +1,5 @@
 package com.example.KDBS.enums;
 
-public enum GuestType {
+public enum BookingGuestType {
     ADULT, CHILD, BABY
 }

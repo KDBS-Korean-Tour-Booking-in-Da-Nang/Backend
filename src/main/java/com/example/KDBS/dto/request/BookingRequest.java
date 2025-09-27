@@ -1,21 +1,19 @@
 package com.example.KDBS.dto.request;
 
-import com.example.KDBS.enums.Gender;
-import com.example.KDBS.enums.GuestType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
 import java.util.List;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 @Builder
+@AllArgsConstructor
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class BookingRequest {
 
     @NotNull(message = "Tour ID is required")
@@ -57,29 +55,7 @@ public class BookingRequest {
 
     @Valid
     @NotEmpty(message = "At least one guest is required")
-    private List<GuestRequest> guests;
+    private List<BookingGuestRequest> bookingGuestRequests;
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class GuestRequest {
-        @NotBlank(message = "Guest full name is required")
-        @Size(max = 100, message = "Guest full name must not exceed 100 characters")
-        private String fullName;
 
-        @NotNull(message = "Birth date is required")
-        private LocalDate birthDate;
-
-        private Gender gender;
-
-        @Size(max = 50, message = "ID number must not exceed 50 characters")
-        private String idNumber;
-
-        @Size(max = 50, message = "Nationality must not exceed 50 characters")
-        private String nationality;
-
-        @NotNull(message = "Guest type is required")
-        private GuestType guestType;
-    }
 }
