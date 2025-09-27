@@ -21,54 +21,23 @@ public class ReactionController {
     @Autowired
     private ReactionService reactionService;
 
-    @PostMapping
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ReactionResponse> createReaction(@RequestBody ReactionRequest reactionRequest) {
-        ReactionResponse response = reactionService.createReaction(reactionRequest);
-        return ResponseEntity.ok(response);
-    }
-
     // Compatibility with the provided API spec
     @PostMapping("/add")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ReactionResponse> addReactionLegacy(
-            @RequestHeader(value = "User-Email", required = false) String userEmail,
-            @RequestBody ReactionRequest body) {
-        // Fallbacks to avoid 401/Unauthenticated when header is missing
-        if (userEmail == null || userEmail.isBlank()) {
-            if (body.getUserEmail() != null && !body.getUserEmail().isBlank()) {
-                userEmail = body.getUserEmail();
-            } else {
-                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-                if (auth != null && auth.getName() != null) {
-                    userEmail = auth.getName();
-                }
-            }
-        }
-        ReactionResponse response = reactionService.addOrUpdateReaction(body, userEmail);
-        return ResponseEntity.ok(response);
-    }
+            @RequestBody ReactionRequest request) {
 
-    @DeleteMapping
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> removeReaction(@RequestBody ReactionRequest reactionRequest) {
-        reactionService.removeReactionByRequest(reactionRequest);
-        return ResponseEntity.noContent().build();
+        ReactionResponse response = reactionService.addOrUpdateReaction(request);
+        return ResponseEntity.ok(response);
     }
 
     // Compatibility remove endpoint as spec: POST
     // /api/reactions/{targetType}/{targetId}
-    @PostMapping("/{targetType}/{targetId}")
+    @PostMapping("/delete")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> removeReactionLegacy(
-            @PathVariable ReactionTargetType targetType,
-            @PathVariable Long targetId,
-            @RequestHeader(value = "User-Email", required = false) String userEmail,
-            @RequestParam(value = "userEmail", required = false) String userEmailQuery) {
-        if (userEmail == null || userEmail.isBlank()) {
-            userEmail = userEmailQuery;
-        }
-        reactionService.removeReaction(targetId, targetType, userEmail);
+            @RequestBody ReactionRequest request) {
+        reactionService.removeReaction(request);
         return ResponseEntity.noContent().build();
     }
 
