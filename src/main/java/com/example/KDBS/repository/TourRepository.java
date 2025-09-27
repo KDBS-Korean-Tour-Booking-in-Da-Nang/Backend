@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,14 +23,28 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
     // Tìm theo tourName hoặc tourDescription hoặc tourSchedule chứa keyword
     @Query("""
     SELECT t FROM Tour t
+    LEFT JOIN t.ratings r
     WHERE 
-        LOWER(CAST(t.tourName AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
-        OR LOWER(CAST(t.tourDescription AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
-        OR (
-            :keyword NOT IN ('đà nẵng', 'da nang')
-            AND LOWER(CAST(t.tourSchedule AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        (:keyword IS NULL OR 
+            LOWER(CAST(t.tourName AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(CAST(t.tourDescription AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR (
+                :keyword NOT IN ('đà nẵng', 'da nang')
+                AND LOWER(CAST(t.tourSchedule AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            )
         )
+        AND (:minPrice IS NULL OR t.adultPrice >= :minPrice)
+        AND (:maxPrice IS NULL OR t.adultPrice <= :maxPrice)
+    GROUP BY t
+    HAVING (:minRating IS NULL OR COALESCE(AVG(r.star), 0) >= :minRating)
 """)
-    Page<Tour> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+    Page<Tour> searchByKeywordAndFilters(
+            @Param("keyword") String keyword,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("minRating") Double minRating,
+            Pageable pageable
+    );
+
 
 }

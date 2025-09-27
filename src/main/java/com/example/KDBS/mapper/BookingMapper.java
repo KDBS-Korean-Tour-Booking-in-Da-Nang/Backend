@@ -1,27 +1,51 @@
 package com.example.KDBS.mapper;
 
 import com.example.KDBS.dto.request.BookingRequest;
+import com.example.KDBS.dto.request.BookingGuestRequest;
 import com.example.KDBS.dto.response.BookingResponse;
+import com.example.KDBS.dto.response.BookingGuestResponse;
+import com.example.KDBS.dto.response.BookingSummaryResponse;
 import com.example.KDBS.model.Booking;
 import com.example.KDBS.model.BookingGuest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
+import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+import java.math.BigDecimal;
+import java.util.List;
+
+@Mapper(
+        componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+        unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
 public interface BookingMapper {
 
-    BookingMapper INSTANCE = Mappers.getMapper(BookingMapper.class);
-
+    // ----- Booking -----
     @Mapping(target = "bookingId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "guests", ignore = true)
-    Booking toEntity(BookingRequest request);
+    @Mapping(target = "guests", ignore = true) // sẽ set riêng
+    @Mapping(target = "tour", ignore = true)   // tránh vòng lặp
+    Booking toBooking(BookingRequest request);
 
-    BookingResponse toResponse(Booking booking);
+    BookingResponse toBookingResponse(Booking booking);
 
-    @Mapping(target = "guestId", ignore = true)
-    @Mapping(target = "bookingId", source = "bookingId")
-    @Mapping(target = "booking", ignore = true)
-    BookingGuest toGuestEntity(BookingRequest.GuestRequest guestRequest, Long bookingId);
+    List<BookingResponse> toBookingResponses(List<Booking> bookings);
+
+    // ----- BookingGuest -----
+    @Mapping(target = "bookingGuestId", ignore = true)
+    @Mapping(target = "booking", ignore = true) // set riêng từ service
+    BookingGuest toBookingGuest(BookingGuestRequest request);
+
+    BookingGuestResponse toBookingGuestResponse(BookingGuest guest);
+
+    List<BookingGuestResponse> toBookingGuestResponses(List<BookingGuest> guests);
+
+    // ----- BookingSummary -----
+    @Mapping(target = "tourName", expression = "java(tourName)")
+    @Mapping(target = "totalAmount", expression = "java(totalAmount)")
+    @Mapping(target = "status", constant = "PENDING")
+    BookingSummaryResponse toBookingSummaryResponse(Booking booking, String tourName, BigDecimal totalAmount);
+
 }

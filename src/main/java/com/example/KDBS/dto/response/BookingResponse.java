@@ -30,5 +30,5 @@ public class BookingResponse {
     private Integer babiesCount;
     private Integer totalGuests;
     private LocalDateTime createdAt;
-    private List<GuestResponse> guests;
+    private List<BookingGuestResponse> guests;
 }

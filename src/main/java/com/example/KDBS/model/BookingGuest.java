@@ -1,7 +1,7 @@
 package com.example.KDBS.model;
 
 import com.example.KDBS.enums.Gender;
-import com.example.KDBS.enums.GuestType;
+import com.example.KDBS.enums.BookingGuestType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -17,15 +17,12 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class    BookingGuest {
+public class BookingGuest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "guest_id")
-    private Long guestId;
-
-    @Column(name = "booking_id", insertable = false, updatable = false)
-    private Long bookingId;
+    @Column(name = "booking_guest_id")
+    private Long bookingGuestId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id", nullable = false)
@@ -50,5 +47,5 @@ public class    BookingGuest {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "guest_type", nullable = false)
-    private GuestType guestType;
+    private BookingGuestType bookingGuestType;
 }

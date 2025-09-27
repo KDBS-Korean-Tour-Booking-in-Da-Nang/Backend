@@ -1,7 +1,7 @@
 package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.response.HashtagStatsResponse;
-import com.example.KDBS.service.HashtagService;
+import com.example.KDBS.service.ForumHashtagService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,12 +13,12 @@ import java.util.List;
 public class HashtagController {
 
     @Autowired
-    private HashtagService hashtagService;
+    private ForumHashtagService forumHashtagService;
 
     @GetMapping("/popular")
     public ResponseEntity<List<HashtagStatsResponse>> getPopularHashtags(
             @RequestParam(defaultValue = "10") int limit) {
-        List<HashtagStatsResponse> popularHashtags = hashtagService.getPopularHashtags(limit);
+        List<HashtagStatsResponse> popularHashtags = forumHashtagService.getPopularHashtags(limit);
         return ResponseEntity.ok(popularHashtags);
     }
 
@@ -26,7 +26,7 @@ public class HashtagController {
     public ResponseEntity<List<HashtagStatsResponse>> searchHashtags(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "10") int limit) {
-        List<HashtagStatsResponse> hashtags = hashtagService.searchHashtags(keyword, limit);
+        List<HashtagStatsResponse> hashtags = forumHashtagService.searchHashtags(keyword, limit);
         return ResponseEntity.ok(hashtags);
     }
 }

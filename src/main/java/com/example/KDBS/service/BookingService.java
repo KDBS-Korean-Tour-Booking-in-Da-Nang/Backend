@@ -1,12 +1,13 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.BookingRequest;
+import com.example.KDBS.dto.response.BookingGuestResponse;
 import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
-import com.example.KDBS.dto.response.GuestResponse;
-import com.example.KDBS.enums.GuestType;
+import com.example.KDBS.enums.BookingGuestType;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
+import com.example.KDBS.mapper.BookingMapper;
 import com.example.KDBS.model.Booking;
 import com.example.KDBS.model.BookingGuest;
 import com.example.KDBS.model.Tour;
@@ -16,22 +17,28 @@ import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TourRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class BookingService {
 
-    private final BookingRepository bookingRepository;
-    private final BookingGuestRepository bookingGuestRepository;
-    private final TourRepository tourRepository;
-    private final EmailService emailService;
+    @Autowired
+    private BookingRepository bookingRepository;
+    @Autowired
+    private BookingGuestRepository bookingGuestRepository;
+    @Autowired
+    private TourRepository tourRepository;
+    @Autowired
+    private EmailService emailService;
+    @Autowired
+    private BookingMapper bookingMapper;
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
@@ -43,46 +50,30 @@ public class BookingService {
         validateGuestCounts(request);
 
         // Create booking first
-        Booking booking = Booking.builder()
-                .tourId(request.getTourId())
-                .contactName(request.getContactName())
-                .contactAddress(request.getContactAddress())
-                .contactPhone(request.getContactPhone())
-                .contactEmail(request.getContactEmail())
-                .pickupPoint(request.getPickupPoint())
-                .note(request.getNote())
-                .departureDate(request.getDepartureDate())
-                .adultsCount(request.getAdultsCount())
-                .childrenCount(request.getChildrenCount())
-                .babiesCount(request.getBabiesCount())
-                .build();
+        Booking booking = bookingMapper.toBooking(request);
 
         // Save booking first to get ID
         Booking savedBooking = bookingRepository.save(booking);
 
-        // Create guests with booking reference
-        List<BookingGuest> guests = request.getGuests().stream()
-                .map(guestRequest -> {
-                    BookingGuest guest = BookingGuest.builder()
-                            .booking(savedBooking) // Set booking reference
-                            .fullName(guestRequest.getFullName())
-                            .birthDate(guestRequest.getBirthDate())
-                            .gender(guestRequest.getGender())
-                            .idNumber(guestRequest.getIdNumber())
-                            .nationality(guestRequest.getNationality())
-                            .guestType(guestRequest.getGuestType())
-                            .build();
+        // Map guests và set booking reference
+        List<BookingGuest> guests = request.getBookingGuestRequests().stream()
+                .map(guestReq -> {
+                    BookingGuest guest = bookingMapper.toBookingGuest(guestReq);
+                    guest.setBooking(savedBooking);
                     return guest;
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         // Save guests
         List<BookingGuest> savedGuests = bookingGuestRepository.saveAll(guests);
-        
-        // Update booking with guests for response
         savedBooking.setGuests(savedGuests);
 
-        return mapToResponse(savedBooking, tour);
+        // Map sang response
+        BookingResponse response = bookingMapper.toBookingResponse(savedBooking);
+        response.setTourName(tour.getTourName());
+        response.setGuests(bookingMapper.toBookingGuestResponses(savedGuests));
+
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -94,10 +85,14 @@ public class BookingService {
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         // Load guests
-        List<BookingGuest> guests = bookingGuestRepository.findByBookingId(bookingId);
+        List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(bookingId);
         booking.setGuests(guests);
 
-        return mapToResponse(booking, tour);
+        BookingResponse response = bookingMapper.toBookingResponse(booking);
+        response.setTourName(tour.getTourName());
+        response.setGuests(bookingMapper.toBookingGuestResponses(guests));
+
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -106,41 +101,54 @@ public class BookingService {
         return bookings.stream()
                 .map(booking -> {
                     Tour tour = tourRepository.findById(booking.getTourId()).orElse(null);
-                    List<BookingGuest> guests = bookingGuestRepository.findByBookingId(booking.getBookingId());
+                    List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(booking.getBookingId());
                     booking.setGuests(guests);
-                    return mapToResponse(booking, tour);
+
+                    BookingResponse response = bookingMapper.toBookingResponse(booking);
+                    response.setTourName(tour != null ? tour.getTourName() : "Unknown Tour");
+                    response.setGuests(bookingMapper.toBookingGuestResponses(guests));
+                    return response;
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
+
 
     @Transactional(readOnly = true)
     public List<BookingResponse> getBookingsByTourId(Long tourId) {
         List<Booking> bookings = bookingRepository.findByTourIdOrderByCreatedAtDesc(tourId);
         Tour tour = tourRepository.findById(tourId).orElse(null);
-        
+
         return bookings.stream()
                 .map(booking -> {
-                    List<BookingGuest> guests = bookingGuestRepository.findByBookingId(booking.getBookingId());
+                    List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(booking.getBookingId());
                     booking.setGuests(guests);
-                    return mapToResponse(booking, tour);
+
+                    BookingResponse response = bookingMapper.toBookingResponse(booking);
+                    response.setTourName(tour != null ? tour.getTourName() : "Unknown Tour");
+                    response.setGuests(bookingMapper.toBookingGuestResponses(guests));
+                    return response;
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<GuestResponse> getAllGuestsByBookingId(Long bookingId) {
-        List<BookingGuest> guests = bookingGuestRepository.findByBookingId(bookingId);
+    public List<BookingGuestResponse> getAllGuestsByBookingId(Long bookingId) {
+        List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(bookingId);
+        return bookingMapper.toBookingGuestResponses(guests);
+    }
 
-        return guests.stream()
-                .map(g -> GuestResponse.builder()
-                        .guestId(g.getGuestId())
-                        .fullName(g.getFullName())
-                        .birthDate(g.getBirthDate())
-                        .gender(g.getGender())
-                        .idNumber(g.getIdNumber())
-                        .nationality(g.getNationality())
-                        .guestType(g.getGuestType())
-                        .build())
+    @Transactional(readOnly = true)
+    public List<BookingSummaryResponse> getBookingSummaryByEmail(String email) {
+        List<Booking> bookings = bookingRepository.findByContactEmailOrderByCreatedAtDesc(email);
+
+        return bookings.stream()
+                .map(booking -> {
+                    Tour tour = tourRepository.findById(booking.getTourId()).orElse(null);
+                    String tourName = (tour != null ? tour.getTourName() : "Unknown Tour");
+                    BigDecimal totalAmount = calculateBookingTotal(booking.getBookingId());
+
+                    return bookingMapper.toBookingSummaryResponse(booking, tourName, totalAmount);
+                })
                 .toList();
     }
 
@@ -159,84 +167,34 @@ public class BookingService {
         return adultTotal.add(childrenTotal).add(babyTotal);
     }
 
-    @Transactional(readOnly = true)
-    public List<BookingSummaryResponse> getBookingSummaryByEmail(String email) {
-        List<Booking> bookings = bookingRepository.findByContactEmailOrderByCreatedAtDesc(email);
-        return bookings.stream()
-                .map(booking -> {
-                    Tour tour = tourRepository.findById(booking.getTourId()).orElse(null);
-                    BigDecimal totalAmount = calculateBookingTotal(booking.getBookingId());
-                    
-                    return BookingSummaryResponse.builder()
-                            .bookingId(booking.getBookingId())
-                            .tourId(booking.getTourId())
-                            .tourName(tour != null ? tour.getTourName() : "Unknown Tour")
-                            .contactName(booking.getContactName())
-                            .contactPhone(booking.getContactPhone())
-                            .contactEmail(booking.getContactEmail())
-                            .departureDate(booking.getDepartureDate())
-                            .totalGuests(booking.getTotalGuests())
-                            .totalAmount(totalAmount)
-                            .status("PENDING") // You can add status field to Booking entity
-                            .createdAt(booking.getCreatedAt())
-                            .build();
-                })
-                .collect(Collectors.toList());
-    }
-
     private void validateGuestCounts(BookingRequest request) {
-        int actualAdults = (int) request.getGuests().stream()
-                .filter(g -> g.getGuestType() == GuestType.ADULT)
+        int actualAdults = (int) request.getBookingGuestRequests().stream()
+                .filter(g -> g.getBookingGuestType() == BookingGuestType.ADULT)
                 .count();
-        int actualChildren = (int) request.getGuests().stream()
-                .filter(g -> g.getGuestType() == GuestType.CHILD)
+        int actualChildren = (int) request.getBookingGuestRequests().stream()
+                .filter(g -> g.getBookingGuestType() == BookingGuestType.CHILD)
                 .count();
-        int actualBabies = (int) request.getGuests().stream()
-                .filter(g -> g.getGuestType() == GuestType.BABY)
+        int actualBabies = (int) request.getBookingGuestRequests().stream()
+                .filter(g -> g.getBookingGuestType() == BookingGuestType.BABY)
                 .count();
 
-        if (actualAdults != request.getAdultsCount()) {
-            throw new AppException(ErrorCode.INVALID_GUEST_COUNT);
-        }
-        if (actualChildren != request.getChildrenCount()) {
-            throw new AppException(ErrorCode.INVALID_GUEST_COUNT);
-        }
-        if (actualBabies != request.getBabiesCount()) {
+        if (!actualAdultsEquals(request, actualAdults)
+                || !actualChildrenEquals(request, actualChildren)
+                || !actualBabiesEquals(request, actualBabies)) {
             throw new AppException(ErrorCode.INVALID_GUEST_COUNT);
         }
     }
 
-    private BookingResponse mapToResponse(Booking booking, Tour tour) {
-        List<GuestResponse> guestResponses = booking.getGuests().stream()
-                .map(guest -> GuestResponse.builder()
-                        .guestId(guest.getGuestId())
-                        .fullName(guest.getFullName())
-                        .birthDate(guest.getBirthDate())
-                        .gender(guest.getGender())
-                        .idNumber(guest.getIdNumber())
-                        .nationality(guest.getNationality())
-                        .guestType(guest.getGuestType())
-                        .build())
-                .collect(Collectors.toList());
+    private boolean actualAdultsEquals(BookingRequest request, int actualAdults) {
+        return actualAdults == (request.getAdultsCount() != null ? request.getAdultsCount() : 0);
+    }
 
-        return BookingResponse.builder()
-                .bookingId(booking.getBookingId())
-                .tourId(booking.getTourId())
-                .tourName(tour != null ? tour.getTourName() : "Unknown Tour")
-                .contactName(booking.getContactName())
-                .contactAddress(booking.getContactAddress())
-                .contactPhone(booking.getContactPhone())
-                .contactEmail(booking.getContactEmail())
-                .pickupPoint(booking.getPickupPoint())
-                .note(booking.getNote())
-                .departureDate(booking.getDepartureDate())
-                .adultsCount(booking.getAdultsCount())
-                .childrenCount(booking.getChildrenCount())
-                .babiesCount(booking.getBabiesCount())
-                .totalGuests(booking.getTotalGuests())
-                .createdAt(booking.getCreatedAt())
-                .guests(guestResponses)
-                .build();
+    private boolean actualChildrenEquals(BookingRequest request, int actualChildren) {
+        return actualChildren == (request.getChildrenCount() != null ? request.getChildrenCount() : 0);
+    }
+
+    private boolean actualBabiesEquals(BookingRequest request, int actualBabies) {
+        return actualBabies == (request.getBabiesCount() != null ? request.getBabiesCount() : 0);
     }
 
     /**

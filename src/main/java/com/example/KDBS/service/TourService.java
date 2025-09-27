@@ -19,6 +19,7 @@ import jakarta.transaction.Transactional;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,35 +27,32 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class TourService {
 
-    private final TourRepository tourRepository;
-    private final TourContentRepository tourContentRepository;
-    private final TourContentImgRepository tourContentImgRepository;
-    private final UserRepository userRepository;
-    private final TourMapper tourMapper;
+    @Autowired
+    private TourRepository tourRepository;
+    @Autowired
+    private TourContentRepository tourContentRepository;
+    @Autowired
+    private TourContentImgRepository tourContentImgRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private TourMapper tourMapper;
+
+    @Value("${vnpay.frontend-url}")
+    private String frontendUrl;
 
     @Value("${vnpay.frontend-url}")
     private String frontendUrl;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
-
-    public TourService(TourRepository tourRepository,
-            TourContentRepository tourContentRepository,
-            TourContentImgRepository tourContentImgRepository,
-            UserRepository userRepository,
-            TourMapper tourMapper) {
-        this.tourRepository = tourRepository;
-        this.tourContentRepository = tourContentRepository;
-        this.tourContentImgRepository = tourContentImgRepository;
-        this.userRepository = userRepository;
-        this.tourMapper = tourMapper;
-    }
 
     /** Handle TinyMCE inline image uploads */
     public String saveEditorImage(MultipartFile file) throws IOException {
@@ -109,11 +107,16 @@ public class TourService {
     }
 
     /** Search tours */
-    public Page<TourResponse> searchTours(String keyword, Pageable pageable) {
+    public Page<TourResponse> searchToursWithFilters(String keyword,
+                                                     BigDecimal minPrice,
+                                                     BigDecimal maxPrice,
+                                                     Double minRating,
+                                                     Pageable pageable) {
         String normalized = (keyword == null) ? null : keyword.toLowerCase();
-        return tourRepository.searchByKeyword(normalized, pageable)
+        return tourRepository.searchByKeywordAndFilters(normalized, minPrice, maxPrice, minRating, pageable)
                 .map(tourMapper::toTourResponse);
     }
+
 
 
     /** Update tour */
