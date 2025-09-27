@@ -6,7 +6,9 @@ import java.util.List;
 
 @Data
 public class TourRatedResponse {
-    private Long id;
+    private Long tourRatedId;
+    private Long userId;
+    private Long tourId;
     private Integer star;
     private String comment;
     private LocalDateTime createdAt;

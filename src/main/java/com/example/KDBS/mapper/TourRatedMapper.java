@@ -19,7 +19,8 @@ public interface TourRatedMapper {
     TourRated toTourRated(TourRatedRequest request);
 
     // Entity -> Response
-    @Mapping(target = "id", source = "tourRatedId")
+    @Mapping(target = "userId", source = "user.userId")
+    @Mapping(target = "tourId", source = "tour.tourId")
     TourRatedResponse toTourRatedResponse(TourRated entity);
 
     // Update

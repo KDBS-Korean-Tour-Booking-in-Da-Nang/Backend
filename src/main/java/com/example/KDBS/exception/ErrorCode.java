@@ -57,6 +57,7 @@ public enum ErrorCode {
     FAILED_TO_RETRIVE_SAVED_TOUR(1045, "Failed to retrieve saved tour", HttpStatus.NOT_FOUND),
     FAILED_TO_RETRIVE_UPDATED_TOUR(1046, "Failed to retrieve updated tour", HttpStatus.NOT_FOUND),
     IMAGE_NOT_FOUND(1047, "Image not found", HttpStatus.NOT_FOUND),
+    TOUR_RATED_IS_EXISTED(1048,"Tour rated is existed",HttpStatus.NOT_FOUND),
             ;
 
     private int code;
