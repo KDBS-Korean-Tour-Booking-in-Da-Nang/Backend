@@ -44,12 +44,10 @@ public class ReactionService {
     private PostImgRepository postImgRepository;
 
     @Transactional
-    public ReactionResponse addOrUpdateReaction(ReactionRequest request, String userEmail) {
-        System.out.println("fiding" + userEmail);
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("not found" + userEmail));
+    public ReactionResponse addOrUpdateReaction(ReactionRequest request) {
+        User user = userRepository.findByEmail(request.getUserEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
 
-        System.out.println("found " + user.getUsername() + " (ID: " + user.getUserId() + ")");
 
         // check target exists
         validateTargetExists(request.getTargetId(), request.getTargetType());
@@ -87,12 +85,12 @@ public class ReactionService {
     }
 
     @Transactional
-    public void removeReaction(Long targetId, ReactionTargetType targetType, String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public void removeReaction(ReactionRequest request) {
+        User user = userRepository.findByEmail(request.getUserEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
 
-        reactionRepository.deleteByUserAndTargetIdAndTargetType(user, targetId, targetType);
-        updateTargetReactionCount(targetId, targetType, -1);
+        reactionRepository.deleteByUserAndTargetIdAndTargetType(user, request.getTargetId(), request.getTargetType());
+        updateTargetReactionCount(request.getTargetId(), request.getTargetType(), -1);
     }
 
     public ReactionSummaryResponse getReactionSummary(Long targetId, ReactionTargetType targetType, String userEmail) {
@@ -187,17 +185,6 @@ public class ReactionService {
                 .userAvatar(reaction.getUser().getAvatar())
                 .createdAt(reaction.getCreatedAt())
                 .build();
-    }
-
-    // New methods for simplified reaction handling
-    @Transactional
-    public ReactionResponse createReaction(ReactionRequest reactionRequest) {
-        return addOrUpdateReaction(reactionRequest, reactionRequest.getUserEmail());
-    }
-
-    @Transactional
-    public void removeReactionByRequest(ReactionRequest reactionRequest) {
-        removeReaction(reactionRequest.getTargetId(), reactionRequest.getTargetType(), reactionRequest.getUserEmail());
     }
 
     public Long getReactionCountByPost(Long postId) {
