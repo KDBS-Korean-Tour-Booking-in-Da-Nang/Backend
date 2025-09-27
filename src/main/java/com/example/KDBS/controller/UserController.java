@@ -116,7 +116,7 @@ public class UserController {
                 .build();
     }
 
-    @PutMapping(path = "/update-business-license", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        @PutMapping(path = "/update-business-license", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateBusinessLicense(
             @RequestPart("file") MultipartFile file,
             @RequestPart("idCardFront") MultipartFile idCardFront,

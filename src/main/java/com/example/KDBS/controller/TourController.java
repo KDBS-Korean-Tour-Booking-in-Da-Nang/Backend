@@ -24,6 +24,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -37,19 +38,6 @@ public class TourController {
     @PostMapping(value = "/content-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadEditorImage(@RequestParam("file") MultipartFile file) throws IOException {
         return ResponseEntity.ok(tourService.saveEditorImage(file));
-    }
-
-
-    @Component
-    public class DebugAuthFilter extends OncePerRequestFilter {
-        @Override
-        protected void doFilterInternal(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        FilterChain filterChain) throws ServletException, IOException {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            System.out.println("DEBUG AUTH: " + auth);
-            filterChain.doFilter(request, response);
-        }
     }
 
     /** Create a tour with REQUIRED main image */
@@ -83,12 +71,16 @@ public class TourController {
     @GetMapping("/search")
     public ResponseEntity<Page<TourResponse>> searchTours(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Double minRating,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(tourService.searchTours(keyword, pageable));
+        return ResponseEntity.ok(tourService.searchToursWithFilters(keyword, minPrice, maxPrice, minRating, pageable));
     }
+
 
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
