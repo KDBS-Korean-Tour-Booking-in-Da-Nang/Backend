@@ -1,6 +1,6 @@
 package com.example.KDBS.mapper;
 
-import com.example.KDBS.dto.response.CommentResponse;
+import com.example.KDBS.dto.response.ForumCommentResponse;
 import com.example.KDBS.model.ForumComment;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -18,5 +18,5 @@ public interface CommentMapper {
     @Mapping(target = "userEmail", source = "user.email")
     @Mapping(target = "forumPostId", source = "forumPost.forumPostId")
     @Mapping(target = "parentCommentId", source = "parentComment.forumCommentId")
-    CommentResponse toResponse(ForumComment comment);
+    ForumCommentResponse toCommentResponse(ForumComment comment);
 }

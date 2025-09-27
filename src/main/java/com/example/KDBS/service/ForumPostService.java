@@ -1,11 +1,18 @@
 package com.example.KDBS.service;
 
+<<<<<<<< HEAD:src/main/java/com/example/KDBS/service/PostService.java
 import com.example.KDBS.dto.request.PostRequest;
 import com.example.KDBS.dto.response.PostResponse;
 import com.example.KDBS.dto.response.ReactionSummaryResponse;
 import com.example.KDBS.enums.ReactionTargetType;
+========
+import com.example.KDBS.dto.request.ForumPostRequest;
+import com.example.KDBS.dto.response.ForumPostResponse;
+import com.example.KDBS.dto.response.ReactionSummaryResponse;
+import com.example.KDBS.enums.ReactionTargetType;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
+>>>>>>>> main:src/main/java/com/example/KDBS/service/ForumPostService.java
 import com.example.KDBS.mapper.PostMapper;
 import com.example.KDBS.model.*;
 import com.example.KDBS.repository.*;
@@ -55,23 +62,30 @@ public class ForumPostService {
     private String uploadDir;
 
     @Transactional
+<<<<<<<< HEAD:src/main/java/com/example/KDBS/service/PostService.java
     public PostResponse createPost(PostRequest postRequest) throws IOException {
         User user = userRepository.findByEmail(postRequest.getUserEmail())
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + postRequest.getUserEmail()));
+        ForumPost forumPost = postMapper.toEntity(postRequest);
+========
+    public ForumPostResponse createPost(ForumPostRequest forumPostRequest) throws IOException {
+        User user = userRepository.findByEmail(forumPostRequest.getUserEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        ForumPost forumPost = postMapper.toEntity(postRequest);
+        ForumPost forumPost = postMapper.toForumPost(forumPostRequest);
+>>>>>>>> main:src/main/java/com/example/KDBS/service/ForumPostService.java
         forumPost.setUser(user);
         forumPost = forumPostRepository.save(forumPost);
 
-        handleImages(postRequest.getImageUrls(), forumPost);
-        handleHashtags(postRequest.getHashtags(), forumPost);
+        handleImages(forumPostRequest.getImages(), forumPost);
+        handleHashtags(forumPostRequest.getHashtags(), forumPost);
 
-        return postMapper.toResponse(forumPostRepository.findById(forumPost.getForumPostId())
+        return postMapper.toPostResponse(forumPostRepository.findById(forumPost.getForumPostId())
                 .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND_AFTER_SAVING)));
     }
 
     @Transactional
-    public PostResponse updatePost(Long id, PostRequest updateRequest) throws IOException {
+    public ForumPostResponse updatePost(Long id, ForumPostRequest updateRequest) throws IOException {
         ForumPost forumPost = forumPostRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND, id));
 
@@ -81,18 +95,18 @@ public class ForumPostService {
             throw new AppException(ErrorCode.POST_OWNER_CAN_ONLY_UPDATE_THEIR_OWN_POSTS);
         }
 
-        ForumPost updatedPost = postMapper.toEntity(updateRequest);
+        ForumPost updatedPost = postMapper.toForumPost(updateRequest);
         forumPost.setContent(updatedPost.getContent());
         forumPost.setTitle(updatedPost.getTitle());
 
         postImgRepository.deleteAll(forumPost.getImages());
         postHashtagRepository.deleteAll(forumPost.getHashtags());
 
-        handleImages(updateRequest.getImageUrls(), forumPost);
+        handleImages(updateRequest.getImages(), forumPost);
         handleHashtags(updateRequest.getHashtags(), forumPost);
 
         forumPost = forumPostRepository.save(forumPost);
-        return postMapper.toResponse(forumPost);
+        return postMapper.toPostResponse(forumPost);
     }
 
     @Transactional
@@ -100,22 +114,37 @@ public class ForumPostService {
         // Xóa các saved posts liên quan trước
         deleteRelatedSavedPosts(id);
 
+<<<<<<<< HEAD:src/main/java/com/example/KDBS/service/PostService.java
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+        if (forumPost.getUser().getUserId() != (user.getUserId())) {
+            throw new RuntimeException("User not authorized to delete this post");
+        }
+
+        // Delete all related saved posts first to avoid foreign key constraint issues
+        // This allows users to delete their posts even if they have been saved by
+        // others
+        deleteRelatedSavedPosts(id);
+
+        forumPostRepository.delete(forumPost);
+========
         // Xóa bài
         forumPostRepository.deleteById(id);
+>>>>>>>> main:src/main/java/com/example/KDBS/service/ForumPostService.java
     }
 
     @Transactional(readOnly = true)
-    public List<PostResponse> getAllPosts() {
+    public List<ForumPostResponse> getAllPosts() {
         return forumPostRepository.findAll().stream()
-                .map(postMapper::toResponse)
+                .map(postMapper::toPostResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public PostResponse getPostById(Long id) {
+    public ForumPostResponse getPostById(Long id) {
         ForumPost forumPost = forumPostRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
-        return postMapper.toResponse(forumPost);
+        return postMapper.toPostResponse(forumPost);
     }
 
     private void handleImages(List<MultipartFile> images, ForumPost forumPost) throws IOException {
@@ -178,7 +207,11 @@ public class ForumPostService {
     }
 
     @Transactional(readOnly = true)
+<<<<<<<< HEAD:src/main/java/com/example/KDBS/service/PostService.java
     public Page<PostResponse> searchPosts(String keyword, List<String> hashtags, Pageable pageable) {
+========
+    public Page<ForumPostResponse> searchPosts(String keyword, List<String> hashtags, Pageable pageable) {
+>>>>>>>> main:src/main/java/com/example/KDBS/service/ForumPostService.java
         List<String> normalizedTags = null;
         if (hashtags != null && !hashtags.isEmpty()) {
             // Normalize hashtag to lowercase
@@ -186,7 +219,11 @@ public class ForumPostService {
         }
 
         return forumPostRepository.searchPosts(keyword, normalizedTags, pageable)
+<<<<<<<< HEAD:src/main/java/com/example/KDBS/service/PostService.java
                 .map(postMapper::toResponse);
+========
+                .map(postMapper::toPostResponse);
+>>>>>>>> main:src/main/java/com/example/KDBS/service/ForumPostService.java
     }
 
     /**
@@ -211,14 +248,22 @@ public class ForumPostService {
     }
 
     @Transactional(readOnly = true)
+<<<<<<<< HEAD:src/main/java/com/example/KDBS/service/PostService.java
     public Page<PostResponse> getPostsByUser(String userEmail, Pageable pageable) {
+========
+    public Page<ForumPostResponse> getPostsByUser(String userEmail, Pageable pageable) {
+>>>>>>>> main:src/main/java/com/example/KDBS/service/ForumPostService.java
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
 
         Page<ForumPost> posts = forumPostRepository.findByUserOrderByCreatedAtDesc(user, pageable);
 
         return posts.map(post -> {
+<<<<<<<< HEAD:src/main/java/com/example/KDBS/service/PostService.java
             PostResponse response = postMapper.toResponse(post);
+========
+            ForumPostResponse response = postMapper.toPostResponse(post);
+>>>>>>>> main:src/main/java/com/example/KDBS/service/ForumPostService.java
 
             // Get reaction summary
             ReactionSummaryResponse reactionSummary = reactionService.getReactionSummary(

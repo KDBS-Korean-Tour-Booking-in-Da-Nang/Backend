@@ -39,7 +39,8 @@ public class SecurityConfiguration {
             "/api/saved-posts/**",
             "/api/reports/**",
             "/api/users/suggestions",
-            "/api/tour/**"
+            "/api/tour/**",
+            "api/vnpay/return"
     };
 
     private final String[] PUBLIC_RESOURCES = {
@@ -91,6 +92,7 @@ public class SecurityConfiguration {
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        jwtGrantedAuthoritiesConverter.setAuthoritiesClaimName("scope");
         jwtGrantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter);

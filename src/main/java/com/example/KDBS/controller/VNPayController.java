@@ -26,20 +26,21 @@ public class VNPayController {
     @Value("${vnpay.frontend-url}")
     private String frontendUrl;
 
-    public VNPayController(VNPayService vnpayService, UserRepository userRepository, TransactionRepository transactionRepository) {
+    public VNPayController(VNPayService vnpayService, UserRepository userRepository,
+            TransactionRepository transactionRepository) {
         this.vnpayService = vnpayService;
         this.userRepository = userRepository;
         this.transactionRepository = transactionRepository;
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Map<String, Object>> createPayment(@RequestBody Map<String, Object> request){
+    public ResponseEntity<Map<String, Object>> createPayment(@RequestBody Map<String, Object> request) {
         try {
             BigDecimal amount = new BigDecimal(request.get("amount").toString());
             String userEmail = request.get("userEmail").toString();
             String orderInfo = request.get("orderInfo").toString();
 
-            //Validate user exists
+            // Validate user exists
             if (!userRepository.findByEmail(userEmail).isPresent()) {
                 throw new RuntimeException("User not found");
             }
@@ -50,8 +51,7 @@ public class VNPayController {
             return ResponseEntity.badRequest()
                     .body(Map.of(
                             "success", false,
-                            "message", "Invalid request data: " + e.getMessage()
-                    ));
+                            "message", "Invalid request data: " + e.getMessage()));
         }
     }
 
@@ -89,7 +89,6 @@ public class VNPayController {
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
-
 
     @GetMapping("/transaction/{orderId}")
     public ResponseEntity<?> getTransaction(@PathVariable String orderId) {

@@ -17,7 +17,7 @@ public class TourContentImg {
     @Column(name = "tour_img_id")
     private Long tourImgId;
 
-    @Column(name = "img_path")
+    @Column(name = "img_path", length = 500)
     private String imgPath;
 
     @ManyToOne

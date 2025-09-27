@@ -2,13 +2,9 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.enums.PaymentMethod;
 import com.example.KDBS.enums.TransactionStatus;
-import com.example.KDBS.model.Booking;
 import com.example.KDBS.model.Transaction;
-import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.User;
-import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TransactionRepository;
-import com.example.KDBS.repository.TourRepository;
 import com.example.KDBS.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,21 +36,17 @@ public class VNPayService {
 
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
-    private final BookingRepository bookingRepository;
-    private final TourRepository tourRepository;
-    private final EmailService emailService;
+    private final BookingService bookingService;
 
-    public VNPayService(TransactionRepository transactionRepository, UserRepository userRepository, 
-                       BookingRepository bookingRepository, TourRepository tourRepository, EmailService emailService) {
+
+    public VNPayService(TransactionRepository transactionRepository, UserRepository userRepository, BookingService bookingService) {
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
-        this.bookingRepository = bookingRepository;
-        this.tourRepository = tourRepository;
-        this.emailService = emailService;
+        this.bookingService = bookingService;
     }
 
     public Map<String, Object> createPayment(String userEmail, BigDecimal amount, String orderInfo) {
-        try{
+        try {
             String transactionId = UUID.randomUUID().toString();
             String orderId = "TXN" + System.currentTimeMillis() + "_" + new Random().nextInt(1000);
 
@@ -70,13 +62,13 @@ public class VNPayService {
                 user.setCccd("000000000000");
                 user = userRepository.save(user);
             }
-            
-            Transaction transaction = new Transaction(transactionId, orderId, amount, user, orderInfo );
+
+            Transaction transaction = new Transaction(transactionId, orderId, amount, user, orderInfo);
             transaction.setStatus(TransactionStatus.PENDING);
             transaction.setPaymentMethod(PaymentMethod.VNPAY);
             transaction = transactionRepository.save(transaction);
 
-            //Build VNpay parameters
+            // Build VNpay parameters
             Map<String, String> vnpParams = new HashMap<>();
             vnpParams.put("vnp_Version", "2.1.0");
             vnpParams.put("vnp_Command", "pay");
@@ -137,13 +129,14 @@ public class VNPayService {
             result.put("orderInfo", orderInfo);
 
             return result;
-        } catch (Exception e){
+        } catch (Exception e) {
             log.error("Error creating VNPay payment URL: {}", e.getMessage(), e);
             throw new RuntimeException("Error creating VNPay payment URL: " + e.getMessage(), e);
         }
     }
 
-    public Transaction processPaymentReturn(Map<String, String> vnpParams) throws NoSuchAlgorithmException, InvalidKeyException {
+    public Transaction processPaymentReturn(Map<String, String> vnpParams)
+            throws NoSuchAlgorithmException, InvalidKeyException {
         String vnpSecureHash = vnpParams.get("vnp_SecureHash");
         vnpParams.remove("vnp_SecureHash");
         vnpParams.remove("vnp_SecureHashType");
@@ -181,10 +174,10 @@ public class VNPayService {
             if (signValue.equals(vnpSecureHash)) {
                 if ("00".equals(responseCode)) {
                     transaction.setStatus(TransactionStatus.SUCCESS);
-                    
+
                     // Send booking confirmation email when payment is successful
                     try {
-                        sendBookingConfirmationEmailIfNeeded(transaction);
+                        bookingService.sendBookingConfirmationEmailIfNeeded(transaction);
                     } catch (Exception e) {
                         log.error("Failed to send booking confirmation email for transaction: {}", orderId, e);
                         // Don't fail the transaction if email fails
@@ -219,36 +212,5 @@ public class VNPayService {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
-    }
-
-    /**
-     * Gửi email xác nhận booking nếu transaction liên quan đến booking
-     */
-    private void sendBookingConfirmationEmailIfNeeded(Transaction transaction) {
-        try {
-            // Extract booking ID from orderInfo if it's a booking payment
-            // Format: "Booking payment for booking ID: {bookingId}"
-            String orderInfo = transaction.getOrderInfo();
-            if (orderInfo != null && orderInfo.contains("Booking payment for booking ID:")) {
-                String bookingIdStr = orderInfo.replace("Booking payment for booking ID:", "").trim();
-                Long bookingId = Long.parseLong(bookingIdStr);
-                
-                // Get booking and tour information
-                Booking booking = bookingRepository.findById(bookingId).orElse(null);
-                if (booking != null) {
-                    Tour tour = tourRepository.findById(booking.getTourId()).orElse(null);
-                    if (tour != null) {
-                        emailService.sendBookingConfirmationEmail(booking, tour);
-                        log.info("Booking confirmation email sent for booking ID: {} after successful payment", bookingId);
-                    } else {
-                        log.warn("Tour not found for booking ID: {}", bookingId);
-                    }
-                } else {
-                    log.warn("Booking not found for ID: {}", bookingId);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error sending booking confirmation email for transaction: {}", transaction.getOrderId(), e);
-        }
     }
 }

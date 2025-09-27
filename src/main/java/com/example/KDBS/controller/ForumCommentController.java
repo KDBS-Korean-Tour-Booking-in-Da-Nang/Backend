@@ -1,7 +1,7 @@
 package com.example.KDBS.controller;
 
-import com.example.KDBS.dto.request.CommentRequest;
-import com.example.KDBS.dto.response.CommentResponse;
+import com.example.KDBS.dto.request.ForumCommentRequest;
+import com.example.KDBS.dto.response.ForumCommentResponse;
 import com.example.KDBS.service.ForumCommentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,18 +20,18 @@ public class ForumCommentController {
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<CommentResponse> createComment(@RequestBody CommentRequest commentRequest)
+    public ResponseEntity<ForumCommentResponse> createComment(@RequestBody ForumCommentRequest forumCommentRequest)
             throws IOException {
-        CommentResponse response = forumCommentService.createComment(commentRequest);
+        ForumCommentResponse response = forumCommentService.createComment(forumCommentRequest);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<CommentResponse> updateComment(
+    public ResponseEntity<ForumCommentResponse> updateComment(
             @PathVariable Long id,
-            @RequestBody CommentRequest updateRequest) throws IOException {
-        CommentResponse response = forumCommentService.updateComment(id, updateRequest);
+            @RequestBody ForumCommentRequest updateRequest) throws IOException {
+        ForumCommentResponse response = forumCommentService.updateComment(id, updateRequest);
         return ResponseEntity.ok(response);
     }
 
@@ -45,14 +45,19 @@ public class ForumCommentController {
     }
 
     @GetMapping("/post/{postId}")
-    public ResponseEntity<List<CommentResponse>> getCommentsByPost(@PathVariable Long postId) {
-        List<CommentResponse> responses = forumCommentService.getCommentsByPostId(postId);
+    public ResponseEntity<List<ForumCommentResponse>> getCommentsByPost(@PathVariable Long postId) {
+        List<ForumCommentResponse> responses = forumCommentService.getCommentsByPostId(postId);
         return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/{commentId}/replies")
-    public ResponseEntity<List<CommentResponse>> getReplies(@PathVariable Long commentId) {
-        List<CommentResponse> responses = forumCommentService.getReplies(commentId);
+    public ResponseEntity<List<ForumCommentResponse>> getReplies(@PathVariable Long commentId) {
+        List<ForumCommentResponse> responses = forumCommentService.getReplies(commentId);
         return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ForumCommentResponse> getCommentById(@PathVariable Long id) {
+        return ResponseEntity.ok(forumCommentService.getCommentById(id));
     }
 }

@@ -1,6 +1,6 @@
 package com.example.KDBS.service;
 
-import com.example.KDBS.dto.request.SavePostRequest;
+import com.example.KDBS.dto.request.SavedPostRequest;
 import com.example.KDBS.dto.response.SavedPostResponse;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
@@ -11,6 +11,7 @@ import com.example.KDBS.repository.ForumPostRepository;
 import com.example.KDBS.repository.SavedPostRepository;
 import com.example.KDBS.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,12 +22,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SavedPostService {
 
-        private final SavedPostRepository savedPostRepository;
-        private final ForumPostRepository forumPostRepository;
-        private final UserRepository userRepository;
+        @Autowired
+        private SavedPostRepository savedPostRepository;
+        @Autowired
+        private ForumPostRepository forumPostRepository;
+        @Autowired
+        private UserRepository userRepository;
 
         @Transactional
-        public SavedPostResponse savePost(SavePostRequest request, String userEmail) {
+        public SavedPostResponse savePost(SavedPostRequest request, String userEmail) {
                 // tim user
                 User user = userRepository.findByEmail(userEmail)
                                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));

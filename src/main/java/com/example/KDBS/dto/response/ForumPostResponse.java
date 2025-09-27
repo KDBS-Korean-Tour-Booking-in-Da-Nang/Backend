@@ -6,11 +6,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-public class PostResponse {
+public class ForumPostResponse {
     private Long forumPostId;
     private String title;
     private String content;
-    private List<PostImgResponse> images;
+    private List<ForumPostImgResponse> images;
     private List<HashtagResponse> hashtags;
     private LocalDateTime createdAt;
     private ReactionSummaryResponse reactions;
