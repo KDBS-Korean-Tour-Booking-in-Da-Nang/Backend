@@ -37,13 +37,16 @@ public class VNPayService {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final BookingService bookingService;
+    private final PremiumService premiumService;
 
 
-    public VNPayService(TransactionRepository transactionRepository, UserRepository userRepository, BookingService bookingService) {
+    public VNPayService(TransactionRepository transactionRepository, UserRepository userRepository, BookingService bookingService, PremiumService premiumService) {
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
         this.bookingService = bookingService;
+        this.premiumService = premiumService;
     }
+
 
     public Map<String, Object> createPayment(String userEmail, BigDecimal amount, String orderInfo) {
         try {
@@ -180,7 +183,12 @@ public class VNPayService {
                         bookingService.sendBookingConfirmationEmailIfNeeded(transaction);
                     } catch (Exception e) {
                         log.error("Failed to send booking confirmation email for transaction: {}", orderId, e);
-                        // Don't fail the transaction if email fails
+                    }
+
+                    try {
+                        premiumService.processPremiumPayment(transaction);
+                    } catch (Exception e) {
+                        log.error("Failed to process premium payment success for transaction: {}", orderId, e);
                     }
                 } else {
                     transaction.setStatus(TransactionStatus.FAILED);

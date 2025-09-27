@@ -57,6 +57,12 @@ public enum ErrorCode {
     FAILED_TO_RETRIVE_SAVED_TOUR(1045, "Failed to retrieve saved tour", HttpStatus.NOT_FOUND),
     FAILED_TO_RETRIVE_UPDATED_TOUR(1046, "Failed to retrieve updated tour", HttpStatus.NOT_FOUND),
     IMAGE_NOT_FOUND(1047, "Image not found", HttpStatus.NOT_FOUND),
+    INVALID_PREMIUM_DURATION(1048, "Invalid premium duration. Only 1 or 3 months allowed", HttpStatus.BAD_REQUEST),
+    PREMIUM_UPGRADE_FAILED(1049, "Premium upgrade failed", HttpStatus.BAD_REQUEST),
+    PREMIUM_ALREADY_ACTIVE(1050, "Premium account is already active", HttpStatus.BAD_REQUEST),
+    PREMIUM_ACCESS_DENIED(1051, "Premium account required for this feature", HttpStatus.FORBIDDEN),
+    PAYMENT_CREATION_FAILED(1052, "Failed to create payment", HttpStatus.BAD_REQUEST),
+    TRANSACTION_NOT_FOUND(1053, "Transaction not found", HttpStatus.NOT_FOUND),
             ;
 
     private int code;
