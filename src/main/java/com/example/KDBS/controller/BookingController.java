@@ -40,7 +40,9 @@ public class BookingController {
             BigDecimal totalAmount = bookingService.calculateBookingTotal(request.getBookingId());
             
             //  order info
-            String orderInfo = String.format("Booking Tour: %s - %s guests on %s", 
+            String orderInfo = String.format(
+                    "Booking payment for booking ID:%d | Tour:%s - %d guests on %s",
+                    request.getBookingId(),
                     booking.getTourName(), 
                     booking.getTotalGuests(), 
                     booking.getDepartureDate());

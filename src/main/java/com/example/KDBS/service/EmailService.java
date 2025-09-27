@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.core.io.ClassPathResource;
 
@@ -35,7 +36,8 @@ public class EmailService {
     /**
      * Gửi email xác nhận booking thành công
      */
-    public void sendBookingConfirmationEmail(Booking booking, Tour tour) {
+    @Async
+    public void sendBookingConfirmationEmailAsync(Booking booking, Tour tour) {
         try {
             String emailContent = buildBookingConfirmationEmail(booking, tour);
             String subject = "Xác nhận đặt tour thành công - " + tour.getTourName();
@@ -150,6 +152,7 @@ public class EmailService {
      * @param email Email người dùng
      * @param username Tên người dùng
      */
+    @Async
     public void sendPasswordResetSuccessEmail(String email, String username) {
         try {
             String subject = "Đổi mật khẩu thành công - KDBS";
@@ -266,6 +269,7 @@ public class EmailService {
     /**
      * Gửi email OTP
      */
+    @Async
     public void sendOTPEmail(String email, String otpCode, String purpose) {
         try {
             String subject = "Mã OTP - KDBS";
