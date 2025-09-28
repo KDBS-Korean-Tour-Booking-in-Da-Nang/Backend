@@ -41,6 +41,12 @@ public class TourRatedService {
         User user = userRepository.findByEmail(tourRatedRequest.getUserEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
+        if (tourRatedRepository.findByTour_TourIdAndUser_UserId(
+                tour.getTourId(), user.getUserId()
+        ).isPresent()) {
+            throw new AppException(ErrorCode.TOUR_RATED_IS_EXISTED);
+        }
+
         TourRated tourRated = tourRatedMapper.toTourRated(tourRatedRequest);
         tourRated.setTour(tour);
         tourRated.setUser(user);

@@ -4,7 +4,7 @@ import com.example.KDBS.dto.request.BookingPaymentRequest;
 import com.example.KDBS.dto.request.BookingRequest;
 import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
-import com.example.KDBS.dto.response.GuestResponse;
+import com.example.KDBS.dto.response.BookingGuestResponse;
 import com.example.KDBS.service.BookingService;
 import com.example.KDBS.service.EmailService;
 import com.example.KDBS.service.VNPayService;
@@ -40,7 +40,9 @@ public class BookingController {
             BigDecimal totalAmount = bookingService.calculateBookingTotal(request.getBookingId());
             
             //  order info
-            String orderInfo = String.format("Booking Tour: %s - %s guests on %s", 
+            String orderInfo = String.format(
+                    "Booking payment for booking ID:%d | Tour:%s - %d guests on %s",
+                    request.getBookingId(),
                     booking.getTourName(), 
                     booking.getTotalGuests(), 
                     booking.getDepartureDate());
@@ -76,8 +78,8 @@ public class BookingController {
     }
 
     @GetMapping("/id/{bookingId}/guests")
-    public ResponseEntity<List<GuestResponse>> getGuestsByBookingId(@PathVariable Long bookingId) {
-        List<GuestResponse> guests = bookingService.getAllGuestsByBookingId(bookingId);
+    public ResponseEntity<List<BookingGuestResponse>> getGuestsByBookingId(@PathVariable Long bookingId) {
+        List<BookingGuestResponse> guests = bookingService.getAllGuestsByBookingId(bookingId);
         return ResponseEntity.ok(guests);
     }
 

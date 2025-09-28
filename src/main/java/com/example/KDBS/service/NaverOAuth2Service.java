@@ -21,6 +21,8 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.example.KDBS.enums.PremiumType.FREE;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -136,7 +138,7 @@ public class NaverOAuth2Service {
                     .password(passwordEncoder.encode("NAVER_OAUTH2_USER_" + System.currentTimeMillis()))
                     .status(Status.UNBANNED)
                     .role(Role.USER)
-                    .isPremium(false)
+                    .premiumType(FREE)
                     .balance(java.math.BigDecimal.ZERO)
                     .build();
             return userRepository.save(newUser);

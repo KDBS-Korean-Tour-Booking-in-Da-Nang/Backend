@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.core.io.ClassPathResource;
 
@@ -35,7 +36,8 @@ public class EmailService {
     /**
      * Gửi email xác nhận booking thành công
      */
-    public void sendBookingConfirmationEmail(Booking booking, Tour tour) {
+    @Async
+    public void sendBookingConfirmationEmailAsync(Booking booking, Tour tour) {
         try {
             String emailContent = buildBookingConfirmationEmail(booking, tour);
             String subject = "Xác nhận đặt tour thành công - " + tour.getTourName();
@@ -104,7 +106,7 @@ public class EmailService {
                     .append("<div class=\"guest-details\">")
                     .append("Ngày sinh: ").append(guest.getBirthDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
                     .append(" | Giới tính: ").append(guest.getGender() != null ? guest.getGender().name() : "Chưa xác định")
-                    .append(" | Loại: ").append(guest.getGuestType().name())
+                    .append(" | Loại: ").append(guest.getBookingGuestType().name())
                     .append(" | CMND/CCCD: ").append(guest.getIdNumber() != null ? guest.getIdNumber() : "Chưa cung cấp")
                     .append(" | Quốc tịch: ").append(guest.getNationality() != null ? guest.getNationality() : "Chưa cung cấp")
                     .append("</div>")
@@ -150,6 +152,7 @@ public class EmailService {
      * @param email Email người dùng
      * @param username Tên người dùng
      */
+    @Async
     public void sendPasswordResetSuccessEmail(String email, String username) {
         try {
             String subject = "Đổi mật khẩu thành công - KDBS";
@@ -266,6 +269,7 @@ public class EmailService {
     /**
      * Gửi email OTP
      */
+    @Async
     public void sendOTPEmail(String email, String otpCode, String purpose) {
         try {
             String subject = "Mã OTP - KDBS";
@@ -391,6 +395,117 @@ public class EmailService {
             </body>
             </html>
             """, purposeText, purposeText, otpCode);
+    }
+
+    /**
+     * Gửi email xác nhận nâng cấp premium thành công
+     */
+    @Async
+    public void sendPremiumUpgradeConfirmation(String email, int durationInMonths, java.time.LocalDateTime validUntil) {
+        try {
+            String subject = "Chúc mừng! Tài khoản Premium của bạn đã được kích hoạt - KDBS";
+            String content = buildPremiumUpgradeConfirmationEmail(durationInMonths, validUntil);
+            
+            sendEmail(email, subject, content);
+            log.info("Premium upgrade confirmation email sent successfully to: {}", email);
+
+        } catch (Exception e) {
+            log.error("Failed to send premium upgrade confirmation email to: {}", email, e);
+            throw new RuntimeException("Failed to send premium upgrade confirmation email", e);
+        }
+    }
+
+    /**
+     * Xây dựng nội dung email xác nhận nâng cấp premium
+     */
+    private String buildPremiumUpgradeConfirmationEmail(int durationInMonths, java.time.LocalDateTime validUntil) {
+        String validUntilFormatted = validUntil.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("vi-VN")));
+        
+        return String.format("""
+            <!DOCTYPE html>
+            <html lang="vi">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Nâng cấp Premium thành công</title>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+                    .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+                    .header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 30px; text-align: center; }
+                    .header h1 { margin: 0; font-size: 28px; }
+                    .content { padding: 30px; }
+                    .success-icon { font-size: 48px; color: #28a745; text-align: center; margin: 20px 0; }
+                    .premium-badge { display: inline-block; background: linear-gradient(45deg, #FFD700, #FFA500); color: #333; padding: 8px 16px; border-radius: 20px; font-weight: bold; margin: 10px 0; }
+                    .info-box { background: #f8f9fa; border-left: 4px solid #667eea; padding: 20px; margin: 20px 0; border-radius: 0 5px 5px 0; }
+                    .benefits { background: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; }
+                    .benefits h3 { color: #28a745; margin-top: 0; }
+                    .benefits ul { margin: 10px 0; padding-left: 20px; }
+                    .benefits li { margin: 8px 0; }
+                    .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; }
+                    .cta-button { display: inline-block; background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; margin: 20px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🎉 Chúc mừng!</h1>
+                        <p>Tài khoản Premium của bạn đã được kích hoạt thành công</p>
+                    </div>
+                    
+                    <div class="content">
+                        <div class="success-icon">✅</div>
+                        
+                        <h2 style="text-align: center; color: #333;">Nâng cấp Premium thành công!</h2>
+                        
+                        <div class="premium-badge">⭐ PREMIUM ACCOUNT ⭐</div>
+                        
+                        <div class="info-box">
+                            <h3>📋 Thông tin gói Premium</h3>
+                            <p><strong>Thời hạn:</strong> %d tháng</p>
+                            <p><strong>Hiệu lực đến:</strong> %s</p>
+                            <p><strong>Trạng thái:</strong> <span style="color: #28a745; font-weight: bold;">Đang hoạt động</span></p>
+                        </div>
+                        
+                        <div class="benefits">
+                            <h3>🚀 Quyền lợi Premium</h3>
+                            <ul>
+                                <li>🎯 Ưu tiên hiển thị tour trong kết quả tìm kiếm</li>
+                                <li>💎 Truy cập các tour độc quyền chỉ dành cho Premium</li>
+                                <li>📞 Hỗ trợ khách hàng 24/7</li>
+                                <li>🎁 Nhận thông báo sớm nhất về các ưu đãi đặc biệt</li>
+                                <li>⭐ Đánh giá và bình luận không giới hạn</li>
+                                <li>📱 Giao diện không quảng cáo</li>
+                                <li>🔄 Hoàn tiền 100%% nếu hủy tour trong vòng 24h</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="%s" class="cta-button">Khám phá ngay</a>
+                        </div>
+                        
+                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <h4 style="color: #856404; margin-top: 0;">💡 Lưu ý quan trọng</h4>
+                            <ul style="margin: 10px 0; padding-left: 20px; color: #856404;">
+                                <li>Tài khoản Premium sẽ tự động hết hạn vào %s</li>
+                                <li>Bạn sẽ nhận email thông báo trước khi hết hạn 7 ngày</li>
+                                <li>Có thể gia hạn bất kỳ lúc nào trước khi hết hạn</li>
+                            </ul>
+                        </div>
+                        
+                        <p>Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của KDBS!</p>
+                        <p>Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email hỗ trợ.</p>
+                        <p>Trân trọng,<br><strong>Đội ngũ KDBS</strong></p>
+                    </div>
+
+                    <div class="footer">
+                        <p><strong>KDBS Travel Agency</strong></p>
+                        <p>📧 Email: info@kdbs.com | 📞 Hotline: 1900-xxxx</p>
+                        <p>🏢 Địa chỉ: 123 Đường ABC, Quận XYZ, TP.HCM</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """, durationInMonths, validUntilFormatted, frontendUrl, validUntilFormatted);
     }
 
     /**

@@ -23,7 +23,8 @@ public class OTPService {
 
     private static final int OTP_LENGTH = 6;
     private static final int OTP_EXPIRY_MINUTES = 5;
-    private static final int MAX_OTP_ATTEMPTS_PER_HOUR = 3;
+    //Temporary limit, can be adjusted later after development stage
+    private static final int MAX_OTP_ATTEMPTS_PER_HOUR = 100;
 
     public void generateAndSendOTP(String email, OTPPurpose purpose) {
         // check so lan gui OTP trong 1 h

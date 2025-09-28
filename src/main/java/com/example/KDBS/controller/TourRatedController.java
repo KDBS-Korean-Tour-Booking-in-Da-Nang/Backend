@@ -3,6 +3,7 @@ package com.example.KDBS.controller;
 import com.example.KDBS.dto.request.TourRatedRequest;
 import com.example.KDBS.dto.response.TourRatedResponse;
 import com.example.KDBS.service.TourRatedService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,14 +11,11 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/tour/rated")
+@RequestMapping("/api/tourRated")
 public class TourRatedController {
 
-    private final TourRatedService tourRatedService;
-
-    public TourRatedController(TourRatedService tourRatedService) {
-        this.tourRatedService = tourRatedService;
-    }
+    @Autowired
+    private TourRatedService tourRatedService;
 
     /** Create new tourRated */
     @PostMapping
