@@ -37,6 +37,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static com.example.KDBS.enums.PremiumType.FREE;
+
 @Service
 public class UserService {
 
@@ -86,7 +88,7 @@ public class UserService {
         user.setRole(Role.USER);
         user.setStatus(Status.UNVERIFIED);
         user.setCreatedAt(LocalDateTime.now());
-
+        user.setPremiumType(FREE);
         userRepository.save(user);
 
         otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
