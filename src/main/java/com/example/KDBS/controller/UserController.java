@@ -6,7 +6,6 @@ import com.example.KDBS.dto.request.EmailVerificationRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
-import com.example.KDBS.dto.response.UserSuggestionResponse;
 import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.enums.Status;
 import com.example.KDBS.exception.AppException;
@@ -15,7 +14,6 @@ import com.example.KDBS.model.User;
 import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.service.UserService;
 import com.example.KDBS.service.OTPService;
-import com.example.KDBS.service.UserSuggestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,8 +40,6 @@ public class UserController {
     @Autowired
     private OTPService otpService;
 
-    @Autowired
-    private UserSuggestionService userSuggestionService;
     @Autowired
     private UserRepository userRepository;
 
@@ -94,7 +90,6 @@ public class UserController {
         }
     }
 
-
     @PostMapping("/regenerate-otp")
     public ApiResponse<Void> regenerateOTP(@RequestBody @Valid EmailVerificationRequest request) {
         try {
@@ -116,7 +111,7 @@ public class UserController {
                 .build();
     }
 
-        @PutMapping(path = "/update-business-license", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(path = "/update-business-license", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateBusinessLicense(
             @RequestPart("file") MultipartFile file,
             @RequestPart("idCardFront") MultipartFile idCardFront,
@@ -145,12 +140,4 @@ public class UserController {
                 .build();
     }
 
-    @GetMapping("/suggestions")
-    public ApiResponse<List<UserSuggestionResponse>> getSuggestedUsers(
-            @RequestParam(defaultValue = "5") int limit) {
-        List<UserSuggestionResponse> suggestions = userSuggestionService.getSuggestedUsers(limit);
-        return ApiResponse.<List<UserSuggestionResponse>>builder()
-                .result(suggestions)
-                .build();
-    }
 }
