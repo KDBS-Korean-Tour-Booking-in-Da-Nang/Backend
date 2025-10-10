@@ -1,10 +1,12 @@
 package com.example.KDBS.mapper;
 
-import com.example.KDBS.dto.request.BookingRequest;
 import com.example.KDBS.dto.request.BookingGuestRequest;
-import com.example.KDBS.dto.response.BookingResponse;
+import com.example.KDBS.dto.request.BookingRequest;
 import com.example.KDBS.dto.response.BookingGuestResponse;
+import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
+import com.example.KDBS.dto.response.GuestInsuranceResponse;
+import com.example.KDBS.enums.InsuranceStatus;
 import com.example.KDBS.model.Booking;
 import com.example.KDBS.model.BookingGuest;
 import org.mapstruct.Mapper;
@@ -47,5 +49,11 @@ public interface BookingMapper {
     @Mapping(target = "totalAmount", expression = "java(totalAmount)")
     @Mapping(target = "status", constant = "PENDING")
     BookingSummaryResponse toBookingSummaryResponse(Booking booking, String tourName, BigDecimal totalAmount);
+
+    GuestInsuranceResponse toGuestInsuranceResponse(
+            BookingGuestResponse guestResponse,
+            String insuranceNumber,
+            InsuranceStatus insuranceStatus
+    );
 
 }

@@ -48,9 +48,6 @@ public class TourService {
     @Value("${vnpay.frontend-url}")
     private String frontendUrl;
 
-    @Value("${vnpay.frontend-url}")
-    private String frontendUrl;
-
     @Value("${file.upload-dir}")
     private String uploadDir;
 
