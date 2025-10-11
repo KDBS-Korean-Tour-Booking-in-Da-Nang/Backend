@@ -29,8 +29,8 @@ public class ArticleService {
         return articleRepository.findAll();
     }
 
-    public Optional<Article> getArticleById(Long id) {
-        return articleRepository.findById(id);
+    public Optional<Article> getArticleById(Long articleId) {
+        return articleRepository.findById(articleId);
     }
 
     @Transactional

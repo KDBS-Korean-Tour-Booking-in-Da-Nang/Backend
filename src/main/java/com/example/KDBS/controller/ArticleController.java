@@ -20,7 +20,7 @@ public class ArticleController {
 
     // Endpoint to trigger crawling articles
     // e.g., GET /api/article/crawl
-    @RequestMapping("/crawl")
+    @GetMapping("/crawl")
     public ResponseEntity<List<Article>> crawlArticles() {
         List<Article> articles = articleService.crawlArticlesFromDanangXanh();
         return ResponseEntity.ok(articles);
@@ -28,27 +28,27 @@ public class ArticleController {
 
     // Get all
     @GetMapping
-    public List<Article> getAllArticles() {
-        return articleService.getAllArticles();
+    public ResponseEntity<List<Article>> getAllArticles() {
+        return ResponseEntity.ok(articleService.getAllArticles());
     }
 
     // Get by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<Article> getArticleById(@PathVariable Long id) {
-        return articleService.getArticleById(id)
+    @GetMapping("/{articleId}")
+    public ResponseEntity<Article> getArticleById(@PathVariable Long articleId) {
+        return articleService.getArticleById(articleId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
     }
 
-    @PutMapping("/{id}/status")
-    public ResponseEntity<?> updateStatus(
-            @PathVariable Long id,
+    @PutMapping("/{articleId}/status")
+    public ResponseEntity<Article> updateStatus(
+            @PathVariable Long articleId,
             @RequestParam("status") ArticleStatus status) {
-        Article updatedArticle = articleService.updateArticleStatus(id, status);
+        Article updatedArticle = articleService.updateArticleStatus(articleId, status);
         if (updatedArticle != null) {
             return ResponseEntity.ok(updatedArticle);
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Article not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
 }
