@@ -34,7 +34,7 @@ import java.util.Arrays;
 public class SecurityConfiguration {
 
     private final String[] PUBLIC_ENDPOINTS = {
-            "/api/auth/login", "/api/auth/logout", "/api/auth/introspect",
+            "/api/auth/login", "/api/auth/logout", "/api/auth/introspect", "/api/auth/login-username",
             "/api/users/register", "/api/users/verify-account", "/api/users/sendOTP", "/api/users/verify-email",
             "/api/users/regenerate-otp", "/api/users/update-business-license",
             "/api/auth/google/login", "/api/auth/google/callback",
@@ -49,7 +49,7 @@ public class SecurityConfiguration {
             "/api/reports/**",
             "/api/users/suggestions",
             "/api/tour/**",
-            "api/vnpay/return",
+            "/api/vnpay/return",
             "/api/article/**"
     };
 
