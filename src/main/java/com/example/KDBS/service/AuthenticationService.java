@@ -3,6 +3,7 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.request.AuthenticationRequest;
 import com.example.KDBS.dto.request.IntrospectRequest;
 import com.example.KDBS.dto.request.LogOutRequest;
+import com.example.KDBS.dto.request.UsernameAuthenticationRequest;
 import com.example.KDBS.dto.response.AuthenticationResponse;
 import com.example.KDBS.dto.response.IntrospectResponse;
 import com.example.KDBS.dto.response.UserResponse;
@@ -80,8 +81,8 @@ public class AuthenticationService {
                 .build();
     }
 
-    public AuthenticationResponse loginWithUsername(String username, String password) {
-        User user = userRepository.findByUsername(username).orElseThrow(
+    public AuthenticationResponse loginWithUsername(UsernameAuthenticationRequest usernameAuthenticationRequest) {
+        User user = userRepository.findByUsername(usernameAuthenticationRequest.getUsername()).orElseThrow(
                 () -> new AppException(ErrorCode.USERNAME_NOT_EXISTED)
         );
         if (Status.UNVERIFIED.name().equalsIgnoreCase(user.getStatus().name())) {
@@ -90,7 +91,7 @@ public class AuthenticationService {
         if (Status.BANNED.name().equalsIgnoreCase(user.getStatus().name())) {
             throw new AppException(ErrorCode.USER_IS_BANNED);
         }
-        boolean authenticated = passwordEncoder.matches(password, user.getPassword());
+        boolean authenticated = passwordEncoder.matches(usernameAuthenticationRequest.getPassword(), user.getPassword());
         if (!authenticated)
             throw new AppException(ErrorCode.LOGIN_FAILED);
         var token = generateToken(user);
