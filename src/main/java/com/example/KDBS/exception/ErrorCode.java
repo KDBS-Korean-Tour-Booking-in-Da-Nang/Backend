@@ -67,6 +67,8 @@ public enum ErrorCode {
     PREMIUM_ACCESS_DENIED(1055, "Premium account required for this feature", HttpStatus.FORBIDDEN),
     PAYMENT_CREATION_FAILED(1056, "Failed to create payment", HttpStatus.BAD_REQUEST),
     TRANSACTION_NOT_FOUND(1057, "Transaction not found", HttpStatus.NOT_FOUND),
+    USERNAME_NOT_EXISTED(1058, "Username has not existed", HttpStatus.NOT_FOUND),
+    USERNAME_EXISTED(1059, "Username has existed", HttpStatus.BAD_REQUEST)
     ;
 
     private int code;
