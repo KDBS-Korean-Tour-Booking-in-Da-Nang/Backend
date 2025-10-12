@@ -3,15 +3,16 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.request.AuthenticationRequest;
 import com.example.KDBS.dto.request.IntrospectRequest;
 import com.example.KDBS.dto.request.LogOutRequest;
+import com.example.KDBS.dto.request.UsernameAuthenticationRequest;
 import com.example.KDBS.dto.response.AuthenticationResponse;
 import com.example.KDBS.dto.response.IntrospectResponse;
 import com.example.KDBS.dto.response.UserResponse;
-import com.example.KDBS.mapper.UserMapper;
-import com.example.KDBS.model.InvalidateToken;
-import com.example.KDBS.model.User;
 import com.example.KDBS.enums.Status;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
+import com.example.KDBS.mapper.UserMapper;
+import com.example.KDBS.model.InvalidateToken;
+import com.example.KDBS.model.User;
 import com.example.KDBS.repository.InvalidateTokenRepository;
 import com.example.KDBS.repository.UserRepository;
 import com.nimbusds.jose.*;
@@ -21,10 +22,9 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
-import org.springframework.beans.factory.annotation.Value;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -33,8 +33,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
-
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -61,7 +59,6 @@ public class AuthenticationService {
     public AuthenticationResponse login(AuthenticationRequest authenticationRequest) {
         User user = userRepository.findByEmail(authenticationRequest.getEmail()).orElseThrow(
                 () -> new AppException(ErrorCode.EMAIL_NOT_EXISTED)
-
         );
         if (Status.UNVERIFIED.name().equalsIgnoreCase(user.getStatus().name())) {
             throw new AppException(ErrorCode.EMAIL_NOT_EXISTED);
@@ -82,13 +79,41 @@ public class AuthenticationService {
                 .authenticated(true)
                 .user(userResponse)
                 .build();
+    }
 
+    public AuthenticationResponse loginWithUsername(UsernameAuthenticationRequest usernameAuthenticationRequest) {
+        User user = userRepository.findByUsername(usernameAuthenticationRequest.getUsername()).orElseThrow(
+                () -> new AppException(ErrorCode.USERNAME_NOT_EXISTED)
+        );
+        if (Status.UNVERIFIED.name().equalsIgnoreCase(user.getStatus().name())) {
+            throw new AppException(ErrorCode.USERNAME_NOT_EXISTED);
+        }
+        if (Status.BANNED.name().equalsIgnoreCase(user.getStatus().name())) {
+            throw new AppException(ErrorCode.USER_IS_BANNED);
+        }
+        boolean authenticated = passwordEncoder.matches(usernameAuthenticationRequest.getPassword(), user.getPassword());
+        if (!authenticated)
+            throw new AppException(ErrorCode.LOGIN_FAILED);
+        var token = generateToken(user);
+
+        // Convert User to UserResponse
+        UserResponse userResponse = userMapper.toUserResponse(user);
+
+        return AuthenticationResponse.builder()
+                .token(token)
+                .authenticated(true)
+                .user(userResponse)
+                .build();
     }
 
     public String generateToken(User user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
+        String subject = (user.getEmail() != null && !user.getEmail().isEmpty())
+                ? user.getEmail()
+                : user.getUsername();
+
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getEmail())
+                .subject(subject)
                 .issuer("KDBS.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(Instant.now().plus(VALID_DURATION, ChronoUnit.HOURS).toEpochMilli()))
