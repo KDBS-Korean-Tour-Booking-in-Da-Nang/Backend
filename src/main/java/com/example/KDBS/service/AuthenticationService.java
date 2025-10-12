@@ -57,46 +57,33 @@ public class AuthenticationService {
     protected long REFRESHABLE_DURATION;
 
     public AuthenticationResponse login(AuthenticationRequest authenticationRequest) {
-        User user = userRepository.findByEmail(authenticationRequest.getEmail()).orElseThrow(
-                () -> new AppException(ErrorCode.EMAIL_NOT_EXISTED)
-        );
-        if (Status.UNVERIFIED.name().equalsIgnoreCase(user.getStatus().name())) {
+        User user = userRepository.findByEmail(authenticationRequest.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
+
+        if (Status.UNVERIFIED.equals(user.getStatus())) {
             throw new AppException(ErrorCode.EMAIL_NOT_EXISTED);
         }
-        if (Status.BANNED.name().equalsIgnoreCase(user.getStatus().name())) {
+        if (Status.BANNED.equals(user.getStatus())) {
             throw new AppException(ErrorCode.USER_IS_BANNED);
         }
-        boolean authenticated = passwordEncoder.matches(authenticationRequest.getPassword(), user.getPassword());
-        if (!authenticated)
-            throw new AppException(ErrorCode.LOGIN_FAILED);
-        var token = generateToken(user);
 
-        // Convert User to UserResponse
-        UserResponse userResponse = userMapper.toUserResponse(user);
-
-        return AuthenticationResponse.builder()
-                .token(token)
-                .authenticated(true)
-                .user(userResponse)
-                .build();
+        return authenticateAndBuildResponse(user, authenticationRequest.getPassword());
     }
 
     public AuthenticationResponse loginWithUsername(UsernameAuthenticationRequest usernameAuthenticationRequest) {
-        User user = userRepository.findByUsername(usernameAuthenticationRequest.getUsername()).orElseThrow(
-                () -> new AppException(ErrorCode.USERNAME_NOT_EXISTED)
-        );
-        if (Status.UNVERIFIED.name().equalsIgnoreCase(user.getStatus().name())) {
-            throw new AppException(ErrorCode.USERNAME_NOT_EXISTED);
-        }
-        if (Status.BANNED.name().equalsIgnoreCase(user.getStatus().name())) {
-            throw new AppException(ErrorCode.USER_IS_BANNED);
-        }
-        boolean authenticated = passwordEncoder.matches(usernameAuthenticationRequest.getPassword(), user.getPassword());
-        if (!authenticated)
-            throw new AppException(ErrorCode.LOGIN_FAILED);
-        var token = generateToken(user);
+        User user = userRepository.findByUsername(usernameAuthenticationRequest.getUsername())
+                .orElseThrow(() -> new AppException(ErrorCode.USERNAME_NOT_EXISTED));
 
-        // Convert User to UserResponse
+        return authenticateAndBuildResponse(user, usernameAuthenticationRequest.getPassword());
+    }
+
+    // Shared authentication logic
+    private AuthenticationResponse authenticateAndBuildResponse(User user, String rawPassword) {
+        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+            throw new AppException(ErrorCode.LOGIN_FAILED);
+        }
+
+        String token = generateToken(user);
         UserResponse userResponse = userMapper.toUserResponse(user);
 
         return AuthenticationResponse.builder()
