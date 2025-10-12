@@ -40,6 +40,12 @@ public class ArticleController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
     }
 
+    // Get by status
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<Article>> getArticlesByStatus(@PathVariable ArticleStatus status) {
+        return ResponseEntity.ok(articleService.getArticlesByStatus(status));
+    }
+
     @PutMapping("/{articleId}/status")
     public ResponseEntity<Article> updateStatus(
             @PathVariable Long articleId,

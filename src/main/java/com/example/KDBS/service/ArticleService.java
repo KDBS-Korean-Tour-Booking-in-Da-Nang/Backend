@@ -33,6 +33,10 @@ public class ArticleService {
         return articleRepository.findById(articleId);
     }
 
+    public List<Article> getArticlesByStatus(ArticleStatus status) {
+        return articleRepository.findByArticleStatus(status);
+    }
+
     @Transactional
     public Article updateArticleStatus(Long articleId, ArticleStatus newStatus) {
         return articleRepository.findById(articleId)
@@ -61,7 +65,7 @@ public class ArticleService {
 
             int count = 0;
             for(Element article : articles) {
-                if (count >= 2) break;
+                if (count >= 5) break;
                 String link = article.select("h3 > a").attr("abs:href").trim();
 
                 if (link.isEmpty()) {
