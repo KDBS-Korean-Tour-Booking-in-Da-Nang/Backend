@@ -2,6 +2,7 @@ package com.example.KDBS.model;
 
 import com.example.KDBS.enums.Gender;
 import com.example.KDBS.enums.BookingGuestType;
+import com.example.KDBS.enums.InsuranceStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -48,4 +49,11 @@ public class BookingGuest {
     @Enumerated(EnumType.STRING)
     @Column(name = "guest_type", nullable = false)
     private BookingGuestType bookingGuestType;
+
+    @Column(name = "insurance_number", length = 100)
+    private String insuranceNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "insurance_status", length = 50)
+    private InsuranceStatus insuranceStatus;
 }

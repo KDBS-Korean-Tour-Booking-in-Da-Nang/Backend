@@ -63,24 +63,30 @@ public class UserService {
     private String uploadDir;
 
     public String createUser(UserRegisterRequest request) throws IOException {
-        Optional<User> existing = userRepository.findByEmail(request.getEmail());
+        Optional<User> existingByEmail = userRepository.findByEmail(request.getEmail());
+        Optional<User> existingByUsername = userRepository.findByUsername(request.getUsername());
 
-        if (existing.isPresent()) {
-            User user = existing.get();
+        if (existingByUsername.isPresent()) {
+            throw new AppException(ErrorCode.USERNAME_EXISTED);
+        }
+
+        if (existingByEmail.isPresent()) {
+            User user = existingByEmail.get();
 
             if (user.getStatus() == Status.UNVERIFIED) {
-                // Nếu chưa hết hạn → resend OTP
+                // If account created within 3 days → resend OTP
                 if (user.getCreatedAt().isAfter(LocalDateTime.now().minusDays(3))) {
                     otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
                     return "Email already registered but not verified. OTP resent.";
                 } else {
-                    // Nếu hết hạn → xóa user cũ
+                    // If expired → delete old unverified user
                     userRepository.delete(user);
                 }
             } else {
                 throw new AppException(ErrorCode.EMAIL_EXISTED);
             }
         }
+
 
         // Tạo user mới với status UNVERIFIED
         User user = userMapper.toUser(request);
