@@ -22,4 +22,6 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     List<User> findByStatusAndCreatedAtBefore(Status status, LocalDateTime time);
 
+    Optional<User> findByUsername(String username);
+
 }
