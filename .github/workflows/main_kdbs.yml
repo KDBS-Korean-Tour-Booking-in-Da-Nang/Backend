@@ -23,6 +23,7 @@ jobs:
       NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
       UPLOAD_DIR: ${{ secrets.UPLOAD_DIR }}
       JWT_SIGNER_KEY: ${{ secrets.JWT_SIGNER_KEY }}
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
       
     steps:
       - uses: actions/checkout@v4
@@ -78,6 +79,7 @@ jobs:
           slot-name: 'Production'
           package: 'java-app/*.jar'
           
+
 
 
 
