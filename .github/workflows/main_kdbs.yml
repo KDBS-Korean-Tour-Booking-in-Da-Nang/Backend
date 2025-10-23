@@ -24,6 +24,10 @@ jobs:
       UPLOAD_DIR: ${{ secrets.UPLOAD_DIR }}
       JWT_SIGNER_KEY: ${{ secrets.JWT_SIGNER_KEY }}
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+      VNPAY_TMN_CODE: ${{ secrets.VNPAY_TMN_CODE }}
+      VNPAY_SECRET_KEY: ${{ secrets.VNPAY_SECRET_KEY }}
+      VNPAY_RETURN_URL: ${{ secrets.VNPAY_RETURN_URL }}
+      FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
       
     steps:
       - uses: actions/checkout@v4
@@ -79,6 +83,7 @@ jobs:
           slot-name: 'Production'
           package: 'java-app/*.jar'
           
+
 
 
 
