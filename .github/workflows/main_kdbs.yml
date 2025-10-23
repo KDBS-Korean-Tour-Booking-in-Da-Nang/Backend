@@ -18,6 +18,7 @@ jobs:
       DB_URL: ${{ secrets.DB_URL }}
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${{ secrets.SPRING_JPA_HIBERNATE_DDL_AUTO }}
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
       UPLOAD_DIR: ${{ secrets.UPLOAD_DIR }}
@@ -77,5 +78,6 @@ jobs:
           slot-name: 'Production'
           package: 'java-app/*.jar'
           
+
 
 
