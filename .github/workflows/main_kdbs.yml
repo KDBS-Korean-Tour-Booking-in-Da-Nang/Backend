@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
+    env:
+      JWT_SIGNER_KEY: OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh
     steps:
       - uses: actions/checkout@v4
 
@@ -69,3 +70,4 @@ jobs:
           slot-name: 'Production'
           package: 'java-app/*.jar'
           
+
