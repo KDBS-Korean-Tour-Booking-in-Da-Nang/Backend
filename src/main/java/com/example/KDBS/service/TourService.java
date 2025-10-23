@@ -45,7 +45,7 @@ public class TourService {
     @Autowired
     private TourMapper tourMapper;
 
-    @Value("${vnpay.frontend-url}")
+    @Value("${app.frontend.url}")
     private String frontendUrl;
 
     @Value("${file.upload-dir}")
