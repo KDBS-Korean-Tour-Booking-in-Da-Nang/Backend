@@ -85,8 +85,9 @@ jobs:
         with:
           app-name: 'kdbs'
           slot-name: 'Production'
-          package: 'java-app/*.jar'
+          package: '*.jar'
           
+
 
 
 
