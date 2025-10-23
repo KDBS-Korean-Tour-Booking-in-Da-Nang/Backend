@@ -15,7 +15,14 @@ jobs:
     permissions:
       contents: read
     env:
-      JWT_SIGNER_KEY: OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh
+      DB_URL: ${{ secrets.DB_URL }}
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+      UPLOAD_DIR: ${{ secrets.UPLOAD_DIR }}
+      JWT_SIGNER_KEY: ${{ secrets.JWT_SIGNER_KEY }}
+      
     steps:
       - uses: actions/checkout@v4
 
@@ -70,4 +77,5 @@ jobs:
           slot-name: 'Production'
           package: 'java-app/*.jar'
           
+
 
