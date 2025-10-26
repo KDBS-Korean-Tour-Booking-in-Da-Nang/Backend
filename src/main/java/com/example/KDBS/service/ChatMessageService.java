@@ -1,6 +1,8 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.ChatMessageRequest;
+import com.example.KDBS.dto.response.ChatMessageResponse;
+import com.example.KDBS.mapper.ChatMessageMapper;
 import com.example.KDBS.model.ChatMessage;
 import com.example.KDBS.model.User;
 import com.example.KDBS.repository.ChatMessageRepository;
@@ -17,22 +19,27 @@ import java.util.List;
 public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
+    private final ChatMessageMapper chatMessageMapper;
 
-    public List<ChatMessage> GetConversation(String senderName, String receiverName) {
+    public List<ChatMessageResponse> GetConversation(String senderName, String receiverName) {
         var sender = getUserByUsername(senderName);
         var receiver = getUserByUsername(receiverName);
 
-        return chatMessageRepository.findBySenderAndReceiverOrReceiverAndSenderOrderByTimestampAsc(
-                sender, receiver,
-                receiver, sender);
+        return chatMessageRepository.findConversationBetween(sender, receiver)
+                .stream()
+                .map(chatMessageMapper::toResponse)
+                .toList();
     }
 
-    public List<ChatMessage> getAllMessageFromUser(String Username) {
+    public List<ChatMessageResponse> getAllMessageFromUser(String Username) {
         var user = getUserByUsername(Username);
-        return chatMessageRepository.findBySenderOrReceiverOrderByTimestampDesc(user, user);
+        return chatMessageRepository.findBySenderOrReceiverOrderByTimestampDesc(user, user)
+                .stream()
+                .map(chatMessageMapper::toResponse)
+                .toList();
     }
 
-    public List<ChatMessage> sendMessage(ChatMessageRequest chatMessageRequest) {
+    public List<ChatMessageResponse> sendMessage(ChatMessageRequest chatMessageRequest) {
         var sender = getUserByUsername(chatMessageRequest.getSenderName());
         var receiver = getUserByUsername(chatMessageRequest.getReceiverName());
         ChatMessage newMessage = ChatMessage.builder()

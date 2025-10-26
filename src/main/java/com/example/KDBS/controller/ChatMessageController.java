@@ -1,7 +1,7 @@
 package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.ChatMessageRequest;
-import com.example.KDBS.model.ChatMessage;
+import com.example.KDBS.dto.response.ChatMessageResponse;
 import com.example.KDBS.service.ChatMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,20 +22,20 @@ public class ChatMessageController {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     @GetMapping("/conversation/{user1}/{user2}")
-    public ResponseEntity<List<ChatMessage>> getConversation(@PathVariable String user1, @PathVariable String user2) {
-        List<ChatMessage> conversation = chatMessageService.GetConversation(user1, user2);
+    public ResponseEntity<List<ChatMessageResponse>> getConversation(@PathVariable String user1, @PathVariable String user2) {
+        List<ChatMessageResponse> conversation = chatMessageService.GetConversation(user1, user2);
         return ResponseEntity.ok(conversation);
     }
 
     @GetMapping("/all/{username}")
-    public ResponseEntity<List<ChatMessage>> getAllMessagesFromUser(@PathVariable String username) {
-        List<ChatMessage> messages = chatMessageService.getAllMessageFromUser(username);
+    public ResponseEntity<List<ChatMessageResponse>> getAllMessagesFromUser(@PathVariable String username) {
+        List<ChatMessageResponse> messages = chatMessageService.getAllMessageFromUser(username);
         return ResponseEntity.ok(messages);
     }
 
     @PostMapping("/send")
-    public ResponseEntity<List<ChatMessage>> sendMessage(@RequestBody ChatMessageRequest chatMessageRequest) {
-        List<ChatMessage> updatedConversation = chatMessageService.sendMessage(chatMessageRequest);
+    public ResponseEntity<List<ChatMessageResponse>> sendMessage(@RequestBody ChatMessageRequest chatMessageRequest) {
+        List<ChatMessageResponse> updatedConversation = chatMessageService.sendMessage(chatMessageRequest);
         return ResponseEntity.ok(updatedConversation);
     }
 
