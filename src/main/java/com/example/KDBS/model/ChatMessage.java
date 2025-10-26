@@ -1,13 +1,13 @@
 package com.example.KDBS.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 @Table(name = "chat_messages")
 @NoArgsConstructor
 @AllArgsConstructor
