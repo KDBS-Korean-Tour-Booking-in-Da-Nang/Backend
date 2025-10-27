@@ -2,9 +2,11 @@ package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.BookingPaymentRequest;
 import com.example.KDBS.dto.request.BookingRequest;
+import com.example.KDBS.dto.request.InsuranceRequest;
+import com.example.KDBS.dto.response.BookingGuestResponse;
 import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
-import com.example.KDBS.dto.response.BookingGuestResponse;
+import com.example.KDBS.dto.response.InsuranceResponse;
 import com.example.KDBS.service.BookingService;
 import com.example.KDBS.service.EmailService;
 import com.example.KDBS.service.VNPayService;
@@ -110,5 +112,10 @@ public class BookingController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", "false", "message", "Failed to send email: " + e.getMessage()));
         }
+    }
+
+    @PostMapping("/insurance/register")
+    public ResponseEntity<InsuranceResponse> registerInsurance(@RequestBody InsuranceRequest request) {
+        return ResponseEntity.ok(bookingService.registerInsurance(request));
     }
 }

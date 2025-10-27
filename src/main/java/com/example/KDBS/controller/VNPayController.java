@@ -23,7 +23,7 @@ public class VNPayController {
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
 
-    @Value("${vnpay.frontend-url}")
+    @Value("${app.frontend.url}")
     private String frontendUrl;
 
     public VNPayController(VNPayService vnpayService, UserRepository userRepository,
