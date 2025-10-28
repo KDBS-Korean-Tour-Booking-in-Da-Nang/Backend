@@ -93,7 +93,14 @@ public class UserService {
         // Tạo user mới với status UNVERIFIED
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(Role.USER);
+        Role role;
+        try {
+            role = Role.valueOf(request.getRole().toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            // Nếu request gửi role sai hoặc null, mặc định là USER
+            role = Role.USER;
+        }
+        user.setRole(role);
         user.setStatus(Status.UNVERIFIED);
         user.setCreatedAt(LocalDateTime.now());
         user.setPremiumType(FREE);
@@ -152,7 +159,7 @@ public class UserService {
                 .build();
 
         user.setBusinessLicense(license);
-
+        user.setStatus(Status.UNBANNED);
         userRepository.save(user);
     }
 
@@ -166,7 +173,7 @@ public class UserService {
         // Use mapper
         UserIdCard entity = userIdCardMapper.toUserIdCard(frontData);
         entity.setUser(userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found")));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)));
         entity.setFrontImagePath(frontPath);
         entity.setBackImagePath(backPath);
 
