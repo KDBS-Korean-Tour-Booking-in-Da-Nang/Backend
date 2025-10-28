@@ -2,6 +2,7 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.BusinessLicenseRequest;
 import com.example.KDBS.dto.request.UserRegisterRequest;
+import com.example.KDBS.dto.request.UserUpdateRequest;
 import com.example.KDBS.dto.response.IdCardApiResponse;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
 import com.example.KDBS.dto.response.UserResponse;
@@ -27,6 +28,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
@@ -36,6 +38,8 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import static com.example.KDBS.enums.PremiumType.FREE;
 
 @Service
 public class UserService {
@@ -61,18 +65,23 @@ public class UserService {
     private String uploadDir;
 
     public String createUser(UserRegisterRequest request) throws IOException {
-        Optional<User> existing = userRepository.findByEmail(request.getEmail());
+        Optional<User> existingByEmail = userRepository.findByEmail(request.getEmail());
+        Optional<User> existingByUsername = userRepository.findByUsername(request.getUsername());
 
-        if (existing.isPresent()) {
-            User user = existing.get();
+        if (existingByUsername.isPresent()) {
+            throw new AppException(ErrorCode.USERNAME_EXISTED);
+        }
+
+        if (existingByEmail.isPresent()) {
+            User user = existingByEmail.get();
 
             if (user.getStatus() == Status.UNVERIFIED) {
-                // Nếu chưa hết hạn → resend OTP
+                // If account created within 3 days → resend OTP
                 if (user.getCreatedAt().isAfter(LocalDateTime.now().minusDays(3))) {
                     otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
                     return "Email already registered but not verified. OTP resent.";
                 } else {
-                    // Nếu hết hạn → xóa user cũ
+                    // If expired → delete old unverified user
                     userRepository.delete(user);
                 }
             } else {
@@ -80,18 +89,43 @@ public class UserService {
             }
         }
 
+
         // Tạo user mới với status UNVERIFIED
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.USER);
         user.setStatus(Status.UNVERIFIED);
         user.setCreatedAt(LocalDateTime.now());
-
+        user.setPremiumType(FREE);
         userRepository.save(user);
 
         otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
 
         return "Registration successful. Please check your email for verification code.";
+    }
+
+    @Transactional
+    public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg) throws IOException {
+        // Tìm user theo email
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (request.getUsername() != null) {
+            userRepository.findByUsername(request.getUsername())
+                    .filter(u -> u.getUserId() != user.getUserId())
+                    .ifPresent(u -> { throw new AppException(ErrorCode.USERNAME_EXISTED); });
+        }
+
+        if (request.getPhone() != null) {
+            userRepository.findByPhone(request.getPhone())
+                    .filter(u -> u.getUserId() != user.getUserId())
+                    .ifPresent(u -> { throw new AppException(ErrorCode.PHONE_EXISTED); });
+        }
+
+        userMapper.updateUserFromDto(request, user);
+        user.setAvatar(FileUtils.convertFileToPath(avatarImg, uploadDir, "/users/avatar"));
+        userRepository.save(user);
+        return userMapper.toUserResponse(user);
     }
 
     public List<UserResponse> getAllUsers() {

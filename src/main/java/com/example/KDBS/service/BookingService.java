@@ -1,10 +1,10 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.BookingRequest;
-import com.example.KDBS.dto.response.BookingGuestResponse;
-import com.example.KDBS.dto.response.BookingResponse;
-import com.example.KDBS.dto.response.BookingSummaryResponse;
+import com.example.KDBS.dto.request.InsuranceRequest;
+import com.example.KDBS.dto.response.*;
 import com.example.KDBS.enums.BookingGuestType;
+import com.example.KDBS.enums.InsuranceStatus;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.BookingMapper;
@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -73,6 +74,43 @@ public class BookingService {
         response.setTourName(tour.getTourName());
         response.setGuests(bookingMapper.toBookingGuestResponses(savedGuests));
 
+        return response;
+    }
+
+    @Transactional
+    public InsuranceResponse registerInsurance(InsuranceRequest request){
+        tourRepository.findById(request.getTourId())
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
+
+        Booking booking = bookingRepository.findById(request.getBookingId())
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
+        if (!booking.getTour().getTourId().equals(request.getTourId())) {
+            throw new AppException(ErrorCode.BOOKING_NOT_BELONG_TO_TOUR);
+        }
+
+        List<GuestInsuranceResponse> guestInsuranceResponses = request.getBookingGuessIds()
+                .stream()
+                .map(GuestId -> {
+                    BookingGuest guest = bookingGuestRepository.findById(GuestId)
+                            .orElseThrow(() -> new AppException(ErrorCode.BOOKING_GUEST_NOT_FOUND));
+                    if (!guest.getBooking().getBookingId().equals(request.getBookingId())) {
+                        throw new AppException(ErrorCode.BOOKING_GUEST_NOT_BELONG_TO_BOOKING);
+                    }
+
+                    String uuid = UUID.randomUUID().toString();
+                    guest.setInsuranceNumber(uuid);
+                    guest.setInsuranceStatus(InsuranceStatus.Success);
+                    bookingGuestRepository.save(guest);
+
+                    BookingGuestResponse guestResponse = bookingMapper.toBookingGuestResponse(guest);
+                    return bookingMapper.toGuestInsuranceResponse(guestResponse, uuid, InsuranceStatus.Success);
+                }).toList();
+
+        InsuranceResponse response = new InsuranceResponse();
+        response.setTourId(request.getTourId());
+        response.setBookingId(request.getBookingId());
+        response.setGuestInsuranceResponses(guestInsuranceResponses);
         return response;
     }
 
@@ -220,6 +258,7 @@ public class BookingService {
             // Extract booking ID from orderInfo if it's a booking payment
             // Format: "Booking payment for booking ID: {bookingId}"
             String orderInfo = transaction.getOrderInfo();
+            log.info("Processing transaction orderInfo: {}", orderInfo);
             if (orderInfo != null && orderInfo.contains("Booking payment for booking ID:")) {
 
                 //Get booking ID by parsing orderInfo replace and split then get first part and trim
@@ -229,6 +268,7 @@ public class BookingService {
                         .trim();
                 Long bookingId = Long.parseLong(bookingIdStr);
 
+                log.info("Extracted booking ID: {} from transaction orderInfo", bookingId);
                 // Get booking and tour information
                 Booking booking = bookingRepository.findByIdWithGuests(bookingId).orElse(null);
                 if (booking != null) {

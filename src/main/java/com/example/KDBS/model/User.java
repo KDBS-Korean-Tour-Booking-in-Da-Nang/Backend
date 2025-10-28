@@ -1,5 +1,6 @@
 package com.example.KDBS.model;
 
+import com.example.KDBS.enums.PremiumType;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -41,8 +42,12 @@ public class User {
     @Column(name = "phone", length = 11, unique = true)
     private String phone;
 
-    @Column(name = "is_premium")
-    private Boolean isPremium;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "premium_type")
+    private PremiumType premiumType = PremiumType.FREE;
+
+    @Column(name = "premium_valid_until")
+    private LocalDateTime premiumValidUntil;
 
     @Column(name = "dob")
     private LocalDate dob;
