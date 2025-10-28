@@ -5,4 +5,5 @@ public enum Status {
     UNBANNED,
     PENDING,
     UNVERIFIED,
+    COMPANY_PENDING
 }
