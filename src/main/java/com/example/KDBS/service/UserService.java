@@ -89,7 +89,6 @@ public class UserService {
             }
         }
 
-
         // Tạo user mới với status UNVERIFIED
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -105,7 +104,8 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg) throws IOException {
+    public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg)
+            throws IOException {
         // Tìm user theo email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -113,13 +113,17 @@ public class UserService {
         if (request.getUsername() != null) {
             userRepository.findByUsername(request.getUsername())
                     .filter(u -> u.getUserId() != user.getUserId())
-                    .ifPresent(u -> { throw new AppException(ErrorCode.USERNAME_EXISTED); });
+                    .ifPresent(u -> {
+                        throw new AppException(ErrorCode.USERNAME_EXISTED);
+                    });
         }
 
         if (request.getPhone() != null) {
             userRepository.findByPhone(request.getPhone())
                     .filter(u -> u.getUserId() != user.getUserId())
-                    .ifPresent(u -> { throw new AppException(ErrorCode.PHONE_EXISTED); });
+                    .ifPresent(u -> {
+                        throw new AppException(ErrorCode.PHONE_EXISTED);
+                    });
         }
 
         userMapper.updateUserFromDto(request, user);
