@@ -1,4 +1,4 @@
-package com.example.KDBS.utils;
+package com.example.KDBS.scheduler;
 
 import com.example.KDBS.enums.Status;
 import com.example.KDBS.model.User;

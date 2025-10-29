@@ -140,6 +140,11 @@ public class GoogleOAuth2Service {
                 user.setAvatar(userInfo.getPicture());
                 userRepository.save(user);
             }
+            if (!StringUtils.hasText(user.getUsername())
+                    && StringUtils.hasText(userInfo.getName())) {
+                user.setUsername(userInfo.getName());
+            }
+
             return user;
         } else {
             // tao user moi default = user

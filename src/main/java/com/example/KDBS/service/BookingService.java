@@ -135,7 +135,7 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<BookingResponse> getBookingsByEmail(String email) {
-        List<Booking> bookings = bookingRepository.findByContactEmailOrderByCreatedAtDesc(email);
+        List<Booking> bookings = bookingRepository.findByUserEmailOrderByCreatedAtDesc(email);
         return bookings.stream()
                 .map(booking -> {
                     Tour tour = tourRepository.findById(booking.getTourId()).orElse(null);
@@ -177,7 +177,7 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<BookingSummaryResponse> getBookingSummaryByEmail(String email) {
-        List<Booking> bookings = bookingRepository.findByContactEmailOrderByCreatedAtDesc(email);
+        List<Booking> bookings = bookingRepository.findByUserEmailOrderByCreatedAtDesc(email);
 
         return bookings.stream()
                 .map(booking -> {
