@@ -1,5 +1,6 @@
 package com.example.KDBS.dto.response;
 
+import com.example.KDBS.enums.BookingStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,8 @@ public class BookingResponse {
 
     private Long bookingId;
     private Long tourId;
+    private String userEmail;
+    private BookingStatus bookingStatus;
     private String tourName;
     private String contactName;
     private String contactAddress;

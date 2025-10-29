@@ -1,5 +1,6 @@
 package com.example.KDBS.dto.request;
 
+import com.example.KDBS.enums.BookingStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -18,6 +19,13 @@ public class BookingRequest {
 
     @NotNull(message = "Tour ID is required")
     private Long tourId;
+
+    @Email(message = "Invalid email format")
+    @Size(max = 100, message = "Email email must not exceed 100 characters")
+    private String userEmail;
+
+    @NotNull(message = "Booking status is required")
+    private BookingStatus bookingStatus;
 
     @NotBlank(message = "Contact name is required")
     @Size(max = 100, message = "Contact name must not exceed 100 characters")
