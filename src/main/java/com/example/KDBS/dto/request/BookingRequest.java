@@ -24,7 +24,6 @@ public class BookingRequest {
     @Size(max = 100, message = "Email email must not exceed 100 characters")
     private String userEmail;
 
-    @NotNull(message = "Booking status is required")
     private BookingStatus bookingStatus;
 
     @NotBlank(message = "Contact name is required")
