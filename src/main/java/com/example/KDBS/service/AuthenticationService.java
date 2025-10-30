@@ -80,7 +80,7 @@ public class AuthenticationService {
     // Shared authentication logic
     private AuthenticationResponse authenticateAndBuildResponse(User user, String rawPassword) {
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            throw new AppException(ErrorCode.LOGIN_FAILED);
+            throw new AppException(ErrorCode.WRONG_PASSWORD);
         }
 
         String token = generateToken(user);
