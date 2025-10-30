@@ -73,6 +73,7 @@ public enum ErrorCode {
     MISSING_PARAMETER(1061,"Missing parameter",HttpStatus.BAD_REQUEST),
     CANNOT_RESOLVE_EMAIL_FROM_TOKEN(1062,"Cannot resolve email from token",HttpStatus.BAD_REQUEST),
     CANNOT_MODIFY_ANOTHER_ACCOUNT(1062,"You are not authorized to modify another user's account",HttpStatus.FORBIDDEN),
+    WRONG_EMAIL(1063, "Wrong email", HttpStatus.NOT_FOUND),
     ;
 
     private int code;

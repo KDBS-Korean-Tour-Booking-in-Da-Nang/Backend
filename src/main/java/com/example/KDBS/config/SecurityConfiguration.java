@@ -53,7 +53,9 @@ public class SecurityConfiguration {
             "/api/tour/**",
             "/api/vnpay/return",
             "/api/article/**",
-            "/api/chat/**"
+            "/api/chat/**",
+            "/api/tourRated/**"
+
     };
 
     private final String[] PUBLIC_RESOURCES = {
