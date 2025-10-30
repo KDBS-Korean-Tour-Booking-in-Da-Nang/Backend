@@ -6,6 +6,7 @@ import com.example.KDBS.model.Transaction;
 import com.example.KDBS.model.User;
 import com.example.KDBS.repository.TransactionRepository;
 import com.example.KDBS.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class VNPayService {
     @Value("${vnpay.tmnCode}")
@@ -38,15 +40,6 @@ public class VNPayService {
     private final UserRepository userRepository;
     private final BookingService bookingService;
     private final PremiumService premiumService;
-
-
-    public VNPayService(TransactionRepository transactionRepository, UserRepository userRepository, BookingService bookingService, PremiumService premiumService) {
-        this.transactionRepository = transactionRepository;
-        this.userRepository = userRepository;
-        this.bookingService = bookingService;
-        this.premiumService = premiumService;
-    }
-
 
     public Map<String, Object> createPayment(String userEmail, BigDecimal amount, String orderInfo) {
         try {
@@ -174,9 +167,16 @@ public class VNPayService {
         Optional<Transaction> transactionOpt = transactionRepository.findByOrderId(orderId);
         if (transactionOpt.isPresent()) {
             Transaction transaction = transactionOpt.get();
+
+            Long bookingId = extractBookingIdFromOrderInfo(transaction.getOrderInfo());
+
             if (signValue.equals(vnpSecureHash)) {
                 if ("00".equals(responseCode)) {
                     transaction.setStatus(TransactionStatus.SUCCESS);
+                    // change booking status -> PURCHASED
+                    if (bookingId != null) {
+                        bookingService.markBookingPurchased(bookingId);
+                    }
 
                     // Send booking confirmation email when payment is successful
                     try {
@@ -191,10 +191,19 @@ public class VNPayService {
                         log.error("Failed to process premium payment success for transaction: {}", orderId, e);
                     }
                 } else {
+                    // transaction fail / user cancel
                     transaction.setStatus(TransactionStatus.FAILED);
+
+                    // change booking status -> PENDING
+                    if (bookingId != null) {
+                        bookingService.markBookingPending(bookingId);
+                    }
                 }
             } else {
                 transaction.setStatus(TransactionStatus.FAILED);
+                if (bookingId != null) {
+                    bookingService.markBookingPending(bookingId);
+                }
             }
 
             transaction.setResultCode(Integer.parseInt(responseCode));
@@ -221,4 +230,21 @@ public class VNPayService {
         }
         return sb.toString();
     }
+
+    private Long extractBookingIdFromOrderInfo(String orderInfo) {
+        try {
+            if (orderInfo != null && orderInfo.contains("Booking payment for booking ID:")) {
+                // ví dụ: "Booking payment for booking ID: 15 | Tour: ..."
+                String bookingIdStr = orderInfo
+                        .replace("Booking payment for booking ID:", "")
+                        .split("\\|")[0]
+                        .trim();
+                return Long.parseLong(bookingIdStr);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract bookingId from orderInfo: {}", orderInfo, e);
+        }
+        return null;
+    }
+
 }

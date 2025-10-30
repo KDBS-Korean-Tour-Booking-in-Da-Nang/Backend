@@ -37,7 +37,8 @@ public class Booking {
     private String userEmail;
 
     @Column(name = "booking_status", nullable = false, length = 50)
-    private BookingStatus bookingStatus;
+    @Enumerated(EnumType.STRING)
+    private BookingStatus bookingStatus = BookingStatus.PENDING;
 
     @Column(name = "contact_name", nullable = false, length = 100)
     private String contactName;
@@ -82,6 +83,9 @@ public class Booking {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.bookingStatus == null) {
+            this.bookingStatus = BookingStatus.PENDING;
+        }
         // Calculate total guests
         this.totalGuests = (adultsCount != null ? adultsCount : 0) + 
                           (childrenCount != null ? childrenCount : 0) + 
