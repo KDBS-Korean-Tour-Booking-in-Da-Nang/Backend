@@ -4,6 +4,7 @@ import com.example.KDBS.dto.request.BookingRequest;
 import com.example.KDBS.dto.request.InsuranceRequest;
 import com.example.KDBS.dto.response.*;
 import com.example.KDBS.enums.BookingGuestType;
+import com.example.KDBS.enums.BookingStatus;
 import com.example.KDBS.enums.InsuranceStatus;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
@@ -52,6 +53,8 @@ public class BookingService {
 
         // Create booking first
         Booking booking = bookingMapper.toBooking(request);
+
+        booking.setBookingStatus(BookingStatus.PENDING);
 
         // Save booking first to get ID
         Booking savedBooking = bookingRepository.save(booking);
@@ -288,4 +291,23 @@ public class BookingService {
             log.error("Error sending booking confirmation email for transaction: {}", transaction.getOrderId(), e);
         }
     }
+
+    // BookingService
+
+    @Transactional
+    public void markBookingPurchased(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        booking.setBookingStatus(BookingStatus.PURCHASED);
+        bookingRepository.save(booking);
+    }
+
+    @Transactional
+    public void markBookingPending(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        booking.setBookingStatus(BookingStatus.PENDING);
+        bookingRepository.save(booking);
+    }
+
 }
