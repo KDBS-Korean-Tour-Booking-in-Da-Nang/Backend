@@ -58,10 +58,10 @@ public class AuthenticationService {
 
     public AuthenticationResponse login(AuthenticationRequest authenticationRequest) {
         User user = userRepository.findByEmail(authenticationRequest.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ErrorCode.WRONG_EMAIL));
 
         if (Status.UNVERIFIED.equals(user.getStatus())) {
-            throw new AppException(ErrorCode.EMAIL_NOT_EXISTED);
+            throw new AppException(ErrorCode.WRONG_EMAIL);
         }
         if (Status.BANNED.equals(user.getStatus())) {
             throw new AppException(ErrorCode.USER_IS_BANNED);
