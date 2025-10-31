@@ -3,15 +3,18 @@ package com.example.KDBS.controller;
 import com.example.KDBS.dto.request.BusinessLicenseRequest;
 import com.example.KDBS.dto.request.UserRegisterRequest;
 import com.example.KDBS.dto.request.EmailVerificationRequest;
+import com.example.KDBS.dto.request.UserUpdateRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
 import com.example.KDBS.enums.OTPPurpose;
+import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.model.User;
 import com.example.KDBS.repository.UserRepository;
+import com.example.KDBS.security.IsOwner;
 import com.example.KDBS.service.UserService;
 import com.example.KDBS.service.OTPService;
 import jakarta.validation.Valid;
@@ -74,7 +77,11 @@ public class UserController {
                 User user = userRepository.findByEmail(request.getEmail())
                         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-                user.setStatus(Status.UNBANNED);
+                if (user.getRole() == Role.COMPANY) {
+                    user.setStatus(Status.COMPANY_PENDING);
+                } else {
+                    user.setStatus(Status.UNBANNED);
+                }
                 userRepository.save(user);
             }
 
@@ -138,6 +145,16 @@ public class UserController {
         return ApiResponse.<BusinessUploadStatusResponse>builder()
                 .result(status)
                 .build();
+    }
+
+    @IsOwner(param = "email", jwtClaim = "sub")
+    @PutMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UserResponse> updateUser(
+            @RequestParam("email") String email,
+            @RequestPart("data") @Valid UserUpdateRequest request,
+            @RequestPart(value = "avatarImg", required = false) MultipartFile avatarImg
+    ) throws IOException {
+        return ResponseEntity.ok(userService.updateUser(email, request, avatarImg));
     }
 
 }

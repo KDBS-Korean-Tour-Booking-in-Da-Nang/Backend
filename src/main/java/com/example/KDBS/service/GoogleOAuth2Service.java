@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
@@ -134,10 +135,16 @@ public class GoogleOAuth2Service {
         // check user ton tai
         if (existingUser.isPresent()) {
             User user = existingUser.get();
-            if (userInfo.getPicture() != null && !userInfo.getPicture().equals(user.getAvatar())) {
+            if (!StringUtils.hasText(user.getAvatar())
+                    && StringUtils.hasText(userInfo.getPicture())) {
                 user.setAvatar(userInfo.getPicture());
                 userRepository.save(user);
             }
+            if (!StringUtils.hasText(user.getUsername())
+                    && StringUtils.hasText(userInfo.getName())) {
+                user.setUsername(userInfo.getName());
+            }
+
             return user;
         } else {
             // tao user moi default = user

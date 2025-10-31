@@ -34,17 +34,32 @@ public class GlobalHandleException {
         return ResponseEntity.badRequest().body(apiResponse);
     }
 
-    @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse> handleMethodArgument(MethodArgumentNotValidException exception) {
-        String enumKey = exception.getFieldError().getDefaultMessage();
-        ErrorCode errorCode = ErrorCode.valueOf(enumKey);
-        ApiResponse apiResponse = new ApiResponse();
-        apiResponse.setCode(errorCode.getCode());
-        apiResponse.setMessage(errorCode.getMessage());
+//    @ExceptionHandler(value = MethodArgumentNotValidException.class)
+//    public ResponseEntity<ApiResponse> handleMethodArgument(MethodArgumentNotValidException exception) {
+//        String enumKey = exception.getFieldError().getDefaultMessage();
+//        ErrorCode errorCode = ErrorCode.valueOf(enumKey);
+//        ApiResponse apiResponse = new ApiResponse();
+//        apiResponse.setCode(errorCode.getCode());
+//        apiResponse.setMessage(errorCode.getMessage());
+//
+//        logger.error("MethodArgumentNotValidException: Field: {}, Code: {}, Message: {}",
+//                exception.getFieldError().getField(), errorCode.getCode(), errorCode.getMessage());
+//        return ResponseEntity.badRequest().body(apiResponse);
+//    }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse> handleMethodArgument(MethodArgumentNotValidException ex) {
 
-        logger.error("MethodArgumentNotValidException: Field: {}, Code: {}, Message: {}",
-                exception.getFieldError().getField(), errorCode.getCode(), errorCode.getMessage());
-        return ResponseEntity.badRequest().body(apiResponse);
+        String message = ex.getFieldError() != null
+                ? ex.getFieldError().getDefaultMessage()
+                : "Validation failed";
+
+        ApiResponse api = new ApiResponse();
+        api.setCode(ErrorCode.MISSING_PARAMETER.getCode());   // hoặc tạo ErrorCode.VALIDATION_FAILED
+        api.setMessage(message);
+
+        return ResponseEntity
+                .status(ErrorCode.MISSING_PARAMETER.getStatusCode())
+                .body(api);
     }
 
     @ExceptionHandler(value = Exception.class)

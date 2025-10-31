@@ -95,7 +95,7 @@ public class TourController {
 
     /** Delete a tour */
     @DeleteMapping("/{id}")
-    @PreAuthorize("tourSecurity.canDeleteTour(#id, #userEmail)")
+    @PreAuthorize("@tourSecurity.canDeleteTour(#id, #userEmail)")
     public ResponseEntity<Void> deleteTour(@PathVariable Long id,@RequestParam String userEmail) {
         tourService.deleteTour(id);
         return ResponseEntity.noContent().build();

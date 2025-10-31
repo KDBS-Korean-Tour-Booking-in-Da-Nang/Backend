@@ -1,6 +1,5 @@
 package com.example.KDBS.dto.request;
 
-import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -10,9 +9,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserRegisterRequest {
-    String username;
-    String email;
-    String password;
-    String role;
+public class ChatRequest {
+    private String senderName;
+    private String receiverName;
 }

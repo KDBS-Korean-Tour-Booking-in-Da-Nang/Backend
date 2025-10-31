@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -31,6 +32,7 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@EnableAspectJAutoProxy
 public class SecurityConfiguration {
 
     private final String[] PUBLIC_ENDPOINTS = {
@@ -50,7 +52,10 @@ public class SecurityConfiguration {
             "/api/users/suggestions",
             "/api/tour/**",
             "/api/vnpay/return",
-            "/api/article/**"
+            "/api/article/**",
+            "/api/chat/**",
+            "/api/tourRated/**"
+
     };
 
     private final String[] PUBLIC_RESOURCES = {

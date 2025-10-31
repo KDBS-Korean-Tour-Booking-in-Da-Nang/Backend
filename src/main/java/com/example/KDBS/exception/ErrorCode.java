@@ -68,7 +68,13 @@ public enum ErrorCode {
     PAYMENT_CREATION_FAILED(1056, "Failed to create payment", HttpStatus.BAD_REQUEST),
     TRANSACTION_NOT_FOUND(1057, "Transaction not found", HttpStatus.NOT_FOUND),
     USERNAME_NOT_EXISTED(1058, "Username has not existed", HttpStatus.NOT_FOUND),
-    USERNAME_EXISTED(1059, "Username has existed", HttpStatus.BAD_REQUEST)
+    USERNAME_EXISTED(1059, "Username has existed", HttpStatus.BAD_REQUEST),
+    PHONE_EXISTED(1060,"Phone number is existed",HttpStatus.BAD_REQUEST),
+    MISSING_PARAMETER(1061,"Missing parameter",HttpStatus.BAD_REQUEST),
+    CANNOT_RESOLVE_EMAIL_FROM_TOKEN(1062,"Cannot resolve email from token",HttpStatus.BAD_REQUEST),
+    CANNOT_MODIFY_ANOTHER_ACCOUNT(1062,"You are not authorized to modify another user's account",HttpStatus.FORBIDDEN),
+    WRONG_EMAIL(1063, "Wrong email", HttpStatus.NOT_FOUND),
+    WRONG_PASSWORD(1005, "Wrong password", HttpStatus.FORBIDDEN),
     ;
 
     private int code;

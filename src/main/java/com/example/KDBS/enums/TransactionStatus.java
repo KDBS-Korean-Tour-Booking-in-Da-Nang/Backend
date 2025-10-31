@@ -1,5 +1,9 @@
 package com.example.KDBS.enums;
 
 public enum TransactionStatus {
-    PENDING, SUCCESS, FAILED, CANCELLED;
+    PENDING,
+    SUCCESS,
+    FAILED,
+    CANCELLED;
+
 }

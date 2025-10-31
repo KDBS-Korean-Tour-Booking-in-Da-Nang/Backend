@@ -2,6 +2,7 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.BusinessLicenseRequest;
 import com.example.KDBS.dto.request.UserRegisterRequest;
+import com.example.KDBS.dto.request.UserUpdateRequest;
 import com.example.KDBS.dto.response.IdCardApiResponse;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
 import com.example.KDBS.dto.response.UserResponse;
@@ -27,6 +28,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
@@ -91,7 +93,14 @@ public class UserService {
         // Tạo user mới với status UNVERIFIED
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(Role.USER);
+        Role role;
+        try {
+            role = Role.valueOf(request.getRole().toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            // Nếu request gửi role sai hoặc null, mặc định là USER
+            role = Role.USER;
+        }
+        user.setRole(role);
         user.setStatus(Status.UNVERIFIED);
         user.setCreatedAt(LocalDateTime.now());
         user.setPremiumType(FREE);
@@ -100,6 +109,30 @@ public class UserService {
         otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
 
         return "Registration successful. Please check your email for verification code.";
+    }
+
+    @Transactional
+    public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg) throws IOException {
+        // Tìm user theo email
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (request.getUsername() != null) {
+            userRepository.findByUsername(request.getUsername())
+                    .filter(u -> u.getUserId() != user.getUserId())
+                    .ifPresent(u -> { throw new AppException(ErrorCode.USERNAME_EXISTED); });
+        }
+
+        if (request.getPhone() != null) {
+            userRepository.findByPhone(request.getPhone())
+                    .filter(u -> u.getUserId() != user.getUserId())
+                    .ifPresent(u -> { throw new AppException(ErrorCode.PHONE_EXISTED); });
+        }
+
+        userMapper.updateUserFromDto(request, user);
+        user.setAvatar(FileUtils.convertFileToPath(avatarImg, uploadDir, "/users/avatar"));
+        userRepository.save(user);
+        return userMapper.toUserResponse(user);
     }
 
     public List<UserResponse> getAllUsers() {
@@ -126,7 +159,7 @@ public class UserService {
                 .build();
 
         user.setBusinessLicense(license);
-
+        user.setStatus(Status.UNBANNED);
         userRepository.save(user);
     }
 
@@ -140,7 +173,7 @@ public class UserService {
         // Use mapper
         UserIdCard entity = userIdCardMapper.toUserIdCard(frontData);
         entity.setUser(userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found")));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)));
         entity.setFrontImagePath(frontPath);
         entity.setBackImagePath(backPath);
 
