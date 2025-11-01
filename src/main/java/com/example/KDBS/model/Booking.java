@@ -1,5 +1,6 @@
 package com.example.KDBS.model;
 
+import com.example.KDBS.enums.BookingStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -31,6 +32,13 @@ public class Booking {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tour_id", insertable = false, updatable = false)
     private Tour tour;
+
+    @Column(name = "user_email", length = 100)
+    private String userEmail;
+
+    @Column(name = "booking_status", nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    private BookingStatus bookingStatus = BookingStatus.PENDING;
 
     @Column(name = "contact_name", nullable = false, length = 100)
     private String contactName;
@@ -75,6 +83,9 @@ public class Booking {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.bookingStatus == null) {
+            this.bookingStatus = BookingStatus.PENDING;
+        }
         // Calculate total guests
         this.totalGuests = (adultsCount != null ? adultsCount : 0) + 
                           (childrenCount != null ? childrenCount : 0) + 

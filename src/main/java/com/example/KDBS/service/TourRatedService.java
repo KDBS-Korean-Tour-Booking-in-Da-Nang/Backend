@@ -52,29 +52,45 @@ public class TourRatedService {
         tourRated.setUser(user);
         tourRated = tourRatedRepository.save(tourRated);
 
-        return tourRatedMapper.toTourRatedResponse(tourRated);
+        TourRatedResponse tourRatedResponse = tourRatedMapper.toTourRatedResponse(tourRated);
+        tourRatedResponse.setUsername(user.getUsername());
+        return tourRatedResponse;
     }
 
     /** Get all tourRateds */
     public List<TourRatedResponse> getAllTourRated() {
         return tourRatedRepository.findAll()
                 .stream()
-                .map(tourRatedMapper::toTourRatedResponse)
+                .map(tourRated -> {
+                    TourRatedResponse tourRatedResponse = tourRatedMapper.toTourRatedResponse(tourRated);
+                    tourRatedResponse.setUsername(tourRated.getUser().getUsername());
+                    return tourRatedResponse;
+                })
                 .toList();
     }
 
     /** Get tourRated by id */
     public TourRatedResponse getTourRatedById(Long id) {
-        TourRated rated = tourRatedRepository.findById(id)
+        TourRated tourRated = tourRatedRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND,id));
-        return tourRatedMapper.toTourRatedResponse(rated);
+        TourRatedResponse tourRatedResponse = tourRatedMapper.toTourRatedResponse(tourRated);
+        tourRatedResponse.setUsername(tourRated.getUser().getUsername());
+        return tourRatedResponse;
     }
 
     /** Get tourRated theo tourId */
+    /** Get tourRated theo tourId */
     public List<TourRatedResponse> getByTour(Long tourId) {
         return tourRatedRepository.findByTour_TourId(tourId)
-                .stream().map(tourRatedMapper::toTourRatedResponse).toList();
+                .stream()
+                .map(tourRated -> {
+                    TourRatedResponse tourRatedResponse = tourRatedMapper.toTourRatedResponse(tourRated);
+                    tourRatedResponse.setUsername(tourRated.getUser().getUsername());
+                    return tourRatedResponse;
+                })
+                .toList();
     }
+
 
     /** Update tourRated */
     @Transactional
@@ -85,7 +101,9 @@ public class TourRatedService {
         tourRatedMapper.updateTourRatedFromRequest(request, existing);
 
         TourRated saved = tourRatedRepository.save(existing);
-        return tourRatedMapper.toTourRatedResponse(saved);
+        TourRatedResponse tourRatedResponse = tourRatedMapper.toTourRatedResponse(saved);
+        tourRatedResponse.setUsername(saved.getUser().getUsername());
+        return tourRatedResponse;
     }
 
     /** Delete tourRated */

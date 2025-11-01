@@ -26,7 +26,6 @@ public class BookingController {
 
     private final BookingService bookingService;
     private final VNPayService vnpayService;
-    private final EmailService emailService;
 
     @PostMapping
     public ResponseEntity<BookingResponse> createBooking(@Valid @RequestBody BookingRequest request) {

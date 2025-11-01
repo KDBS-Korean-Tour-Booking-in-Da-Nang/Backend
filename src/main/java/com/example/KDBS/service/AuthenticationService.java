@@ -58,10 +58,10 @@ public class AuthenticationService {
 
     public AuthenticationResponse login(AuthenticationRequest authenticationRequest) {
         User user = userRepository.findByEmail(authenticationRequest.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ErrorCode.WRONG_EMAIL));
 
         if (Status.UNVERIFIED.equals(user.getStatus())) {
-            throw new AppException(ErrorCode.EMAIL_NOT_EXISTED);
+            throw new AppException(ErrorCode.WRONG_EMAIL);
         }
         if (Status.BANNED.equals(user.getStatus())) {
             throw new AppException(ErrorCode.USER_IS_BANNED);
@@ -80,7 +80,7 @@ public class AuthenticationService {
     // Shared authentication logic
     private AuthenticationResponse authenticateAndBuildResponse(User user, String rawPassword) {
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            throw new AppException(ErrorCode.LOGIN_FAILED);
+            throw new AppException(ErrorCode.WRONG_PASSWORD);
         }
 
         String token = generateToken(user);
