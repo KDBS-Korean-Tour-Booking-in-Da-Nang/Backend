@@ -21,8 +21,6 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.example.KDBS.enums.PremiumType.FREE;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -89,13 +87,23 @@ public class NaverOAuth2Service {
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, request, Map.class);
+        // ✅ Use exchange() + ParameterizedTypeReference for type safety
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                tokenUrl,
+                HttpMethod.POST,
+                request,
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
+        );
+
         if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
             return (String) response.getBody().get("access_token");
         }
+
         throw new RuntimeException("Failed to exchange authorization code for access token (Naver)");
     }
 
+    @SuppressWarnings("unchecked") // safe cast due to API response contract
     private NaverUserInfo getUserInfoFromNaver(String accessToken) {
         String userInfoUrl = "https://openapi.naver.com/v1/nid/me";
 
@@ -104,7 +112,14 @@ public class NaverOAuth2Service {
 
         HttpEntity<String> request = new HttpEntity<>(headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(userInfoUrl, HttpMethod.GET, request, Map.class);
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                userInfoUrl,
+                HttpMethod.GET,
+                request,
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                }
+        );
+
         if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
             Map<String, Object> body = response.getBody();
             Map<String, Object> resp = (Map<String, Object>) body.get("response");
@@ -116,6 +131,7 @@ public class NaverOAuth2Service {
             userInfo.setProfileImage((String) resp.get("profile_image"));
             return userInfo;
         }
+
         throw new RuntimeException("Failed to get user info from Naver");
     }
 
@@ -138,7 +154,6 @@ public class NaverOAuth2Service {
                     .password(passwordEncoder.encode("NAVER_OAUTH2_USER_" + System.currentTimeMillis()))
                     .status(Status.UNBANNED)
                     .role(Role.USER)
-                    .premiumType(FREE)
                     .balance(java.math.BigDecimal.ZERO)
                     .build();
             return userRepository.save(newUser);

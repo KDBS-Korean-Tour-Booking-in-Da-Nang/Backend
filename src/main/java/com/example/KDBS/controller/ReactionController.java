@@ -5,21 +5,18 @@ import com.example.KDBS.dto.response.ReactionResponse;
 import com.example.KDBS.dto.response.ReactionSummaryResponse;
 import com.example.KDBS.enums.ReactionTargetType;
 import com.example.KDBS.service.ReactionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("api/reactions")
+@RequiredArgsConstructor
 public class ReactionController {
-
-    @Autowired
-    private ReactionService reactionService;
+    private final ReactionService reactionService;
 
     // Compatibility with the provided API spec
     @PostMapping("/add")

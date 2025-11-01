@@ -8,7 +8,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -44,5 +43,5 @@ public class TourContent {
 
     @OneToMany(mappedBy = "tourContent", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<TourContentImg> images = new ArrayList<>();
+    private List<TourContentImg> images;
 }

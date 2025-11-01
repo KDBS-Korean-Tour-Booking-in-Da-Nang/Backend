@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -20,7 +19,6 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Booking {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "booking_id")
@@ -38,7 +36,7 @@ public class Booking {
 
     @Column(name = "booking_status", nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
-    private BookingStatus bookingStatus = BookingStatus.PENDING;
+    private BookingStatus bookingStatus;
 
     @Column(name = "contact_name", nullable = false, length = 100)
     private String contactName;
@@ -62,13 +60,13 @@ public class Booking {
     private LocalDate departureDate;
 
     @Column(name = "adults_count")
-    private Integer adultsCount = 0;
+    private Integer adultsCount;
 
     @Column(name = "children_count")
-    private Integer childrenCount = 0;
+    private Integer childrenCount;
 
     @Column(name = "babies_count")
-    private Integer babiesCount = 0;
+    private Integer babiesCount;
 
     @Column(name = "total_guests", nullable = false)
     private Integer totalGuests;
@@ -78,7 +76,7 @@ public class Booking {
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL)
     @JsonManagedReference
-    private List<BookingGuest> guests = new ArrayList<>();
+    private List<BookingGuest> guests;
 
     @PrePersist
     protected void onCreate() {
@@ -86,9 +84,10 @@ public class Booking {
         if (this.bookingStatus == null) {
             this.bookingStatus = BookingStatus.PENDING;
         }
+        this.adultsCount = 1;
+        this.childrenCount = 0;
+        this.babiesCount = 0;
         // Calculate total guests
-        this.totalGuests = (adultsCount != null ? adultsCount : 0) + 
-                          (childrenCount != null ? childrenCount : 0) + 
-                          (babiesCount != null ? babiesCount : 0);
+        this.totalGuests = this.adultsCount + this.childrenCount + this.babiesCount;
     }
 }

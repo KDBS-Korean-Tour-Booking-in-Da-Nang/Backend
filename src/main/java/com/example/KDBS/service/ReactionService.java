@@ -7,81 +7,68 @@ import com.example.KDBS.enums.ReactionTargetType;
 import com.example.KDBS.enums.ReactionType;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
-import com.example.KDBS.model.ForumPost;
+import com.example.KDBS.mapper.ReactionMapper;
 import com.example.KDBS.model.ForumComment;
+import com.example.KDBS.model.ForumPost;
 import com.example.KDBS.model.Reaction;
 import com.example.KDBS.model.User;
-import com.example.KDBS.repository.ForumPostRepository;
-import com.example.KDBS.repository.ForumCommentRepository;
-import com.example.KDBS.repository.ReactionRepository;
-import com.example.KDBS.repository.UserRepository;
-import com.example.KDBS.repository.PostImgRepository;
+import com.example.KDBS.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ReactionService {
 
-    @Autowired
-    private ReactionRepository reactionRepository;
-    @Autowired
-    private ForumPostRepository forumPostRepository;
-    @Autowired
-    private ForumCommentRepository forumCommentRepository;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private PostImgRepository postImgRepository;
+    private final ReactionRepository reactionRepository;
+    private final ForumPostRepository forumPostRepository;
+    private final ForumCommentRepository forumCommentRepository;
+    private final UserRepository userRepository;
+    private final PostImgRepository postImgRepository;
+    private final ReactionMapper reactionMapper;   // <-- injected mapper
 
     @Transactional
     public ReactionResponse addOrUpdateReaction(ReactionRequest request) {
         User user = userRepository.findByEmail(request.getUserEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
 
-
-        // check target exists
+        // target existence check
         validateTargetExists(request.getTargetId(), request.getTargetType());
 
-        // check user da react target
-        Optional<Reaction> existingReaction = reactionRepository.findByUserAndTargetIdAndTargetType(
-                user, request.getTargetId(), request.getTargetType());
+        Optional<Reaction> existingReaction = reactionRepository
+                .findByUserAndTargetIdAndTargetType(user, request.getTargetId(), request.getTargetType());
 
         if (existingReaction.isPresent()) {
             Reaction reaction = existingReaction.get();
-            // da react ->
+
+            // Same type → remove
             if (reaction.getReactionType() == request.getReactionType()) {
                 reactionRepository.delete(reaction);
                 updateTargetReactionCount(request.getTargetId(), request.getTargetType(), -1);
-                return null; // Reaction removed
-            } else {
-                // update to new reaction type
-                reaction.setReactionType(request.getReactionType());
-                Reaction savedReaction = reactionRepository.save(reaction);
-                return mapToResponse(savedReaction);
+                return null; // indicates removal
             }
-        } else {
-            // create new reaction
-            Reaction newReaction = Reaction.builder()
-                    .user(user)
-                    .targetId(request.getTargetId())
-                    .targetType(request.getTargetType())
-                    .reactionType(request.getReactionType())
-                    .build();
 
-            Reaction savedReaction = reactionRepository.save(newReaction);
-            updateTargetReactionCount(request.getTargetId(), request.getTargetType(), 1);
-            return mapToResponse(savedReaction);
+            // Different type → update
+            reaction.setReactionType(request.getReactionType());
+            Reaction saved = reactionRepository.save(reaction);
+            return reactionMapper.toReactionResponse(saved);
         }
+
+        // New reaction
+        Reaction newReaction = Reaction.builder()
+                .user(user)
+                .targetId(request.getTargetId())
+                .targetType(request.getTargetType())
+                .reactionType(request.getReactionType())
+                .build();
+
+        Reaction saved = reactionRepository.save(newReaction);
+        updateTargetReactionCount(request.getTargetId(), request.getTargetType(), 1);
+        return reactionMapper.toReactionResponse(saved);
     }
 
     @Transactional
@@ -89,38 +76,37 @@ public class ReactionService {
         User user = userRepository.findByEmail(request.getUserEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
 
-        reactionRepository.deleteByUserAndTargetIdAndTargetType(user, request.getTargetId(), request.getTargetType());
+        reactionRepository.deleteByUserAndTargetIdAndTargetType(
+                user, request.getTargetId(), request.getTargetType());
         updateTargetReactionCount(request.getTargetId(), request.getTargetType(), -1);
     }
 
-    public ReactionSummaryResponse getReactionSummary(Long targetId, ReactionTargetType targetType, String userEmail) {
-        // check target exists
+    public ReactionSummaryResponse getReactionSummary(Long targetId,
+                                                      ReactionTargetType targetType,
+                                                      String userEmail) {
+
         validateTargetExists(targetId, targetType);
 
-        // Get reaction counts by type
-        List<Object[]> reactionCounts = reactionRepository.countReactionsByType(targetId, targetType);
-        Map<ReactionType, Long> reactionMap = new HashMap<>();
-
-        for (Object[] result : reactionCounts) {
-            ReactionType type = (ReactionType) result[0];
-            Long count = (Long) result[1];
-            reactionMap.put(type, count);
+        // Count per reaction type
+        List<Object[]> rawCounts = reactionRepository.countReactionsByType(targetId, targetType);
+        Map<ReactionType, Long> counts = new HashMap<>();
+        for (Object[] row : rawCounts) {
+            counts.put((ReactionType) row[0], (Long) row[1]);
         }
 
-        Long likeCount = reactionMap.getOrDefault(ReactionType.LIKE, 0L);
-        Long dislikeCount = reactionMap.getOrDefault(ReactionType.DISLIKE, 0L);
-        Long totalReactions = likeCount + dislikeCount;
+        Long likeCount    = counts.getOrDefault(ReactionType.LIKE, 0L);
+        Long dislikeCount = counts.getOrDefault(ReactionType.DISLIKE, 0L);
+        Long total        = likeCount + dislikeCount;
 
-        // Get user's reaction if logged in
+        // User's own reaction (if any)
         ReactionType userReaction = null;
         if (userEmail != null) {
             User user = userRepository.findByEmail(userEmail).orElse(null);
             if (user != null) {
-                Optional<Reaction> userReactionOpt = reactionRepository.findByUserAndTargetIdAndTargetType(
-                        user, targetId, targetType);
-                if (userReactionOpt.isPresent()) {
-                    userReaction = userReactionOpt.get().getReactionType();
-                }
+                userReaction = reactionRepository
+                        .findByUserAndTargetIdAndTargetType(user, targetId, targetType)
+                        .map(Reaction::getReactionType)
+                        .orElse(null);
             }
         }
 
@@ -129,62 +115,48 @@ public class ReactionService {
                 .targetType(targetType)
                 .likeCount(likeCount)
                 .dislikeCount(dislikeCount)
-                .totalReactions(totalReactions)
+                .totalReactions(total)
                 .userReaction(userReaction)
                 .build();
     }
 
-    public List<ReactionResponse> getReactionsByTarget(Long targetId, ReactionTargetType targetType) {
-        List<Reaction> reactions = reactionRepository.findByTargetIdAndTargetType(targetId, targetType);
-        return reactions.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
     private void validateTargetExists(Long targetId, ReactionTargetType targetType) {
-        if (targetType == ReactionTargetType.POST) {
-            if (!forumPostRepository.existsById(targetId)) {
-                throw new AppException(ErrorCode.POST_NOT_FOUND);
-            }
-        } else if (targetType == ReactionTargetType.COMMENT) {
-            if (!forumCommentRepository.existsById(targetId)) {
-                throw new AppException(ErrorCode.COMMENT_NOT_FOUND);
-            }
-        } else if (targetType == ReactionTargetType.IMG) {
-            if (!postImgRepository.existsById(targetId)) {
-                throw new AppException(ErrorCode.IMAGE_NOT_FOUND);
-            }
+        boolean exists = switch (targetType) {
+            case POST    -> forumPostRepository.existsById(targetId);
+            case COMMENT -> forumCommentRepository.existsById(targetId);
+            case IMG     -> postImgRepository.existsById(targetId);
+        };
+        if (!exists) {
+            throw switch (targetType) {
+                case POST    -> new AppException(ErrorCode.POST_NOT_FOUND);
+                case COMMENT -> new AppException(ErrorCode.COMMENT_NOT_FOUND);
+                case IMG     -> new AppException(ErrorCode.IMAGE_NOT_FOUND);
+            };
         }
     }
 
-    private void updateTargetReactionCount(Long targetId, ReactionTargetType targetType, int change) {
-        if (targetType == ReactionTargetType.POST) {
-            ForumPost post = forumPostRepository.findById(targetId).orElse(null);
-            if (post != null) {
-                Integer currentReact = post.getReact() != null ? post.getReact() : 0;
-                post.setReact(currentReact + change);
-                forumPostRepository.save(post);
+    private void updateTargetReactionCount(Long targetId,
+                                           ReactionTargetType targetType,
+                                           int change) {
+        switch (targetType) {
+            case POST -> {
+                ForumPost post = forumPostRepository.findById(targetId).orElse(null);
+                if (post != null) {
+                    int cur = Optional.ofNullable(post.getReact()).orElse(0);
+                    post.setReact(cur + change);
+                    forumPostRepository.save(post);
+                }
             }
-        } else if (targetType == ReactionTargetType.COMMENT) {
-            ForumComment comment = forumCommentRepository.findById(targetId).orElse(null);
-            if (comment != null) {
-                Integer currentReact = comment.getReact() != null ? comment.getReact() : 0;
-                comment.setReact(currentReact + change);
-                forumCommentRepository.save(comment);
+            case COMMENT -> {
+                ForumComment comment = forumCommentRepository.findById(targetId).orElse(null);
+                if (comment != null) {
+                    int cur = Optional.ofNullable(comment.getReact()).orElse(0);
+                    comment.setReact(cur + change);
+                    forumCommentRepository.save(comment);
+                }
             }
+            // IMG does not have a reaction count column → nothing to update
         }
-    }
-
-    private ReactionResponse mapToResponse(Reaction reaction) {
-        return ReactionResponse.builder()
-                .reactionId(reaction.getReactionId())
-                .reactionType(reaction.getReactionType())
-                .targetType(reaction.getTargetType())
-                .targetId(reaction.getTargetId())
-                .username(reaction.getUser().getUsername())
-                .userAvatar(reaction.getUser().getAvatar())
-                .createdAt(reaction.getCreatedAt())
-                .build();
     }
 
     public Long getReactionCountByPost(Long postId) {
@@ -193,8 +165,7 @@ public class ReactionService {
 
     public Boolean hasUserReacted(Long postId, String userEmail) {
         User user = userRepository.findByEmail(userEmail).orElse(null);
-        if (user == null)
-            return false;
+        if (user == null) return false;
 
         return reactionRepository.existsByUserAndTargetIdAndTargetType(
                 user, postId, ReactionTargetType.POST);
@@ -202,42 +173,33 @@ public class ReactionService {
 
     public List<ReactionResponse> getUserReactions(String userEmail, String reactionType) {
         User user = userRepository.findByEmail(userEmail).orElse(null);
-        if (user == null) {
-            return new ArrayList<>();
-        }
+        if (user == null) return Collections.emptyList();
 
-        List<Reaction> reactions;
+        List<Reaction> reactions = reactionRepository.findByUserOrderByCreatedAtDesc(user);
+
         if (reactionType != null && !reactionType.isEmpty()) {
-            // Filter by reaction type (LIKE, DISLIKE)
-            reactions = reactionRepository.findByUserOrderByCreatedAtDesc(user);
             reactions = reactions.stream()
-                    .filter(r -> r.getReactionType().name().equals(reactionType))
-                    .collect(Collectors.toList());
-        } else {
-            reactions = reactionRepository.findByUserOrderByCreatedAtDesc(user);
+                    .filter(r -> r.getReactionType().name().equalsIgnoreCase(reactionType))
+                    .toList();
         }
 
         return reactions.stream()
-                .map(this::mapToResponse)
+                .map(reactionMapper::toReactionResponse)
                 .collect(Collectors.toList());
     }
 
-    // Keep original method for backward compatibility
-    public List<ReactionResponse> getUserReactionsByTargetType(String userEmail, ReactionTargetType targetType) {
+    // Backward-compatibility method
+    public List<ReactionResponse> getUserReactionsByTargetType(String userEmail,
+                                                               ReactionTargetType targetType) {
         User user = userRepository.findByEmail(userEmail).orElse(null);
-        if (user == null) {
-            return new ArrayList<>();
-        }
+        if (user == null) return Collections.emptyList();
 
-        List<Reaction> reactions;
-        if (targetType != null) {
-            reactions = reactionRepository.findByUserAndTargetTypeOrderByCreatedAtDesc(user, targetType);
-        } else {
-            reactions = reactionRepository.findByUserOrderByCreatedAtDesc(user);
-        }
+        List<Reaction> reactions = targetType != null
+                ? reactionRepository.findByUserAndTargetTypeOrderByCreatedAtDesc(user, targetType)
+                : reactionRepository.findByUserOrderByCreatedAtDesc(user);
 
         return reactions.stream()
-                .map(this::mapToResponse)
+                .map(reactionMapper::toReactionResponse)
                 .collect(Collectors.toList());
     }
 }

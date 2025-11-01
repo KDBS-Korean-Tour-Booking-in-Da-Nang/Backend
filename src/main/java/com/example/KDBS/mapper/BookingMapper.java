@@ -33,8 +33,6 @@ public interface BookingMapper {
 
     BookingResponse toBookingResponse(Booking booking);
 
-    List<BookingResponse> toBookingResponses(List<Booking> bookings);
-
     // ----- BookingGuest -----
     @Mapping(target = "bookingGuestId", ignore = true)
     @Mapping(target = "booking", ignore = true) // set riêng từ service

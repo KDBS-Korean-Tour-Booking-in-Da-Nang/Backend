@@ -21,12 +21,14 @@ public interface TourRatedMapper {
     // Entity -> Response
     @Mapping(target = "userId", source = "user.userId")
     @Mapping(target = "tourId", source = "tour.tourId")
+    @Mapping(target = "username", source = "user.username")
     TourRatedResponse toTourRatedResponse(TourRated entity);
 
     // Update
     @Mapping(target = "tourRatedId", ignore = true)
     @Mapping(target = "tour", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "user", ignore = true)
     void updateTourRatedFromRequest(TourRatedRequest request, @MappingTarget TourRated entity);
 
 

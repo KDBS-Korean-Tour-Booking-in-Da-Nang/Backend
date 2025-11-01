@@ -18,7 +18,6 @@ import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TourRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,17 +29,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class BookingService {
-
-    @Autowired
-    private BookingRepository bookingRepository;
-    @Autowired
-    private BookingGuestRepository bookingGuestRepository;
-    @Autowired
-    private TourRepository tourRepository;
-    @Autowired
-    private EmailService emailService;
-    @Autowired
-    private BookingMapper bookingMapper;
+    private final BookingRepository bookingRepository;
+    private final BookingGuestRepository bookingGuestRepository;
+    private final TourRepository tourRepository;
+    private final EmailService emailService;
+    private final BookingMapper bookingMapper;
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
@@ -139,20 +132,14 @@ public class BookingService {
     @Transactional(readOnly = true)
     public List<BookingResponse> getBookingsByEmail(String email) {
         List<Booking> bookings = bookingRepository.findByUserEmailOrderByCreatedAtDesc(email);
+
         return bookings.stream()
                 .map(booking -> {
                     Tour tour = tourRepository.findById(booking.getTourId()).orElse(null);
-                    List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(booking.getBookingId());
-                    booking.setGuests(guests);
-
-                    BookingResponse response = bookingMapper.toBookingResponse(booking);
-                    response.setTourName(tour != null ? tour.getTourName() : "Unknown Tour");
-                    response.setGuests(bookingMapper.toBookingGuestResponses(guests));
-                    return response;
+                    return mapToBookingResponse(booking, tour);
                 })
                 .toList();
     }
-
 
     @Transactional(readOnly = true)
     public List<BookingResponse> getBookingsByTourId(Long tourId) {
@@ -160,16 +147,19 @@ public class BookingService {
         Tour tour = tourRepository.findById(tourId).orElse(null);
 
         return bookings.stream()
-                .map(booking -> {
-                    List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(booking.getBookingId());
-                    booking.setGuests(guests);
-
-                    BookingResponse response = bookingMapper.toBookingResponse(booking);
-                    response.setTourName(tour != null ? tour.getTourName() : "Unknown Tour");
-                    response.setGuests(bookingMapper.toBookingGuestResponses(guests));
-                    return response;
-                })
+                .map(booking -> mapToBookingResponse(booking, tour))
                 .toList();
+    }
+
+    private BookingResponse mapToBookingResponse(Booking booking, Tour tour) {
+        List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(booking.getBookingId());
+        booking.setGuests(guests);
+
+        BookingResponse response = bookingMapper.toBookingResponse(booking);
+        response.setTourName(tour != null ? tour.getTourName() : "Unknown Tour");
+        response.setGuests(bookingMapper.toBookingGuestResponses(guests));
+
+        return response;
     }
 
     @Transactional(readOnly = true)

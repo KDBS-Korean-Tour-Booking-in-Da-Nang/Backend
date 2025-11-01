@@ -1,9 +1,9 @@
 package com.example.KDBS.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Getter
@@ -12,19 +12,15 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 public class UserUpdateRequest {
-
-    @Size(max = 30)
+    @NotBlank(message = "Username is required")
+    @Size(max = 100, message = "Username must not exceed 100 characters")
     private String username;
 
-    @Size(max = 11)
+    @Size(max = 20, message = "Phone number must not exceed 20 characters")
     private String phone;
 
     private LocalDate dob;
 
-    @Size(max = 3)
+    @Size(max = 3, message = "Gender must not exceed 3 characters")
     private String gender;
-
-    @Size(max = 12)
-    private String cccd;
-
 }

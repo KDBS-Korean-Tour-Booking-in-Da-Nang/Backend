@@ -14,7 +14,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class UserCleanupJobUtils {
+public class UserCleanupJobScheduler {
     private final UserRepository userRepository;
 
     // chạy mỗi ngày lúc 2h sáng
