@@ -4,6 +4,7 @@ import com.example.KDBS.enums.ArticleStatus;
 import com.example.KDBS.model.Article;
 import com.example.KDBS.repository.ArticleRepository;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -17,13 +18,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class ArticleService {
     private final ArticleRepository articleRepository;
-
-    public ArticleService(ArticleRepository articleRepository) {
-        this.articleRepository = articleRepository;
-    }
 
     public List<Article> getAllArticles() {
         return articleRepository.findAll();
