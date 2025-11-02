@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -68,7 +67,7 @@ public class Tour {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tour_status", length = 50)
-    private TourStatus tourStatus = TourStatus.NOT_APPROVED; // ✅ default value
+    private TourStatus tourStatus; // ✅ default value
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -77,19 +76,16 @@ public class Tour {
 
     @PrePersist
     protected void onCreate() {
-        // set default if not provided
-        if (this.tourStatus == null) {
-            this.tourStatus = TourStatus.NOT_APPROVED;
-        }
+        this.tourStatus = TourStatus.NOT_APPROVED;
         this.createdAt = LocalDateTime.now();
     }
 
     // Relationships
     @OneToMany(mappedBy = "tour", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<TourContent> contents = new ArrayList<>();
+    private List<TourContent> contents;
 
     @OneToMany(mappedBy = "tour", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<TourRated> ratings = new ArrayList<>();
+    private List<TourRated> ratings;
 }

@@ -37,16 +37,13 @@ public class OTPService {
 
         // tao otp moi
         String otpCode = generateOTPCode();
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expiresAt = now.plusMinutes(OTP_EXPIRY_MINUTES);
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(OTP_EXPIRY_MINUTES);
 
         // save OTP vào database
         OTP otp = OTP.builder()
                 .email(email)
                 .otpCode(otpCode)
-                .createdAt(now)
                 .expiresAt(expiresAt)
-                .isUsed(false)
                 .purpose(purpose.name())
                 .build();
 
@@ -72,20 +69,6 @@ public class OTPService {
         return true;
     }
 
-    public void invalidateOTPs(String email, OTPPurpose purpose) {
-        LocalDateTime now = LocalDateTime.now();
-        List<OTP> validOTPs = otpRepository.findRecentOTPs(email, purpose.name(), now.minusDays(1));
-        
-        for (OTP otp : validOTPs) {
-            if (!otp.getIsUsed() && otp.getExpiresAt().isAfter(now)) {
-                otp.setIsUsed(true);
-                otpRepository.save(otp);
-            }
-        }
-        
-        log.info("All valid OTPs invalidated for email: {} and purpose: {}", email, purpose);
-    }
-
     private String generateOTPCode() {
         Random random = new Random();
         StringBuilder otp = new StringBuilder();
@@ -95,10 +78,5 @@ public class OTPService {
         }
         
         return otp.toString();
-    }
-
-    public boolean isOTPExpired(String email, OTPPurpose purpose) {
-        LocalDateTime now = LocalDateTime.now();
-        return otpRepository.findLatestValidOTP(email, purpose.name(), now).isEmpty();
     }
 } 

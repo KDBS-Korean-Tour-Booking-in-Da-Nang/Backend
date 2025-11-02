@@ -8,6 +8,8 @@ import java.util.List;
 public class TourRatedResponse {
     private Long tourRatedId;
     private Long userId;
+    private String username;
+
     private Long tourId;
     private Integer star;
     private String comment;

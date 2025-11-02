@@ -3,25 +3,25 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.GoogleUserInfo;
 import com.example.KDBS.dto.response.AuthenticationResponse;
 import com.example.KDBS.dto.response.UserResponse;
-import com.example.KDBS.mapper.UserMapper;
-import com.example.KDBS.model.User;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
+import com.example.KDBS.mapper.UserMapper;
+import com.example.KDBS.model.User;
 import com.example.KDBS.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 import java.util.Optional;
-
-import static com.example.KDBS.enums.PremiumType.FREE;
 
 @Slf4j
 @Service
@@ -93,7 +93,12 @@ public class GoogleOAuth2Service {
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, request, Map.class);
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    tokenUrl,
+                    HttpMethod.POST,
+                    request,
+                    new ParameterizedTypeReference<>() {}
+            );
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 return (String) response.getBody().get("access_token");
             }
@@ -134,10 +139,16 @@ public class GoogleOAuth2Service {
         // check user ton tai
         if (existingUser.isPresent()) {
             User user = existingUser.get();
-            if (userInfo.getPicture() != null && !userInfo.getPicture().equals(user.getAvatar())) {
+            if (!StringUtils.hasText(user.getAvatar())
+                    && StringUtils.hasText(userInfo.getPicture())) {
                 user.setAvatar(userInfo.getPicture());
                 userRepository.save(user);
             }
+            if (!StringUtils.hasText(user.getUsername())
+                    && StringUtils.hasText(userInfo.getName())) {
+                user.setUsername(userInfo.getName());
+            }
+
             return user;
         } else {
             // tao user moi default = user
@@ -148,7 +159,6 @@ public class GoogleOAuth2Service {
                     .password(passwordEncoder.encode("GOOGLE_OAUTH2_USER_" + System.currentTimeMillis()))
                     .status(Status.UNBANNED)
                     .role(Role.USER)
-                    .premiumType(FREE)
                     .balance(java.math.BigDecimal.ZERO)
                     .build();
             return userRepository.save(newUser);

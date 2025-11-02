@@ -8,7 +8,6 @@ import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
 import com.example.KDBS.dto.response.InsuranceResponse;
 import com.example.KDBS.service.BookingService;
-import com.example.KDBS.service.EmailService;
 import com.example.KDBS.service.VNPayService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,6 @@ public class BookingController {
 
     private final BookingService bookingService;
     private final VNPayService vnpayService;
-    private final EmailService emailService;
 
     @PostMapping
     public ResponseEntity<BookingResponse> createBooking(@Valid @RequestBody BookingRequest request) {

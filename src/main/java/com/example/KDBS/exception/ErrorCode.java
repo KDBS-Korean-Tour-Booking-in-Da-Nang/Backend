@@ -1,8 +1,12 @@
 package com.example.KDBS.exception;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 
+@Getter
+@RequiredArgsConstructor
 public enum ErrorCode {
     EMAIL_EXISTED(1001, "Email has existed", HttpStatus.BAD_REQUEST),
     USERNAME_INVALID(1002, "Username must at least 5 characters", HttpStatus.BAD_REQUEST),
@@ -73,39 +77,12 @@ public enum ErrorCode {
     MISSING_PARAMETER(1061,"Missing parameter",HttpStatus.BAD_REQUEST),
     CANNOT_RESOLVE_EMAIL_FROM_TOKEN(1062,"Cannot resolve email from token",HttpStatus.BAD_REQUEST),
     CANNOT_MODIFY_ANOTHER_ACCOUNT(1062,"You are not authorized to modify another user's account",HttpStatus.FORBIDDEN),
+    WRONG_EMAIL(1063, "Wrong email", HttpStatus.NOT_FOUND),
+    WRONG_PASSWORD(1064, "Wrong password", HttpStatus.FORBIDDEN),
+    RUN_TIME_EXCEPTION(1999, "Runtime exception occurred", HttpStatus.INTERNAL_SERVER_ERROR)
     ;
 
-    private int code;
-    private String message;
-    private HttpStatusCode statusCode;
-
-    ErrorCode(int code, String message, HttpStatusCode statusCode) {
-        this.code = code;
-        this.message = message;
-        this.statusCode = statusCode;
-    }
-
-    public int getCode() {
-        return code;
-    }
-
-    public void setCode(int code) {
-        this.code = code;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public HttpStatusCode getStatusCode() {
-        return statusCode;
-    }
-
-    public void setStatusCode(HttpStatusCode statusCode) {
-        this.statusCode = statusCode;
-    }
+    private final int code;
+    private final String message;
+    private final HttpStatusCode statusCode;
 }

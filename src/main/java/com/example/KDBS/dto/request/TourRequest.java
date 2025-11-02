@@ -1,7 +1,9 @@
 package com.example.KDBS.dto.request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -10,25 +12,33 @@ import java.util.List;
 @Data
 public class TourRequest {
 
-    @NotNull
+    @NotBlank(message = "User email is required")
+    @Email(message = "Invalid email format")
+    @Size(max = 100, message = "Email must not exceed 100 characters")
     private String companyEmail;
 
-    @NotBlank
+    @NotBlank(message = "Tour name is required")
     private String tourName;
 
+    @NotBlank(message = "Tour description is required")
     private String tourDescription;
+    @NotBlank(message = "Tour location is required")
     private String tourDuration;
+    @NotBlank(message = "Tour departure point is required")
     private String tourDeparturePoint;
+    @NotBlank(message = "Tour vehicle is required")
     private String tourVehicle;
+    @NotBlank(message = "Tour type is required")
     private String tourType;
+    @NotBlank(message = "Tour schedule is required")
     private String tourSchedule;
+    @NotNull(message = "Tour amount is required")
     private Integer amount;
 
+    @NotNull(message = "Adult price is required")
     private BigDecimal adultPrice;
     private BigDecimal childrenPrice;
     private BigDecimal babyPrice;
-
-    // Removed fields: bookingDeadline, surcharges
 
     private List<TourContentRequest> contents;
 

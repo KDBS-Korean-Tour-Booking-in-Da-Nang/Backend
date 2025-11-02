@@ -14,9 +14,9 @@ public class GlobalHandleException {
     private static final Logger logger = LoggerFactory.getLogger(GlobalHandleException.class);
 
     @ExceptionHandler(value = AppException.class)
-    public ResponseEntity<ApiResponse> handleAppException(AppException exception){
+    public ResponseEntity<ApiResponse<Void>> handleAppException(AppException exception){
         ErrorCode errorCode = exception.getErrorCode();
-        ApiResponse apiResponse = new ApiResponse();
+        ApiResponse<Void> apiResponse = new ApiResponse<>();
         apiResponse.setCode(errorCode.getCode());
         apiResponse.setMessage(errorCode.getMessage());
 
@@ -25,8 +25,8 @@ public class GlobalHandleException {
     }
 
     @ExceptionHandler(value = CustomException.class)
-    public ResponseEntity<ApiResponse> handleCustomException(CustomException exception) {
-        ApiResponse apiResponse = new ApiResponse();
+    public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException exception) {
+        ApiResponse<Void> apiResponse = new ApiResponse<>();
         apiResponse.setCode(1001);  // Mã lỗi tùy chỉnh
         apiResponse.setMessage(exception.getMessage());
 
@@ -34,26 +34,29 @@ public class GlobalHandleException {
         return ResponseEntity.badRequest().body(apiResponse);
     }
 
-    @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse> handleMethodArgument(MethodArgumentNotValidException exception) {
-        String enumKey = exception.getFieldError().getDefaultMessage();
-        ErrorCode errorCode = ErrorCode.valueOf(enumKey);
-        ApiResponse apiResponse = new ApiResponse();
-        apiResponse.setCode(errorCode.getCode());
-        apiResponse.setMessage(errorCode.getMessage());
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgument(MethodArgumentNotValidException ex) {
 
-        logger.error("MethodArgumentNotValidException: Field: {}, Code: {}, Message: {}",
-                exception.getFieldError().getField(), errorCode.getCode(), errorCode.getMessage());
-        return ResponseEntity.badRequest().body(apiResponse);
+        String message = ex.getFieldError() != null
+                ? ex.getFieldError().getDefaultMessage()
+                : "Validation failed";
+
+        ApiResponse<Void> api = new ApiResponse<>();
+        api.setCode(ErrorCode.MISSING_PARAMETER.getCode());   // hoặc tạo ErrorCode.VALIDATION_FAILED
+        api.setMessage(message);
+
+        return ResponseEntity
+                .status(ErrorCode.MISSING_PARAMETER.getStatusCode())
+                .body(api);
     }
 
     @ExceptionHandler(value = Exception.class)
-    public ResponseEntity<ApiResponse> handleRuntimeException(Exception exception){
-        ApiResponse apiResponse = new ApiResponse();
-        apiResponse.setCode(ErrorCode.UNAUTHENTICATED.getCode());
-        apiResponse.setMessage(ErrorCode.UNAUTHENTICATED.getMessage());
+    public ResponseEntity<ApiResponse<Void>> handleRuntimeException(Exception exception){
+        ApiResponse<Void> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(ErrorCode.RUN_TIME_EXCEPTION.getCode());
+        apiResponse.setMessage(ErrorCode.RUN_TIME_EXCEPTION.getMessage());
 
-        logger.error("Exception: Code: {}, Message: {}", ErrorCode.UNAUTHENTICATED.getCode(), ErrorCode.UNAUTHENTICATED.getMessage(), exception);
+        logger.error("Exception: Code: {}, Message: {}", ErrorCode.RUN_TIME_EXCEPTION.getCode(), ErrorCode.RUN_TIME_EXCEPTION.getMessage(), exception);
         return ResponseEntity.badRequest().body(apiResponse);
     }
 }

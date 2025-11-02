@@ -1,4 +1,4 @@
-package com.example.KDBS.utils;
+package com.example.KDBS.scheduler;
 
 import com.example.KDBS.enums.Status;
 import com.example.KDBS.model.User;
@@ -14,7 +14,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class UserCleanupJobUtils {
+public class UserCleanupJobScheduler {
     private final UserRepository userRepository;
 
     // chạy mỗi ngày lúc 2h sáng

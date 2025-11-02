@@ -4,6 +4,7 @@ import com.example.KDBS.dto.request.BookingRequest;
 import com.example.KDBS.dto.request.InsuranceRequest;
 import com.example.KDBS.dto.response.*;
 import com.example.KDBS.enums.BookingGuestType;
+import com.example.KDBS.enums.BookingStatus;
 import com.example.KDBS.enums.InsuranceStatus;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
@@ -17,7 +18,6 @@ import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TourRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,17 +29,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class BookingService {
-
-    @Autowired
-    private BookingRepository bookingRepository;
-    @Autowired
-    private BookingGuestRepository bookingGuestRepository;
-    @Autowired
-    private TourRepository tourRepository;
-    @Autowired
-    private EmailService emailService;
-    @Autowired
-    private BookingMapper bookingMapper;
+    private final BookingRepository bookingRepository;
+    private final BookingGuestRepository bookingGuestRepository;
+    private final TourRepository tourRepository;
+    private final EmailService emailService;
+    private final BookingMapper bookingMapper;
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
@@ -52,6 +46,8 @@ public class BookingService {
 
         // Create booking first
         Booking booking = bookingMapper.toBooking(request);
+
+        booking.setBookingStatus(BookingStatus.PENDING);
 
         // Save booking first to get ID
         Booking savedBooking = bookingRepository.save(booking);
@@ -135,21 +131,15 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<BookingResponse> getBookingsByEmail(String email) {
-        List<Booking> bookings = bookingRepository.findByContactEmailOrderByCreatedAtDesc(email);
+        List<Booking> bookings = bookingRepository.findByUserEmailOrderByCreatedAtDesc(email);
+
         return bookings.stream()
                 .map(booking -> {
                     Tour tour = tourRepository.findById(booking.getTourId()).orElse(null);
-                    List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(booking.getBookingId());
-                    booking.setGuests(guests);
-
-                    BookingResponse response = bookingMapper.toBookingResponse(booking);
-                    response.setTourName(tour != null ? tour.getTourName() : "Unknown Tour");
-                    response.setGuests(bookingMapper.toBookingGuestResponses(guests));
-                    return response;
+                    return mapToBookingResponse(booking, tour);
                 })
                 .toList();
     }
-
 
     @Transactional(readOnly = true)
     public List<BookingResponse> getBookingsByTourId(Long tourId) {
@@ -157,16 +147,19 @@ public class BookingService {
         Tour tour = tourRepository.findById(tourId).orElse(null);
 
         return bookings.stream()
-                .map(booking -> {
-                    List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(booking.getBookingId());
-                    booking.setGuests(guests);
-
-                    BookingResponse response = bookingMapper.toBookingResponse(booking);
-                    response.setTourName(tour != null ? tour.getTourName() : "Unknown Tour");
-                    response.setGuests(bookingMapper.toBookingGuestResponses(guests));
-                    return response;
-                })
+                .map(booking -> mapToBookingResponse(booking, tour))
                 .toList();
+    }
+
+    private BookingResponse mapToBookingResponse(Booking booking, Tour tour) {
+        List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(booking.getBookingId());
+        booking.setGuests(guests);
+
+        BookingResponse response = bookingMapper.toBookingResponse(booking);
+        response.setTourName(tour != null ? tour.getTourName() : "Unknown Tour");
+        response.setGuests(bookingMapper.toBookingGuestResponses(guests));
+
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -177,7 +170,7 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<BookingSummaryResponse> getBookingSummaryByEmail(String email) {
-        List<Booking> bookings = bookingRepository.findByContactEmailOrderByCreatedAtDesc(email);
+        List<Booking> bookings = bookingRepository.findByUserEmailOrderByCreatedAtDesc(email);
 
         return bookings.stream()
                 .map(booking -> {
@@ -288,4 +281,23 @@ public class BookingService {
             log.error("Error sending booking confirmation email for transaction: {}", transaction.getOrderId(), e);
         }
     }
+
+    // BookingService
+
+    @Transactional
+    public void markBookingPurchased(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        booking.setBookingStatus(BookingStatus.PURCHASED);
+        bookingRepository.save(booking);
+    }
+
+    @Transactional
+    public void markBookingPending(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        booking.setBookingStatus(BookingStatus.PENDING);
+        bookingRepository.save(booking);
+    }
+
 }

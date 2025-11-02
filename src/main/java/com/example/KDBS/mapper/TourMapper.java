@@ -20,6 +20,7 @@ public interface TourMapper {
     TourResponse toTourResponse(Tour tour);
 
     //Map Tour entity -> TourPreviewResponse DTO
+    @Mapping(target = "tourUrl", ignore = true)
     TourPreviewResponse toTourPreviewResponse(Tour tour);
 
     // Explicit mapping for TourContent to TourContentResponse
@@ -40,9 +41,11 @@ public interface TourMapper {
     // Request -> Entity (for create)
     @Mapping(target = "tourId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "tourStatus", constant = "NOT_APPROVED")
     @Mapping(target = "contents", ignore = true)
     @Mapping(target = "ratings", ignore = true)
+    @Mapping(target = "companyId", ignore = true)
+    @Mapping(target = "tourImgPath", ignore = true)
+    @Mapping(target = "tourStatus", ignore = true)
     Tour toTour(TourRequest request);
 
     // Map nested request -> entity
@@ -57,5 +60,7 @@ public interface TourMapper {
     @Mapping(target = "tourStatus", ignore = true)
     @Mapping(target = "contents", ignore = true)
     @Mapping(target = "ratings", ignore = true)
+    @Mapping(target = "companyId", ignore = true)
+    @Mapping(target = "tourImgPath", ignore = true)
     void updateTourFromRequest(TourRequest request, @MappingTarget Tour tour);
 }

@@ -2,10 +2,13 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.enums.PaymentMethod;
 import com.example.KDBS.enums.TransactionStatus;
+import com.example.KDBS.exception.AppException;
+import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.model.Transaction;
 import com.example.KDBS.model.User;
 import com.example.KDBS.repository.TransactionRepository;
 import com.example.KDBS.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class VNPayService {
     @Value("${vnpay.tmnCode}")
@@ -37,16 +41,6 @@ public class VNPayService {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final BookingService bookingService;
-    private final PremiumService premiumService;
-
-
-    public VNPayService(TransactionRepository transactionRepository, UserRepository userRepository, BookingService bookingService, PremiumService premiumService) {
-        this.transactionRepository = transactionRepository;
-        this.userRepository = userRepository;
-        this.bookingService = bookingService;
-        this.premiumService = premiumService;
-    }
-
 
     public Map<String, Object> createPayment(String userEmail, BigDecimal amount, String orderInfo) {
         try {
@@ -54,17 +48,8 @@ public class VNPayService {
             String orderId = "TXN" + System.currentTimeMillis() + "_" + new Random().nextInt(1000);
 
             // Find user by email or create a temporary user
-            User user = userRepository.findByEmail(userEmail).orElse(null);
-            if (user == null) {
-                // Create a minimal user for booking transactions
-                user = new User();
-                user.setEmail(userEmail);
-                user.setUsername("booking_user_" + System.currentTimeMillis());
-                user.setPassword("temp_password");
-                user.setPhone("0000000000");
-                user.setCccd("000000000000");
-                user = userRepository.save(user);
-            }
+            User user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
             Transaction transaction = new Transaction(transactionId, orderId, amount, user, orderInfo);
             transaction.setStatus(TransactionStatus.PENDING);
@@ -174,9 +159,16 @@ public class VNPayService {
         Optional<Transaction> transactionOpt = transactionRepository.findByOrderId(orderId);
         if (transactionOpt.isPresent()) {
             Transaction transaction = transactionOpt.get();
+
+            Long bookingId = extractBookingIdFromOrderInfo(transaction.getOrderInfo());
+
             if (signValue.equals(vnpSecureHash)) {
                 if ("00".equals(responseCode)) {
                     transaction.setStatus(TransactionStatus.SUCCESS);
+                    // change booking status -> PURCHASED
+                    if (bookingId != null) {
+                        bookingService.markBookingPurchased(bookingId);
+                    }
 
                     // Send booking confirmation email when payment is successful
                     try {
@@ -184,17 +176,20 @@ public class VNPayService {
                     } catch (Exception e) {
                         log.error("Failed to send booking confirmation email for transaction: {}", orderId, e);
                     }
-
-                    try {
-                        premiumService.processPremiumPayment(transaction);
-                    } catch (Exception e) {
-                        log.error("Failed to process premium payment success for transaction: {}", orderId, e);
-                    }
                 } else {
+                    // transaction fail / user cancel
                     transaction.setStatus(TransactionStatus.FAILED);
+
+                    // change booking status -> PENDING
+                    if (bookingId != null) {
+                        bookingService.markBookingPending(bookingId);
+                    }
                 }
             } else {
                 transaction.setStatus(TransactionStatus.FAILED);
+                if (bookingId != null) {
+                    bookingService.markBookingPending(bookingId);
+                }
             }
 
             transaction.setResultCode(Integer.parseInt(responseCode));
@@ -221,4 +216,21 @@ public class VNPayService {
         }
         return sb.toString();
     }
+
+    private Long extractBookingIdFromOrderInfo(String orderInfo) {
+        try {
+            if (orderInfo != null && orderInfo.contains("Booking payment for booking ID:")) {
+                // ví dụ: "Booking payment for booking ID: 15 | Tour: ..."
+                String bookingIdStr = orderInfo
+                        .replace("Booking payment for booking ID:", "")
+                        .split("\\|")[0]
+                        .trim();
+                return Long.parseLong(bookingIdStr);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract bookingId from orderInfo: {}", orderInfo, e);
+        }
+        return null;
+    }
+
 }
