@@ -11,7 +11,6 @@ import com.example.KDBS.repository.ForumPostRepository;
 import com.example.KDBS.repository.SavedPostRepository;
 import com.example.KDBS.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,13 +20,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SavedPostService {
-
-        @Autowired
-        private SavedPostRepository savedPostRepository;
-        @Autowired
-        private ForumPostRepository forumPostRepository;
-        @Autowired
-        private UserRepository userRepository;
+        private final SavedPostRepository savedPostRepository;
+        private final ForumPostRepository forumPostRepository;
+        private final UserRepository userRepository;
 
         @Transactional
         public SavedPostResponse savePost(SavedPostRequest request, String userEmail) {

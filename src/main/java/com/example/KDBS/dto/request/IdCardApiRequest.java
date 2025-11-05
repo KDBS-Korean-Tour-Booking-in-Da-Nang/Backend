@@ -1,4 +1,4 @@
-package com.example.KDBS.dto.response;
+package com.example.KDBS.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -14,7 +14,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @JsonIgnoreProperties(ignoreUnknown = true) // Ignore unknown JSON fields
-public class IdCardApiResponse {
+public class IdCardApiRequest {
 
     @JsonProperty("id")
     private String idNumber;

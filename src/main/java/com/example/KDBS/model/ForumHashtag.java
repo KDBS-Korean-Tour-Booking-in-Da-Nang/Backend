@@ -20,7 +20,7 @@ public class ForumHashtag {
     @Column(name = "hastag_id")
     private Long hashtagId;
 
-    @Column(length = 255, nullable = false, unique = true)
+    @Column(nullable = false, unique = true)
     private String content;
 
     @OneToMany(mappedBy = "hashtag", cascade = CascadeType.ALL, orphanRemoval = true)

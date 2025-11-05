@@ -1,11 +1,9 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.AuthenticationRequest;
-import com.example.KDBS.dto.request.IntrospectRequest;
 import com.example.KDBS.dto.request.LogOutRequest;
 import com.example.KDBS.dto.request.UsernameAuthenticationRequest;
 import com.example.KDBS.dto.response.AuthenticationResponse;
-import com.example.KDBS.dto.response.IntrospectResponse;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.enums.Status;
 import com.example.KDBS.exception.AppException;
@@ -23,11 +21,11 @@ import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -38,23 +36,16 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private InvalidateTokenRepository invalidtokenrepository;
-    @Autowired
-    private UserMapper userMapper;
+    private final UserRepository userRepository;
+    private final InvalidateTokenRepository invalidtokenrepository;
+    private final UserMapper userMapper;
     protected static final String signature = "OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+
+    private final PasswordEncoder passwordEncoder;
 
     @NonFinal
     @Value("${jwt.valid-duration}")
     protected long VALID_DURATION;
-
-    @NonFinal
-    @Value("${jwt.refreshable-duration}")
-    protected long REFRESHABLE_DURATION;
 
     public AuthenticationResponse login(AuthenticationRequest authenticationRequest) {
         User user = userRepository.findByEmail(authenticationRequest.getEmail())
@@ -126,58 +117,44 @@ public class AuthenticationService {
 
     }
 
-    public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
-        var token = request.getToken();
-        boolean isValid = true;
-
-        try {
-            verifyToken(token, false);
-        } catch (AppException e) {
-            isValid = false;
-        }
-
-        return IntrospectResponse.builder().valid(isValid).build();
-    }
-
-    private SignedJWT verifyToken(String token, boolean isRefresh) throws JOSEException, ParseException {
-        JWSVerifier verifier = new MACVerifier(signature.getBytes());
-
+    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+        JWSVerifier verifier = new MACVerifier(signature.getBytes(StandardCharsets.UTF_8));
         SignedJWT signedJWT = SignedJWT.parse(token);
 
-        Date expiryTime = (isRefresh)
-                ? new Date(signedJWT
-                        .getJWTClaimsSet()
-                        .getIssueTime()
-                        .toInstant()
-                        .plus(REFRESHABLE_DURATION, ChronoUnit.SECONDS)
-                        .toEpochMilli())
-                : signedJWT.getJWTClaimsSet().getExpirationTime();
-
-        var verified = signedJWT.verify(verifier);
-
-        if (!(verified && expiryTime.after(new Date())))
+        // Verify signature
+        if (!signedJWT.verify(verifier)) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
 
-        if (invalidtokenrepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
+        // Check expiration using the token's actual exp claim
+        Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+        if (expiryTime == null || !expiryTime.after(new Date())) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        // Check if token is blacklisted
+        if (invalidtokenrepository.existsById(signedJWT.getJWTClaimsSet().getJWTID())) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
 
         return signedJWT;
     }
 
     public void logout(LogOutRequest request) throws ParseException, JOSEException {
         try {
-            var signToken = verifyToken(request.getToken(), true);
+            var signToken = verifyToken(request.getToken());
 
-            String jit = signToken.getJWTClaimsSet().getJWTID();
+            String jti = signToken.getJWTClaimsSet().getJWTID();
             Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
 
-            InvalidateToken invalidatedToken = InvalidateToken.builder().id(jit).expiryTime(expiryTime).build();
+            InvalidateToken invalidatedToken = InvalidateToken.builder()
+                    .id(jti)
+                    .expiryTime(expiryTime)
+                    .build();
 
             invalidtokenrepository.save(invalidatedToken);
         } catch (AppException exception) {
-            log.warn("Token has already expired or is invalid.");
-
+            log.info("Token already invalid or expired: {}", exception.getMessage());
         }
     }
-
 }

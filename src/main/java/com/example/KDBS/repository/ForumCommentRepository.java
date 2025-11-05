@@ -10,7 +10,7 @@ import java.util.List;
 public interface ForumCommentRepository extends JpaRepository<ForumComment, Long> {
     List<ForumComment> findByForumPost_ForumPostId(Long forumPostId);
 
-    List<ForumComment> findByForumPostForumPostIdOrderByCreatedAtDesc(Long forumPostId);
+//    List<ForumComment> findByForumPostForumPostIdOrderByCreatedAtDesc(Long forumPostId);
 
     List<ForumComment> findByParentComment_ForumCommentIdOrderByCreatedAtAsc(Long parentCommentId);
 }

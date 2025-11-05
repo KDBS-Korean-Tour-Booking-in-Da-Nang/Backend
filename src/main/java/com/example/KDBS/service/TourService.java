@@ -3,23 +3,24 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.request.TourRequest;
 import com.example.KDBS.dto.response.TourPreviewResponse;
 import com.example.KDBS.dto.response.TourResponse;
-import com.example.KDBS.enums.TourStatus;
+import com.example.KDBS.enums.Role;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.TourMapper;
 import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.TourContent;
 import com.example.KDBS.model.TourContentImg;
+import com.example.KDBS.model.User;
 import com.example.KDBS.repository.TourContentImgRepository;
 import com.example.KDBS.repository.TourContentRepository;
 import com.example.KDBS.repository.TourRepository;
 import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.utils.FileUtils;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,18 +33,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class TourService {
-
-    @Autowired
-    private TourRepository tourRepository;
-    @Autowired
-    private TourContentRepository tourContentRepository;
-    @Autowired
-    private TourContentImgRepository tourContentImgRepository;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private TourMapper tourMapper;
+    private final TourRepository tourRepository;
+    private final TourContentRepository tourContentRepository;
+    private final TourContentImgRepository tourContentImgRepository;
+    private final UserRepository userRepository;
+    private final TourMapper tourMapper;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
@@ -64,11 +60,10 @@ public class TourService {
         }
 
         var company = userRepository.findByEmail(request.getCompanyEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND_WITH_EMAIL,request.getCompanyEmail()));
+                .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND_WITH_EMAIL));
 
         Tour tour = tourMapper.toTour(request);
         tour.setCompanyId(company.getUserId());
-        tour.setTourStatus(TourStatus.NOT_APPROVED);
         tour.setTourImgPath(FileUtils.convertFileToPath(tourImg, uploadDir, "/tours/thumbnails"));
 
         tourRepository.save(tour);
@@ -90,14 +85,14 @@ public class TourService {
     /** Get one tour */
     public TourResponse getTourById(Long id) {
         Tour tour = tourRepository.findByIdWithContents(id)
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND,id));
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
         return tourMapper.toTourResponse(tour);
     }
 
     //**Get tours for preview */
     public TourPreviewResponse getTourPreviewById(Long id) {
         Tour tour = tourRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND, id ));
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
         TourPreviewResponse tourPreviewResponse = tourMapper.toTourPreviewResponse(tour);
         tourPreviewResponse.setTourUrl(frontendUrl + "/tour/" + tour.getTourId());
         return tourPreviewResponse;
@@ -121,7 +116,7 @@ public class TourService {
     public TourResponse updateTour(Long id, TourRequest request, MultipartFile tourImg) throws IOException {
         // Load existing tour
         Tour existing = tourRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND,id));
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         // Update basic fields
         tourMapper.updateTourFromRequest(request, existing);
@@ -151,10 +146,19 @@ public class TourService {
 
     /** Delete tour and cascade its contents & images */
     @Transactional
-    public void deleteTour(Long id) {
-        if (!tourRepository.existsById(id)) {
-            throw new AppException(ErrorCode.TOUR_NOT_FOUND,id);
+    public void deleteTour(Long id, String userEmail) {
+        Tour tour = tourRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
+
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        // Check authorization
+        if (currentUser.getRole() == Role.COMPANY &&
+                tour.getCompanyId() != (currentUser.getUserId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
+
         tourRepository.deleteById(id);
     }
 

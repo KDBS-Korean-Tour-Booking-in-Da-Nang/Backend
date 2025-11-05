@@ -3,12 +3,12 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.request.BusinessLicenseRequest;
 import com.example.KDBS.dto.request.UserRegisterRequest;
 import com.example.KDBS.dto.request.UserUpdateRequest;
-import com.example.KDBS.dto.response.IdCardApiResponse;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
+import com.example.KDBS.dto.request.IdCardApiRequest;
 import com.example.KDBS.dto.response.UserResponse;
+import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
-import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.UserIdCardMapper;
@@ -22,7 +22,7 @@ import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.utils.FileUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,32 +40,24 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static com.example.KDBS.enums.PremiumType.FREE;
-
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private UserMapper userMapper;
-    @Autowired
-    private UserIdCardMapper userIdCardMapper;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private OTPService otpService;
-    @Autowired
-    private BusinessLicenseRepository businessLicenseRepository;
-    @Autowired
-    private UserIdCardRepository userIdCardRepository;
+    private final UserRepository userRepository;
+    private final UserMapper userMapper;
+    private final UserIdCardMapper userIdCardMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final OTPService otpService;
+    private final BusinessLicenseRepository businessLicenseRepository;
+    private final UserIdCardRepository userIdCardRepository;
 
     private static final String API_URL = "https://api.fpt.ai/vision/idr/vnm";
     private static final String API_KEY = "0Ka4zpceIGAxLIlQ1f89RIaXbLaSHSVd";
     @Value("${file.upload-dir}")
     private String uploadDir;
 
-    public String createUser(UserRegisterRequest request) throws IOException {
+    public String createUser(UserRegisterRequest request) {
         Optional<User> existingByEmail = userRepository.findByEmail(request.getEmail());
         Optional<User> existingByUsername = userRepository.findByUsername(request.getUsername());
 
@@ -102,7 +95,6 @@ public class UserService {
         user.setRole(role);
         user.setStatus(Status.UNVERIFIED);
         user.setCreatedAt(LocalDateTime.now());
-        user.setPremiumType(FREE);
         userRepository.save(user);
 
         otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
@@ -111,8 +103,28 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg)
-            throws IOException {
+    public boolean verifyEmail(String email, String otpCode) {
+        boolean isValid = otpService.verifyOTP(email, otpCode, OTPPurpose.VERIFY_EMAIL);
+
+        if (!isValid) {
+            return false;
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getRole() == Role.COMPANY) {
+            user.setStatus(Status.COMPANY_PENDING);
+        } else {
+            user.setStatus(Status.UNBANNED);
+        }
+
+        userRepository.save(user);
+        return true;
+    }
+
+    @Transactional
+    public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg) throws IOException {
         // Tìm user theo email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -139,11 +151,26 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    @GetMapping
     public List<UserResponse> getAllUsers() {
         List<User> users = userRepository.findAll();
         return users.stream()
                 .map(userMapper::toUserResponse)
                 .toList();
+    }
+
+    @Transactional
+    public UserResponse setUserBanStatus(int userId, boolean ban) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (ban) {
+            user.setStatus(Status.BANNED);
+        } else {
+            user.setStatus(Status.UNBANNED);
+        }
+
+        return userMapper.toUserResponse(user);
     }
 
     public void updateBusinessLicense(BusinessLicenseRequest request) throws IOException {
@@ -172,7 +199,7 @@ public class UserService {
         String frontPath = FileUtils.convertFileToPath(request.getFrontImageData(), uploadDir, "/idcard/front");
         String backPath = FileUtils.convertFileToPath(request.getBackImageData(), uploadDir, "/idcard/back");
 
-        IdCardApiResponse frontData = callFptApi(request.getFrontImageData());
+        IdCardApiRequest frontData = callFptApi(request.getFrontImageData());
 
         // Use mapper
         UserIdCard entity = userIdCardMapper.toUserIdCard(frontData);
@@ -215,7 +242,7 @@ public class UserService {
         return idx >= 0 ? path.substring(idx + 1) : path;
     }
 
-    private IdCardApiResponse callFptApi(MultipartFile file) throws Exception {
+    private IdCardApiRequest callFptApi(MultipartFile file) throws Exception {
         RestTemplate restTemplate = new RestTemplate();
 
         ByteArrayResource fileResource = new ByteArrayResource(file.getBytes()) {
@@ -244,6 +271,6 @@ public class UserService {
         JsonNode root = mapper.readTree(response.getBody());
         JsonNode data = root.path("data").get(0);
 
-        return mapper.treeToValue(data, IdCardApiResponse.class);
+        return mapper.treeToValue(data, IdCardApiRequest.class);
     }
 }

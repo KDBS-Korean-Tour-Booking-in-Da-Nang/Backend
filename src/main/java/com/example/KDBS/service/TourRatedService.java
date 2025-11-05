@@ -5,38 +5,31 @@ import com.example.KDBS.dto.response.TourRatedResponse;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.TourRatedMapper;
-import com.example.KDBS.model.*;
+import com.example.KDBS.model.Tour;
+import com.example.KDBS.model.TourRated;
+import com.example.KDBS.model.User;
 import com.example.KDBS.repository.TourRatedRepository;
 import com.example.KDBS.repository.TourRepository;
 import com.example.KDBS.repository.UserRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class TourRatedService {
-
-    @Autowired
-    private TourRatedRepository tourRatedRepository;
-    @Autowired
-    private TourRepository tourRepository;
-    @Autowired
-    private TourRatedMapper tourRatedMapper;
-    @Autowired
-    private UserRepository userRepository;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
+    private final TourRatedRepository tourRatedRepository;
+    private final TourRepository tourRepository;
+    private final TourRatedMapper tourRatedMapper;
+    private final UserRepository userRepository;
 
     /** Create tourRated */
     @Transactional
-    public TourRatedResponse createTourRated(TourRatedRequest tourRatedRequest) throws IOException{
+    public TourRatedResponse createTourRated(TourRatedRequest tourRatedRequest) {
         Tour tour = tourRepository.findById(tourRatedRequest.getTourId())
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND,tourRatedRequest.getTourId()));
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         User user = userRepository.findByEmail(tourRatedRequest.getUserEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -51,10 +44,7 @@ public class TourRatedService {
         tourRated.setTour(tour);
         tourRated.setUser(user);
         tourRated = tourRatedRepository.save(tourRated);
-
-        TourRatedResponse tourRatedResponse = tourRatedMapper.toTourRatedResponse(tourRated);
-        tourRatedResponse.setUsername(user.getUsername());
-        return tourRatedResponse;
+        return tourRatedMapper.toTourRatedResponse(tourRated);
     }
 
     /** Get all tourRateds */
@@ -72,13 +62,12 @@ public class TourRatedService {
     /** Get tourRated by id */
     public TourRatedResponse getTourRatedById(Long id) {
         TourRated tourRated = tourRatedRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND,id));
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
         TourRatedResponse tourRatedResponse = tourRatedMapper.toTourRatedResponse(tourRated);
         tourRatedResponse.setUsername(tourRated.getUser().getUsername());
         return tourRatedResponse;
     }
 
-    /** Get tourRated theo tourId */
     /** Get tourRated theo tourId */
     public List<TourRatedResponse> getByTour(Long tourId) {
         return tourRatedRepository.findByTour_TourId(tourId)
@@ -94,22 +83,20 @@ public class TourRatedService {
 
     /** Update tourRated */
     @Transactional
-    public TourRatedResponse updateTourRated(Long id, TourRatedRequest request) throws IOException {
+    public TourRatedResponse updateTourRated(Long id, TourRatedRequest request) {
         TourRated existing = tourRatedRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND,id));
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         tourRatedMapper.updateTourRatedFromRequest(request, existing);
 
         TourRated saved = tourRatedRepository.save(existing);
-        TourRatedResponse tourRatedResponse = tourRatedMapper.toTourRatedResponse(saved);
-        tourRatedResponse.setUsername(saved.getUser().getUsername());
-        return tourRatedResponse;
+        return tourRatedMapper.toTourRatedResponse(saved);
     }
 
     /** Delete tourRated */
     public void delete(Long id) {
         if (!tourRatedRepository.existsById(id)) {
-            throw new AppException(ErrorCode.TOUR_NOT_FOUND,id);
+            throw new AppException(ErrorCode.TOUR_NOT_FOUND);
         }
         tourRatedRepository.deleteById(id);
     }

@@ -1,11 +1,10 @@
 package com.example.KDBS.repository;
 
+import com.example.KDBS.model.ForumPost;
 import com.example.KDBS.model.SavedPost;
 import com.example.KDBS.model.User;
-import com.example.KDBS.model.ForumPost;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -37,12 +36,4 @@ public interface SavedPostRepository extends JpaRepository<SavedPost, Long> {
     // dem so luong post da save cua user
     @Query("SELECT COUNT(sp) FROM SavedPost sp WHERE sp.user.userId = :userId")
     Long countByUserId(@Param("userId") Long userId);
-
-    // xoa save post
-    void deleteByUserAndPost(User user, ForumPost post);
-
-    // xoa save post bang id
-    @Modifying
-    @Query("DELETE FROM SavedPost sp WHERE sp.user.userId = :userId AND sp.post.forumPostId = :postId")
-    void deleteByUserIdAndPostId(@Param("userId") Long userId, @Param("postId") Long postId);
 }
