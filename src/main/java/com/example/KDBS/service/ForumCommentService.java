@@ -2,6 +2,7 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.ForumCommentRequest;
 import com.example.KDBS.dto.response.ForumCommentResponse;
+import com.example.KDBS.enums.NotificationType;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
@@ -29,6 +30,7 @@ public class ForumCommentService {
         private final UserRepository userRepository;
         private final ForumPostRepository forumPostRepository;
         private final CommentMapper commentMapper;
+        private final NotificationService notificationService;
 
         @Transactional
         public ForumCommentResponse createComment(ForumCommentRequest forumCommentRequest) {
@@ -47,14 +49,19 @@ public class ForumCommentService {
                         .build();
 
                 // If this is a reply, set parent comment
+                ForumComment parent = null;
                 if (forumCommentRequest.getParentCommentId() != null) {
-                        ForumComment parent = forumCommentRepository.findById(forumCommentRequest.getParentCommentId())
+                        parent = forumCommentRepository.findById(forumCommentRequest.getParentCommentId())
                                 .orElseThrow(() -> new AppException(
                                         ErrorCode.PARENT_COMMENT_NOT_FOUND));
                         comment.setParentComment(parent);
                 }
 
                 comment = forumCommentRepository.save(comment);
+                
+                // Tạo thông báo sau khi lưu comment thành công
+                createNotificationForComment(comment, parent);
+                
                 return commentMapper.toCommentResponse(comment);
         }
 
@@ -136,5 +143,59 @@ public class ForumCommentService {
                 ForumComment comment = forumCommentRepository.findById(commentId)
                         .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_FOUND));
                 return commentMapper.toCommentResponse(comment);
+        }
+
+        private void createNotificationForComment(ForumComment comment, ForumComment parentComment) {
+                try {
+                        User actor = comment.getUser();
+                        ForumPost post = comment.getForumPost();
+                        User postOwner = post.getUser();
+
+                        // reply comment
+                        if (parentComment != null) {
+                                User commentOwner = parentComment.getUser();
+                                
+                                // noti cho owner cua comment
+                                if (commentOwner.getUserId() != actor.getUserId()) {
+                                        String commentPreview = parentComment.getContent() != null 
+                                                && parentComment.getContent().length() > 50
+                                                ? parentComment.getContent().substring(0, 50) + "..."
+                                                : parentComment.getContent();
+                                        
+                                        notificationService.createNotification(
+                                                commentOwner.getUserId(),
+                                                actor.getUserId(),
+                                                NotificationType.REPLY_COMMENT,
+                                                parentComment.getForumCommentId(),
+                                                "COMMENT",
+                                                "Ai đó đã trả lời bình luận của bạn",
+                                                String.format("%s đã trả lời bình luận của bạn: \"%s\"",
+                                                        actor.getUsername() != null ? actor.getUsername() : "Người dùng",
+                                                        commentPreview != null ? commentPreview : "")
+                                        );
+                                }
+                        }
+
+                        // noti for new comment
+                        // Không thông báo nếu đã thông báo reply ở trên và cùng một người
+                        if (postOwner.getUserId() != actor.getUserId() 
+                                && (parentComment == null || parentComment.getUser().getUserId() != postOwner.getUserId())) {
+                                notificationService.createNotification(
+                                        postOwner.getUserId(),
+                                        actor.getUserId(),
+                                        NotificationType.COMMENT_POST,
+                                        post.getForumPostId(),
+                                        "POST",
+                                        "Ai đó đã bình luận bài viết của bạn",
+                                        String.format("%s đã bình luận bài viết \"%s\" của bạn",
+                                                actor.getUsername() != null ? actor.getUsername() : "Người dùng",
+                                                post.getTitle() != null && !post.getTitle().isEmpty() 
+                                                        ? post.getTitle() 
+                                                        : "của bạn")
+                                );
+                        }
+                } catch (Exception e) {
+                        log.error("Failed to create notification for comment: {}", e.getMessage(), e);
+                }
         }
 }

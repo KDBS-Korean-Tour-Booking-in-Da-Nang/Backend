@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -147,11 +148,26 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    @GetMapping
     public List<UserResponse> getAllUsers() {
         List<User> users = userRepository.findAll();
         return users.stream()
                 .map(userMapper::toUserResponse)
                 .toList();
+    }
+
+    @Transactional
+    public UserResponse setUserBanStatus(int userId, boolean ban) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (ban) {
+            user.setStatus(Status.BANNED);
+        } else {
+            user.setStatus(Status.UNBANNED);
+        }
+
+        return userMapper.toUserResponse(user);
     }
 
     public void updateBusinessLicense(BusinessLicenseRequest request) throws IOException {

@@ -79,6 +79,8 @@ public enum ErrorCode {
     CANNOT_MODIFY_ANOTHER_ACCOUNT(1062,"You are not authorized to modify another user's account",HttpStatus.FORBIDDEN),
     WRONG_EMAIL(1063, "Wrong email", HttpStatus.NOT_FOUND),
     WRONG_PASSWORD(1064, "Wrong password", HttpStatus.FORBIDDEN),
+    NOTIFICATION_NOT_FOUND(1065, "Notification not found", HttpStatus.NOT_FOUND),
+    NO_PERMISSION(1066, "You do not have permission to perform this action", HttpStatus.FORBIDDEN),
     RUN_TIME_EXCEPTION(1999, "Runtime exception occurred", HttpStatus.INTERNAL_SERVER_ERROR)
     ;
 
