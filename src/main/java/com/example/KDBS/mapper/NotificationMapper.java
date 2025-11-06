@@ -14,6 +14,7 @@ public interface NotificationMapper {
 
     @Mapping(target = "actor", ignore = true)
     NotificationResponse toNotificationResponse(Notification notification);
+    
 
     @AfterMapping
     default void mapActorInfo(@MappingTarget NotificationResponse response, Notification notification) {

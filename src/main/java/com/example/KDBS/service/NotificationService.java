@@ -79,6 +79,7 @@ public class NotificationService {
                     "/queue/notifications",
                     response
             );
+            messagingTemplate.convertAndSend("/topic/notifications", response);
 
             log.debug("WebSocket notification sent to user: {}", userEmail);
         } catch (Exception e) {
