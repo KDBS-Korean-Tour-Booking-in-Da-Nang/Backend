@@ -2,8 +2,8 @@ package com.example.KDBS.controller;
 
 import com.example.KDBS.model.Transaction;
 import com.example.KDBS.repository.TransactionRepository;
-import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.service.VNPayService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -18,20 +18,13 @@ import java.util.Optional;
 @Slf4j
 @RestController
 @RequestMapping("/api/vnpay")
+@RequiredArgsConstructor
 public class VNPayController {
     private final VNPayService vnpayService;
-    private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
-
-    public VNPayController(VNPayService vnpayService, UserRepository userRepository,
-            TransactionRepository transactionRepository) {
-        this.vnpayService = vnpayService;
-        this.userRepository = userRepository;
-        this.transactionRepository = transactionRepository;
-    }
 
     @PostMapping("/create")
     public ResponseEntity<Map<String, Object>> createPayment(@RequestBody Map<String, Object> request) {
@@ -39,11 +32,6 @@ public class VNPayController {
             BigDecimal amount = new BigDecimal(request.get("amount").toString());
             String userEmail = request.get("userEmail").toString();
             String orderInfo = request.get("orderInfo").toString();
-
-            // Validate user exists
-            if (!userRepository.findByEmail(userEmail).isPresent()) {
-                throw new RuntimeException("User not found");
-            }
 
             Map<String, Object> result = vnpayService.createPayment(userEmail, amount, orderInfo);
             return ResponseEntity.ok(result);
@@ -97,8 +85,6 @@ public class VNPayController {
         if (transaction.isPresent()) {
             return ResponseEntity.ok(transaction.get());
         } else {
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Transaction not found");
             return ResponseEntity.notFound().build();
         }
     }

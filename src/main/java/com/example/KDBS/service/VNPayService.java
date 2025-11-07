@@ -2,6 +2,8 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.enums.PaymentMethod;
 import com.example.KDBS.enums.TransactionStatus;
+import com.example.KDBS.exception.AppException;
+import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.model.Transaction;
 import com.example.KDBS.model.User;
 import com.example.KDBS.repository.TransactionRepository;
@@ -39,7 +41,6 @@ public class VNPayService {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final BookingService bookingService;
-    private final PremiumService premiumService;
 
     public Map<String, Object> createPayment(String userEmail, BigDecimal amount, String orderInfo) {
         try {
@@ -47,17 +48,8 @@ public class VNPayService {
             String orderId = "TXN" + System.currentTimeMillis() + "_" + new Random().nextInt(1000);
 
             // Find user by email or create a temporary user
-            User user = userRepository.findByEmail(userEmail).orElse(null);
-            if (user == null) {
-                // Create a minimal user for booking transactions
-                user = new User();
-                user.setEmail(userEmail);
-                user.setUsername("booking_user_" + System.currentTimeMillis());
-                user.setPassword("temp_password");
-                user.setPhone("0000000000");
-                user.setCccd("000000000000");
-                user = userRepository.save(user);
-            }
+            User user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
             Transaction transaction = new Transaction(transactionId, orderId, amount, user, orderInfo);
             transaction.setStatus(TransactionStatus.PENDING);
@@ -183,12 +175,6 @@ public class VNPayService {
                         bookingService.sendBookingConfirmationEmailIfNeeded(transaction);
                     } catch (Exception e) {
                         log.error("Failed to send booking confirmation email for transaction: {}", orderId, e);
-                    }
-
-                    try {
-                        premiumService.processPremiumPayment(transaction);
-                    } catch (Exception e) {
-                        log.error("Failed to process premium payment success for transaction: {}", orderId, e);
                     }
                 } else {
                     // transaction fail / user cancel

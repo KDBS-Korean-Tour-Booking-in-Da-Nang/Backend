@@ -4,23 +4,15 @@ import com.example.KDBS.dto.request.TourRequest;
 import com.example.KDBS.dto.response.TourPreviewResponse;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.service.TourService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -29,10 +21,9 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tour")
+@RequiredArgsConstructor
 public class TourController {
-
-    @Autowired
-    private TourService tourService;
+    private final TourService tourService;
 
     /** TinyMCE inline image upload endpoint */
     @PostMapping(value = "/content-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -95,9 +86,9 @@ public class TourController {
 
     /** Delete a tour */
     @DeleteMapping("/{id}")
-    @PreAuthorize("@tourSecurity.canDeleteTour(#id, #userEmail)")
-    public ResponseEntity<Void> deleteTour(@PathVariable Long id,@RequestParam String userEmail) {
-        tourService.deleteTour(id);
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'COMPANY')")
+    public ResponseEntity<Void> deleteTour(@PathVariable Long id, @RequestParam String userEmail) {
+        tourService.deleteTour(id, userEmail);
         return ResponseEntity.noContent().build();
     }
 }

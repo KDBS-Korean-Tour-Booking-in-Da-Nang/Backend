@@ -18,8 +18,6 @@ import com.example.KDBS.repository.ForumPostRepository;
 import com.example.KDBS.repository.ReportRepository;
 import com.example.KDBS.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.checkerframework.checker.units.qual.A;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -33,17 +31,11 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class ReportService {
-
-    @Autowired
-    private ReportRepository reportRepository;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private ForumPostRepository forumPostRepository;
-    @Autowired
-    private ForumCommentRepository forumCommentRepository;
-    @Autowired
-    private ReportMapper reportMapper;
+    private final ReportRepository reportRepository;
+    private final UserRepository userRepository;
+    private final ForumPostRepository forumPostRepository;
+    private final ForumCommentRepository forumCommentRepository;
+    private final ReportMapper reportMapper;
 
     @Transactional
     public ReportResponse createReport(ReportRequest request, String userEmail) {
@@ -147,18 +139,18 @@ public class ReportService {
 
     private String getTargetTitle(ReportTargetType targetType, Long targetId) {
         try {
-            switch (targetType) {
-                case POST:
+            return switch (targetType) {
+                case POST -> {
                     ForumPost post = forumPostRepository.findById(targetId).orElse(null);
-                    return post != null ? post.getTitle() : "Post not found";
-                case COMMENT:
+                    yield post != null ? post.getTitle() : "Post not found";
+                }
+                case COMMENT -> {
                     ForumComment comment = forumCommentRepository.findById(targetId).orElse(null);
-                    return comment != null
+                    yield comment != null
                             ? comment.getContent().substring(0, Math.min(comment.getContent().length(), 100)) + "..."
                             : "Comment not found";
-                default:
-                    return "Unknown target";
-            }
+                }
+            };
         } catch (Exception e) {
             return "Error loading target";
         }
@@ -166,16 +158,16 @@ public class ReportService {
 
     private String getTargetAuthor(ReportTargetType targetType, Long targetId) {
         try {
-            switch (targetType) {
-                case POST:
+            return switch (targetType) {
+                case POST -> {
                     ForumPost post = forumPostRepository.findById(targetId).orElse(null);
-                    return post != null ? post.getUser().getUsername() : "Unknown";
-                case COMMENT:
+                    yield post != null ? post.getUser().getUsername() : "Unknown";
+                }
+                case COMMENT -> {
                     ForumComment comment = forumCommentRepository.findById(targetId).orElse(null);
-                    return comment != null ? comment.getUser().getUsername() : "Unknown";
-                default:
-                    return "Unknown";
-            }
+                    yield comment != null ? comment.getUser().getUsername() : "Unknown";
+                }
+            };
         } catch (Exception e) {
             return "Error loading author";
         }

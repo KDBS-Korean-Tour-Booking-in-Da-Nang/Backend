@@ -1,6 +1,7 @@
 package com.example.KDBS.dto.request;
 
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -11,7 +12,10 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChatMessageRequest {
-    private String senderName;
-    private String receiverName;
-    private String content;
+    @NotBlank(message = "Sender name is required")
+    String senderName;
+    @NotBlank(message = "Receiver name is required")
+    String receiverName;
+    @NotBlank(message = "Content is required")
+    String content;
 }

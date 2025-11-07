@@ -31,8 +31,14 @@ public class OTP {
     private LocalDateTime expiresAt;
 
     @Column(name = "is_used", nullable = false)
-    private Boolean isUsed = false;
+    private Boolean isUsed;
 
     @Column(name = "purpose", nullable = false)
     private String purpose; // FORGOT_PASSWORD, VERIFY_EMAIL, etc.
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.isUsed = false;
+    }
 } 

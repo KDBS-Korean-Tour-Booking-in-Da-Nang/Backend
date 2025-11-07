@@ -30,9 +30,6 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    @Value("${app.frontend.url:http://localhost:3000}")
-    private String frontendUrl;
-
     /**
      * Gửi email xác nhận booking thành công
      */
@@ -64,7 +61,8 @@ public class EmailService {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("vi"));
 
         // Thay thế các placeholder
-        String emailContent = template
+
+        return template
                 .replace("{bookingId}", booking.getBookingId().toString())
                 .replace("{createdAt}", booking.getCreatedAt().format(dateTimeFormatter))
                 .replace("{departureDate}", booking.getDepartureDate().format(dateFormatter))
@@ -87,8 +85,6 @@ public class EmailService {
                 .replace("{contactEmail}", booking.getContactEmail())
                 .replace("{contactPhone}", booking.getContactPhone())
                 .replace("{contactAddress}", booking.getContactAddress() != null ? booking.getContactAddress() : "Chưa cung cấp");
-
-        return emailContent;
     }
 
     /**
@@ -228,11 +224,11 @@ public class EmailService {
                         <h1>Đổi Mật Khẩu Thành Công!</h1>
                         <p>Tài khoản của bạn đã được bảo mật</p>
                     </div>
-                    
+        
                     <div class="content">
                         <h2>Xin chào %s,</h2>
                         <p>Chúng tôi xin thông báo rằng mật khẩu của bạn đã được thay đổi thành công.</p>
-                        
+          
                         <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; padding: 15px; margin: 20px 0;">
                             <h4 style="margin-top: 0; color: #0c5460;">🔒 Thông tin bảo mật</h4>
                             <ul style="margin: 10px 0; padding-left: 20px;">
@@ -365,13 +361,13 @@ public class EmailService {
                         <h1>🔐 Mã Xác Thực OTP</h1>
                         <p>Mã bảo mật cho %s</p>
                     </div>
-                    
+           
                     <div class="content">
                         <h2>Xin chào,</h2>
                         <p>Bạn đã yêu cầu %s. Vui lòng sử dụng mã OTP bên dưới để hoàn tất quá trình:</p>
-                        
+
                         <div class="otp-code">%s</div>
-                        
+
                         <div class="warning">
                             <h4 style="margin-top: 0; color: #856404;">⚠️ Lưu ý quan trọng</h4>
                             <ul style="margin: 10px 0; padding-left: 20px;">
@@ -395,138 +391,5 @@ public class EmailService {
             </body>
             </html>
             """, purposeText, purposeText, otpCode);
-    }
-
-    /**
-     * Gửi email xác nhận nâng cấp premium thành công
-     */
-    @Async
-    public void sendPremiumUpgradeConfirmation(String email, int durationInMonths, java.time.LocalDateTime validUntil) {
-        try {
-            String subject = "Chúc mừng! Tài khoản Premium của bạn đã được kích hoạt - KDBS";
-            String content = buildPremiumUpgradeConfirmationEmail(durationInMonths, validUntil);
-            
-            sendEmail(email, subject, content);
-            log.info("Premium upgrade confirmation email sent successfully to: {}", email);
-
-        } catch (Exception e) {
-            log.error("Failed to send premium upgrade confirmation email to: {}", email, e);
-            throw new RuntimeException("Failed to send premium upgrade confirmation email", e);
-        }
-    }
-
-    /**
-     * Xây dựng nội dung email xác nhận nâng cấp premium
-     */
-    private String buildPremiumUpgradeConfirmationEmail(int durationInMonths, java.time.LocalDateTime validUntil) {
-        String validUntilFormatted = validUntil.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("vi-VN")));
-        
-        return String.format("""
-            <!DOCTYPE html>
-            <html lang="vi">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Nâng cấp Premium thành công</title>
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
-                    .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-                    .header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 30px; text-align: center; }
-                    .header h1 { margin: 0; font-size: 28px; }
-                    .content { padding: 30px; }
-                    .success-icon { font-size: 48px; color: #28a745; text-align: center; margin: 20px 0; }
-                    .premium-badge { display: inline-block; background: linear-gradient(45deg, #FFD700, #FFA500); color: #333; padding: 8px 16px; border-radius: 20px; font-weight: bold; margin: 10px 0; }
-                    .info-box { background: #f8f9fa; border-left: 4px solid #667eea; padding: 20px; margin: 20px 0; border-radius: 0 5px 5px 0; }
-                    .benefits { background: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; }
-                    .benefits h3 { color: #28a745; margin-top: 0; }
-                    .benefits ul { margin: 10px 0; padding-left: 20px; }
-                    .benefits li { margin: 8px 0; }
-                    .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; }
-                    .cta-button { display: inline-block; background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; margin: 20px 0; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <h1>🎉 Chúc mừng!</h1>
-                        <p>Tài khoản Premium của bạn đã được kích hoạt thành công</p>
-                    </div>
-                    
-                    <div class="content">
-                        <div class="success-icon">✅</div>
-                        
-                        <h2 style="text-align: center; color: #333;">Nâng cấp Premium thành công!</h2>
-                        
-                        <div class="premium-badge">⭐ PREMIUM ACCOUNT ⭐</div>
-                        
-                        <div class="info-box">
-                            <h3>📋 Thông tin gói Premium</h3>
-                            <p><strong>Thời hạn:</strong> %d tháng</p>
-                            <p><strong>Hiệu lực đến:</strong> %s</p>
-                            <p><strong>Trạng thái:</strong> <span style="color: #28a745; font-weight: bold;">Đang hoạt động</span></p>
-                        </div>
-                        
-                        <div class="benefits">
-                            <h3>🚀 Quyền lợi Premium</h3>
-                            <ul>
-                                <li>🎯 Ưu tiên hiển thị tour trong kết quả tìm kiếm</li>
-                                <li>💎 Truy cập các tour độc quyền chỉ dành cho Premium</li>
-                                <li>📞 Hỗ trợ khách hàng 24/7</li>
-                                <li>🎁 Nhận thông báo sớm nhất về các ưu đãi đặc biệt</li>
-                                <li>⭐ Đánh giá và bình luận không giới hạn</li>
-                                <li>📱 Giao diện không quảng cáo</li>
-                                <li>🔄 Hoàn tiền 100%% nếu hủy tour trong vòng 24h</li>
-                            </ul>
-                        </div>
-                        
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="%s" class="cta-button">Khám phá ngay</a>
-                        </div>
-                        
-                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                            <h4 style="color: #856404; margin-top: 0;">💡 Lưu ý quan trọng</h4>
-                            <ul style="margin: 10px 0; padding-left: 20px; color: #856404;">
-                                <li>Tài khoản Premium sẽ tự động hết hạn vào %s</li>
-                                <li>Bạn sẽ nhận email thông báo trước khi hết hạn 7 ngày</li>
-                                <li>Có thể gia hạn bất kỳ lúc nào trước khi hết hạn</li>
-                            </ul>
-                        </div>
-                        
-                        <p>Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của KDBS!</p>
-                        <p>Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email hỗ trợ.</p>
-                        <p>Trân trọng,<br><strong>Đội ngũ KDBS</strong></p>
-                    </div>
-
-                    <div class="footer">
-                        <p><strong>KDBS Travel Agency</strong></p>
-                        <p>📧 Email: info@kdbs.com | 📞 Hotline: 1900-xxxx</p>
-                        <p>🏢 Địa chỉ: 123 Đường ABC, Quận XYZ, TP.HCM</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """, durationInMonths, validUntilFormatted, frontendUrl, validUntilFormatted);
-    }
-
-    /**
-     * Gửi email đơn giản (text)
-     */
-    public void sendSimpleEmail(String to, String subject, String content) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom(fromEmail);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(content, false); // false = text content
-
-            mailSender.send(message);
-            log.info("Simple email sent successfully to: {}", to);
-
-        } catch (MessagingException e) {
-            log.error("Failed to send simple email to: {}", to, e);
-            throw new RuntimeException("Failed to send email", e);
-        }
     }
 } 
