@@ -81,6 +81,9 @@ public enum ErrorCode {
     WRONG_PASSWORD(1064, "Wrong password", HttpStatus.FORBIDDEN),
     NOTIFICATION_NOT_FOUND(1065, "Notification not found", HttpStatus.NOT_FOUND),
     NO_PERMISSION(1066, "You do not have permission to perform this action", HttpStatus.FORBIDDEN),
+    VOUCHER_NOT_FOUND(1067, "Voucher not found", HttpStatus.NOT_FOUND),
+    VOUCHER_ALREADY_EXISTED(1068, "Voucher already existed", HttpStatus.BAD_REQUEST),
+    VOUCHER_INVALID(1069, "Voucher is invalid or cannot be applied", HttpStatus.BAD_REQUEST),
     RUN_TIME_EXCEPTION(1999, "Runtime exception occurred", HttpStatus.INTERNAL_SERVER_ERROR)
     ;
 

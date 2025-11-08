@@ -22,4 +22,7 @@ public class BookingPaymentRequest {
     @Size(max = 100, message = "User email must not exceed 100 characters")
     @Email(message = "Invalid email format")
     private String userEmail;
+
+    // Optional voucher code
+    private String voucherCode;
 }

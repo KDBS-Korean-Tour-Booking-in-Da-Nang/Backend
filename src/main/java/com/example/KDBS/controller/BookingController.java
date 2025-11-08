@@ -8,6 +8,7 @@ import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
 import com.example.KDBS.dto.response.InsuranceResponse;
 import com.example.KDBS.service.BookingService;
+import com.example.KDBS.service.VoucherService;
 import com.example.KDBS.service.VNPayService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class BookingController {
 
     private final BookingService bookingService;
     private final VNPayService vnpayService;
+    private final VoucherService voucherService;
 
     @PostMapping
     public ResponseEntity<BookingResponse> createBooking(@Valid @RequestBody BookingRequest request) {
@@ -38,6 +40,16 @@ public class BookingController {
             // booking details
             BookingResponse booking = bookingService.getBookingById(request.getBookingId());
             BigDecimal totalAmount = bookingService.calculateBookingTotal(request.getBookingId());
+
+            if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
+                var preview = voucherService.previewApplyVoucher(
+                        com.example.KDBS.dto.request.ApplyVoucherRequest.builder()
+                                .bookingId(request.getBookingId())
+                                .voucherCode(request.getVoucherCode())
+                                .build());
+                voucherService.attachVoucherToBookingPending(request.getBookingId(), preview);
+                totalAmount = preview.getFinalTotal();
+            }
             
             //  order info
             String orderInfo = String.format(
