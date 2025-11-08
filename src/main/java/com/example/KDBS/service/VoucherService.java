@@ -66,7 +66,7 @@ public class VoucherService {
             voucherTourMappingRepository.saveAll(mappings);
         }
 
-        return voucherMapper.toVoucherResponse(savedVoucher);
+        return mapToVoucherResponseWithTourIds(savedVoucher);
     }
 
     @Transactional(readOnly = true)
@@ -168,7 +168,7 @@ public class VoucherService {
             return new ArrayList<>();
         }
         return vouchers.stream()
-                .map(voucherMapper::toVoucherResponse)
+                .map(this::mapToVoucherResponseWithTourIds)
                 .collect(Collectors.toList());
     }
 
@@ -182,7 +182,7 @@ public class VoucherService {
             return new ArrayList<>();
         }
         return vouchers.stream()
-                .map(voucherMapper::toVoucherResponse)
+                .map(this::mapToVoucherResponseWithTourIds)
                 .collect(Collectors.toList());
     }
 
@@ -262,6 +262,19 @@ public class VoucherService {
         }
         
         return true;
+    }
+
+    private VoucherResponse mapToVoucherResponseWithTourIds(Voucher voucher) {
+        VoucherResponse response = voucherMapper.toVoucherResponse(voucher);
+
+        List<Long> tourIds = voucherTourMappingRepository.findTourIdsByVoucherId(voucher.getVoucherId());
+        if (tourIds != null && !tourIds.isEmpty()) {
+            response.setTourIds(tourIds);
+        } else {
+            response.setTourIds(null);
+        }
+        
+        return response;
     }
 
 }
