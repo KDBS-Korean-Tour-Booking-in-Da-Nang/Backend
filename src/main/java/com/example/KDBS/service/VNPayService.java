@@ -41,6 +41,7 @@ public class VNPayService {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final BookingService bookingService;
+    private final VoucherService voucherService;
 
     public Map<String, Object> createPayment(String userEmail, BigDecimal amount, String orderInfo) {
         try {
@@ -168,8 +169,8 @@ public class VNPayService {
                     // change booking status -> PURCHASED
                     if (bookingId != null) {
                         bookingService.markBookingPurchased(bookingId);
+                        try { voucherService.lockVoucherOnPaymentSuccess(bookingId); } catch (Exception ex) {}
                     }
-
                     // Send booking confirmation email when payment is successful
                     try {
                         bookingService.sendBookingConfirmationEmailIfNeeded(transaction);
@@ -183,12 +184,14 @@ public class VNPayService {
                     // change booking status -> PENDING
                     if (bookingId != null) {
                         bookingService.markBookingPending(bookingId);
+                        try { voucherService.unlockVoucherOnBookingCancelled(bookingId); } catch (Exception ex) {}
                     }
                 }
             } else {
                 transaction.setStatus(TransactionStatus.FAILED);
                 if (bookingId != null) {
                     bookingService.markBookingPending(bookingId);
+                    try { voucherService.unlockVoucherOnBookingCancelled(bookingId); } catch (Exception ex) {}
                 }
             }
 
