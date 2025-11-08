@@ -88,7 +88,8 @@ public enum ErrorCode {
     UNKNOWN_ERROR(1099, "Unknown error occurred", HttpStatus.INTERNAL_SERVER_ERROR),
     EXTERNAL_SERVICE_ERROR(1069, "External service error: %s", HttpStatus.SERVICE_UNAVAILABLE),
     TRANSACTION_INVALID_STATE(1070, "Transaction is in an invalid state for this operation", HttpStatus.BAD_REQUEST),
-    TRANSACTION_AMOUNT_NOT_MATCH(1071, "Transaction amount does not match the expected amount", HttpStatus.BAD_REQUEST)
+    TRANSACTION_AMOUNT_NOT_MATCH(1071, "Transaction amount does not match the expected amount", HttpStatus.BAD_REQUEST),
+    BOOKING_CANNOT_BE_UPDATE(1072, "Booking cannot be updated in its current status", HttpStatus.BAD_REQUEST)
     ;
 
     private final int code;

@@ -76,6 +76,7 @@ public class Transaction {
     protected void onCreate() {
         createdTime = LocalDateTime.now();
         updatedTime = LocalDateTime.now();
+        status = TransactionStatus.PENDING;
     }
 
     @PreUpdate

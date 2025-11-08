@@ -65,7 +65,7 @@ public class TossPaymentService {
     public TossCreateOrderResponse createOrder(TossCreateOrderRequest req) {
         Booking booking = bookingRepository.findById(req.getBookingId())
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        Tour tour = tourRepository.findById(booking.getTourId())
+        Tour tour = tourRepository.findById(booking.getTour().getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         // Tính tổng tiền booking (giống logic của bạn)
@@ -152,7 +152,7 @@ public class TossPaymentService {
                     Long bookingId = extractBookingIdFromOrderInfo(tx.getOrderInfo());
                     if (bookingId != null) {
                         bookingRepository.findById(bookingId).ifPresent(b -> {
-                            b.setBookingStatus(BookingStatus.PURCHASED);
+                            b.setBookingStatus(BookingStatus.WAITING_FOR_APPROVED);
                             bookingRepository.save(b);
                         });
                     }
@@ -160,7 +160,7 @@ public class TossPaymentService {
 
                 builder.success(true)
                         .transactionStatus(TransactionStatus.SUCCESS)
-                        .bookingStatus(BookingStatus.PURCHASED)
+                        .bookingStatus(BookingStatus.WAITING_FOR_APPROVED)
                         .responseTime(LocalDateTime.now().toString());
 
                 return builder.build();
@@ -177,7 +177,7 @@ public class TossPaymentService {
                 Long bookingId = extractBookingIdFromOrderInfo(tx.getOrderInfo());
                 if (bookingId != null) {
                     bookingRepository.findById(bookingId).ifPresent(b -> {
-                        b.setBookingStatus(BookingStatus.PENDING);
+                        b.setBookingStatus(BookingStatus.PENDING_PAYMENT);
                         bookingRepository.save(b);
                     });
                 }
@@ -185,7 +185,7 @@ public class TossPaymentService {
 
             builder.success(false)
                     .transactionStatus(TransactionStatus.FAILED)
-                    .bookingStatus(BookingStatus.PENDING)
+                    .bookingStatus(BookingStatus.PENDING_PAYMENT)
                     .code((String) json.getOrDefault("code", "CONFIRM_FAILED"))
                     .message((String) json.getOrDefault("message", "Toss confirm failed"))
                     .responseTime(LocalDateTime.now().toString());
@@ -207,7 +207,7 @@ public class TossPaymentService {
                 Long bookingId = extractBookingIdFromOrderInfo(tx.getOrderInfo());
                 if (bookingId != null) {
                     bookingRepository.findById(bookingId).ifPresent(b -> {
-                        b.setBookingStatus(BookingStatus.PENDING);
+                        b.setBookingStatus(BookingStatus.PENDING_PAYMENT);
                         bookingRepository.save(b);
                     });
                 }
@@ -219,7 +219,7 @@ public class TossPaymentService {
                     .paymentKey(req.getPaymentKey())
                     .amount(new BigDecimal(String.valueOf(req.getAmount())))
                     .transactionStatus(TransactionStatus.FAILED)
-                    .bookingStatus(BookingStatus.PENDING)
+                    .bookingStatus(BookingStatus.PENDING_PAYMENT)
                     .payType("TOSS")
                     .code("CONFIRM_FAILED")
                     .message("Runtime error: " + e.getMessage())

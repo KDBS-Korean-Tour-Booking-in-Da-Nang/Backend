@@ -1,8 +1,10 @@
 package com.example.KDBS.service;
 
+import com.example.KDBS.dto.request.BookingGuestRequest;
 import com.example.KDBS.dto.request.BookingRequest;
-import com.example.KDBS.dto.request.InsuranceRequest;
-import com.example.KDBS.dto.response.*;
+import com.example.KDBS.dto.response.BookingGuestResponse;
+import com.example.KDBS.dto.response.BookingResponse;
+import com.example.KDBS.dto.response.BookingSummaryResponse;
 import com.example.KDBS.enums.BookingGuestType;
 import com.example.KDBS.enums.BookingStatus;
 import com.example.KDBS.enums.InsuranceStatus;
@@ -23,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -37,76 +38,65 @@ public class BookingService {
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
-        // Validate tour exists
         Tour tour = tourRepository.findById(request.getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
-        // Validate guest counts match
         validateGuestCounts(request);
 
-        // Create booking first
         Booking booking = bookingMapper.toBooking(request);
-
-        booking.setBookingStatus(BookingStatus.PENDING);
-
-        // Save booking first to get ID
+        booking.setTour(tour);
         Booking savedBooking = bookingRepository.save(booking);
 
-        // Map guests và set booking reference
-        List<BookingGuest> guests = request.getBookingGuestRequests().stream()
+        List<BookingGuest> savedGuests = saveBookingGuests(request.getBookingGuestRequests(), savedBooking);
+        savedBooking.setGuests(savedGuests);
+
+        return buildBookingResponse(savedBooking, tour.getTourName(), savedGuests);
+    }
+
+    @Transactional
+    public BookingResponse updateBooking(long bookingId, BookingRequest request) {
+        Booking existingBooking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
+        if (!existingBooking.getTour().getTourId().equals(request.getTourId())) {
+            throw new AppException(ErrorCode.TOUR_NOT_FOUND);
+        }
+
+        if (existingBooking.getBookingStatus() != BookingStatus.WAITING_FOR_UPDATE) {
+            throw new AppException(ErrorCode.BOOKING_CANNOT_BE_UPDATE);
+        }
+
+        validateGuestCounts(request);
+        bookingMapper.updateBookingFromRequest(request, existingBooking);
+
+        // Replace guests
+        bookingGuestRepository.deleteAll(existingBooking.getGuests());
+
+        List<BookingGuest> savedGuests = saveBookingGuests(request.getBookingGuestRequests(), existingBooking);
+        existingBooking.setGuests(savedGuests);
+
+        // Set status to wait for approved after update
+        existingBooking.setBookingStatus(BookingStatus.WAITING_FOR_APPROVED);
+
+        return buildBookingResponse(existingBooking, existingBooking.getTour().getTourName(), savedGuests);
+    }
+
+    private List<BookingGuest> saveBookingGuests(List<BookingGuestRequest> guestRequests, Booking booking) {
+        List<BookingGuest> guests = guestRequests.stream()
                 .map(guestReq -> {
                     BookingGuest guest = bookingMapper.toBookingGuest(guestReq);
-                    guest.setBooking(savedBooking);
+                    guest.setBooking(booking);
                     return guest;
                 })
                 .toList();
 
-        // Save guests
-        List<BookingGuest> savedGuests = bookingGuestRepository.saveAll(guests);
-        savedBooking.setGuests(savedGuests);
-
-        // Map sang response
-        BookingResponse response = bookingMapper.toBookingResponse(savedBooking);
-        response.setTourName(tour.getTourName());
-        response.setGuests(bookingMapper.toBookingGuestResponses(savedGuests));
-
-        return response;
+        return bookingGuestRepository.saveAll(guests);
     }
 
-    @Transactional
-    public InsuranceResponse registerInsurance(InsuranceRequest request){
-        tourRepository.findById(request.getTourId())
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
-
-        Booking booking = bookingRepository.findById(request.getBookingId())
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-
-        if (!booking.getTour().getTourId().equals(request.getTourId())) {
-            throw new AppException(ErrorCode.BOOKING_NOT_BELONG_TO_TOUR);
-        }
-
-        List<GuestInsuranceResponse> guestInsuranceResponses = request.getBookingGuessIds()
-                .stream()
-                .map(GuestId -> {
-                    BookingGuest guest = bookingGuestRepository.findById(GuestId)
-                            .orElseThrow(() -> new AppException(ErrorCode.BOOKING_GUEST_NOT_FOUND));
-                    if (!guest.getBooking().getBookingId().equals(request.getBookingId())) {
-                        throw new AppException(ErrorCode.BOOKING_GUEST_NOT_BELONG_TO_BOOKING);
-                    }
-
-                    String uuid = UUID.randomUUID().toString();
-                    guest.setInsuranceNumber(uuid);
-                    guest.setInsuranceStatus(InsuranceStatus.Success);
-                    bookingGuestRepository.save(guest);
-
-                    BookingGuestResponse guestResponse = bookingMapper.toBookingGuestResponse(guest);
-                    return bookingMapper.toGuestInsuranceResponse(guestResponse, uuid, InsuranceStatus.Success);
-                }).toList();
-
-        InsuranceResponse response = new InsuranceResponse();
-        response.setTourId(request.getTourId());
-        response.setBookingId(request.getBookingId());
-        response.setGuestInsuranceResponses(guestInsuranceResponses);
+    private BookingResponse buildBookingResponse(Booking booking, String tourName, List<BookingGuest> guests) {
+        BookingResponse response = bookingMapper.toBookingResponse(booking);
+        response.setTourName(tourName);
+        response.setGuests(bookingMapper.toBookingGuestResponses(guests));
         return response;
     }
 
@@ -115,7 +105,7 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
-        Tour tour = tourRepository.findById(booking.getTourId())
+        Tour tour = tourRepository.findById(booking.getTour().getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         // Load guests
@@ -135,7 +125,7 @@ public class BookingService {
 
         return bookings.stream()
                 .map(booking -> {
-                    Tour tour = tourRepository.findById(booking.getTourId()).orElse(null);
+                    Tour tour = tourRepository.findById(booking.getTour().getTourId()).orElse(null);
                     return mapToBookingResponse(booking, tour);
                 })
                 .toList();
@@ -143,7 +133,7 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<BookingResponse> getBookingsByTourId(Long tourId) {
-        List<Booking> bookings = bookingRepository.findByTourIdOrderByCreatedAtDesc(tourId);
+        List<Booking> bookings = bookingRepository.findByTour_TourIdOrderByCreatedAtDesc(tourId);
         Tour tour = tourRepository.findById(tourId).orElse(null);
 
         return bookings.stream()
@@ -174,7 +164,7 @@ public class BookingService {
 
         return bookings.stream()
                 .map(booking -> {
-                    Tour tour = tourRepository.findById(booking.getTourId()).orElse(null);
+                    Tour tour = tourRepository.findById(booking.getTour().getTourId()).orElse(null);
                     String tourName = (tour != null ? tour.getTourName() : "Unknown Tour");
                     BigDecimal totalAmount = calculateBookingTotal(booking.getBookingId());
 
@@ -188,7 +178,7 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
-        Tour tour = tourRepository.findById(booking.getTourId())
+        Tour tour = tourRepository.findById(booking.getTour().getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         BigDecimal adultTotal = tour.getAdultPrice().multiply(BigDecimal.valueOf(booking.getAdultsCount()));
@@ -236,7 +226,7 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
-        Tour tour = tourRepository.findById(booking.getTourId())
+        Tour tour = tourRepository.findById(booking.getTour().getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         emailService.sendBookingConfirmationEmailAsync(booking, tour);
@@ -265,7 +255,7 @@ public class BookingService {
                 // Get booking and tour information
                 Booking booking = bookingRepository.findByIdWithGuests(bookingId).orElse(null);
                 if (booking != null) {
-                    Tour tour = tourRepository.findById(booking.getTourId()).orElse(null);
+                    Tour tour = tourRepository.findById(booking.getTour().getTourId()).orElse(null);
                     if (tour != null) {
                         emailService.sendBookingConfirmationEmailAsync(booking, tour);
                         log.info("Booking confirmation email sent for booking ID: {} after successful payment",
@@ -282,22 +272,26 @@ public class BookingService {
         }
     }
 
-    // BookingService
-
     @Transactional
-    public void markBookingPurchased(Long bookingId) {
+    public BookingResponse changeBookingStatus(Long bookingId, BookingStatus status) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        booking.setBookingStatus(BookingStatus.PURCHASED);
+        booking.setBookingStatus(status);
+
+        if(status.equals(BookingStatus.WAITING_FOR_UPDATE)) {
+            //TODO send notification for user to update booking
+        }
+
         bookingRepository.save(booking);
+        return bookingMapper.toBookingResponse(booking);
     }
 
     @Transactional
-    public void markBookingPending(Long bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        booking.setBookingStatus(BookingStatus.PENDING);
-        bookingRepository.save(booking);
+    public BookingGuestResponse changeBookingGuestInsuranceStatus(Long bookingGuestId, InsuranceStatus status) {
+        BookingGuest guest = bookingGuestRepository.findById(bookingGuestId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_GUEST_NOT_FOUND));
+        guest.setInsuranceStatus(status);
+        bookingGuestRepository.save(guest);
+        return bookingMapper.toBookingGuestResponse(guest);
     }
-
 }

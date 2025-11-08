@@ -24,9 +24,6 @@ public class Booking {
     @Column(name = "booking_id")
     private Long bookingId;
 
-    @Column(name = "tour_id", nullable = false)
-    private Long tourId;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tour_id", insertable = false, updatable = false)
     private Tour tour;
@@ -41,7 +38,7 @@ public class Booking {
     @Column(name = "contact_name", nullable = false, length = 100)
     private String contactName;
 
-    @Column(name = "contact_address", length = 255)
+    @Column(name = "contact_address")
     private String contactAddress;
 
     @Column(name = "contact_phone", nullable = false, length = 20)
@@ -50,7 +47,7 @@ public class Booking {
     @Column(name = "contact_email", length = 100)
     private String contactEmail;
 
-    @Column(name = "pickup_point", length = 255)
+    @Column(name = "pickup_point")
     private String pickupPoint;
 
     @Column(name = "note", columnDefinition = "TEXT")
@@ -81,13 +78,6 @@ public class Booking {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        if (this.bookingStatus == null) {
-            this.bookingStatus = BookingStatus.PENDING;
-        }
-        this.adultsCount = 1;
-        this.childrenCount = 0;
-        this.babiesCount = 0;
-        // Calculate total guests
-        this.totalGuests = this.adultsCount + this.childrenCount + this.babiesCount;
+        this.bookingStatus = BookingStatus.PENDING_PAYMENT;
     }
 }
