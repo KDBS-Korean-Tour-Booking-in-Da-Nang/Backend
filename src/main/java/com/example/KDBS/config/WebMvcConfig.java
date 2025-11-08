@@ -16,6 +16,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         String location = "file:" + (uploadDir.endsWith("/") ? uploadDir : uploadDir + "/");
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations(location, "classpath:/uploads/")
+                .addResourceLocations("classpath:/templates/", "classpath:/static/")
                 .setCachePeriod(3600);
     }
 }

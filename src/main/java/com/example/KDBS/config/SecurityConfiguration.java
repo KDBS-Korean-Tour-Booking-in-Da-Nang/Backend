@@ -36,7 +36,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfiguration {
     private final String[] PUBLIC_RESOURCES = {
-            "/", "/index.html", "/google-login.html", "/css/**", "/js/**", "/images/**", "/uploads/**"
+            "/", "/index.html", "/widget/**", "/css/**", "/js/**", "/images/**", "/uploads/**"
     };
 
 //    private final String signature = "OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";

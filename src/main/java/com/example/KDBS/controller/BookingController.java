@@ -3,12 +3,10 @@ package com.example.KDBS.controller;
 import com.example.KDBS.dto.request.BookingPaymentRequest;
 import com.example.KDBS.dto.request.BookingRequest;
 import com.example.KDBS.dto.request.InsuranceRequest;
-import com.example.KDBS.dto.response.BookingGuestResponse;
-import com.example.KDBS.dto.response.BookingResponse;
-import com.example.KDBS.dto.response.BookingSummaryResponse;
-import com.example.KDBS.dto.response.InsuranceResponse;
+import com.example.KDBS.dto.request.TossCreateOrderRequest;
+import com.example.KDBS.dto.response.*;
 import com.example.KDBS.service.BookingService;
-import com.example.KDBS.service.VNPayService;
+import com.example.KDBS.service.TossPaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +22,7 @@ import java.util.Map;
 public class BookingController {
 
     private final BookingService bookingService;
-    private final VNPayService vnpayService;
+    private final TossPaymentService tossPaymentService;
 
     @PostMapping
     public ResponseEntity<BookingResponse> createBooking(@Valid @RequestBody BookingRequest request) {
@@ -33,38 +31,14 @@ public class BookingController {
     }
 
     @PostMapping("/payment")
-    public ResponseEntity<Map<String, Object>> createBookingPayment(@Valid @RequestBody BookingPaymentRequest request) {
-        try {
-            // booking details
-            BookingResponse booking = bookingService.getBookingById(request.getBookingId());
-            BigDecimal totalAmount = bookingService.calculateBookingTotal(request.getBookingId());
-            
-            //  order info
-            String orderInfo = String.format(
-                    "Booking payment for booking ID:%d | Tour:%s - %d guests on %s",
-                    request.getBookingId(),
-                    booking.getTourName(), 
-                    booking.getTotalGuests(), 
-                    booking.getDepartureDate());
-
-            //  VNPay payment
-            var result = vnpayService.createPayment(
-                    booking.getContactEmail(), 
-                    totalAmount, 
-                    orderInfo
-            );
-
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of(
-                            "success", false,
-                            "message", "Failed to create payment: " + e.getMessage()
-                    ));
-        }
+    public ResponseEntity<TossCreateOrderResponse> createBookingPayment(
+            @Valid @RequestBody BookingPaymentRequest request) {
+        TossCreateOrderResponse resp = tossPaymentService.createOrder(
+                TossCreateOrderRequest.builder().bookingId(request.getBookingId()).build()
+        );
+        return ResponseEntity.ok(resp);
     }
 
-    // Specific endpoints first (no path variables)
     @GetMapping("/email/{email}")
     public ResponseEntity<List<BookingResponse>> getBookingsByEmail(@PathVariable String email) {
         List<BookingResponse> responses = bookingService.getBookingsByEmail(email);

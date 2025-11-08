@@ -12,7 +12,6 @@ import java.util.Optional;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
     Optional<Transaction> findByOrderId(String orderId);
-
     List<Transaction> findByUser_EmailOrderByCreatedTimeDesc(String userEmail);
     List<Transaction> findByUser(User user);
 }
