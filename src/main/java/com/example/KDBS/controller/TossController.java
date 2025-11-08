@@ -2,6 +2,7 @@ package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.TossConfirmRequest;
 import com.example.KDBS.dto.request.TossCreateOrderRequest;
+import com.example.KDBS.dto.response.TossConfirmResponse;
 import com.example.KDBS.dto.response.TossCreateOrderResponse;
 import com.example.KDBS.service.TossPaymentService;
 import jakarta.validation.Valid;
@@ -24,9 +25,9 @@ public class TossController {
     }
 
     @PostMapping("/confirm")
-    public ResponseEntity<JSONObject> confirm(@Valid @RequestBody TossConfirmRequest req) {
-        JSONObject res = tossPaymentService.confirmPayment(req);
-        int status = res.containsKey("error") ? 400 : 200;
+    public ResponseEntity<TossConfirmResponse> confirm(@Valid @RequestBody TossConfirmRequest req) {
+        TossConfirmResponse res = tossPaymentService.confirmPayment(req);
+        int status = res.isSuccess() ? 200 : 400;
         return ResponseEntity.status(status).body(res);
     }
 }

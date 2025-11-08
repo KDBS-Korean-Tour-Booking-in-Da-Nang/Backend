@@ -33,19 +33,12 @@ public class BookingController {
     @PostMapping("/payment")
     public ResponseEntity<TossCreateOrderResponse> createBookingPayment(
             @Valid @RequestBody BookingPaymentRequest request) {
-
-        // Chỉ đẩy bookingId sang service; service tự:
-        // - load booking/tour
-        // - tính totalAmount
-        // - build orderInfo
-        // - lưu transaction PENDING
-        var resp = tossPaymentService.createOrder(
-                new TossCreateOrderRequest(request.getBookingId())
+        TossCreateOrderResponse resp = tossPaymentService.createOrder(
+                TossCreateOrderRequest.builder().bookingId(request.getBookingId()).build()
         );
         return ResponseEntity.ok(resp);
     }
 
-    // Specific endpoints first (no path variables)
     @GetMapping("/email/{email}")
     public ResponseEntity<List<BookingResponse>> getBookingsByEmail(@PathVariable String email) {
         List<BookingResponse> responses = bookingService.getBookingsByEmail(email);
