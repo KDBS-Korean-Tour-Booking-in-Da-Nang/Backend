@@ -11,6 +11,7 @@ import com.example.KDBS.enums.BookingStatus;
 import com.example.KDBS.enums.InsuranceStatus;
 import com.example.KDBS.service.BookingService;
 import com.example.KDBS.service.TossPaymentService;
+import com.example.KDBS.service.VoucherService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,7 @@ public class BookingController {
 
     private final BookingService bookingService;
     private final TossPaymentService tossPaymentService;
+    private final VoucherService voucherService;
 
     @PostMapping
     public ResponseEntity<BookingResponse> createBooking(@Valid @RequestBody BookingRequest request) {
@@ -35,19 +37,22 @@ public class BookingController {
     }
 
     @PutMapping("/{bookingId}")
-    public ResponseEntity<BookingResponse> updateBooking(@PathVariable long bookingId, @Valid @RequestBody BookingRequest request) {
+    public ResponseEntity<BookingResponse> updateBooking(@PathVariable long bookingId,
+            @Valid @RequestBody BookingRequest request) {
         BookingResponse response = bookingService.updateBooking(bookingId, request);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/change-status/{bookingId}")
-    public ResponseEntity<BookingResponse> changeBookingStatus(@PathVariable long bookingId, @RequestParam BookingStatus status) {
+    public ResponseEntity<BookingResponse> changeBookingStatus(@PathVariable long bookingId,
+            @RequestParam BookingStatus status) {
         BookingResponse response = bookingService.changeBookingStatus(bookingId, status);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/booking-guest/insurance/change-status/{guestId}")
-    public ResponseEntity<BookingGuestResponse> changeBookingGuestInsuranceStatus(@PathVariable long guestId, @RequestParam InsuranceStatus status) {
+    public ResponseEntity<BookingGuestResponse> changeBookingGuestInsuranceStatus(@PathVariable long guestId,
+            @RequestParam InsuranceStatus status) {
         BookingGuestResponse response = bookingService.changeBookingGuestInsuranceStatus(guestId, status);
         return ResponseEntity.ok(response);
     }
@@ -100,7 +105,8 @@ public class BookingController {
             bookingService.sendBookingConfirmationEmail(bookingId);
             return ResponseEntity.ok(Map.of("success", "true", "message", "Email sent successfully"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", "false", "message", "Failed to send email: " + e.getMessage()));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", "false", "message", "Failed to send email: " + e.getMessage()));
         }
     }
 }

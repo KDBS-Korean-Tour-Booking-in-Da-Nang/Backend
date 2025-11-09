@@ -3,6 +3,7 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.request.ReactionRequest;
 import com.example.KDBS.dto.response.ReactionResponse;
 import com.example.KDBS.dto.response.ReactionSummaryResponse;
+import com.example.KDBS.enums.NotificationType;
 import com.example.KDBS.enums.ReactionTargetType;
 import com.example.KDBS.enums.ReactionType;
 import com.example.KDBS.exception.AppException;
@@ -14,6 +15,7 @@ import com.example.KDBS.model.Reaction;
 import com.example.KDBS.model.User;
 import com.example.KDBS.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReactionService {
 
     private final ReactionRepository reactionRepository;
@@ -30,6 +33,7 @@ public class ReactionService {
     private final UserRepository userRepository;
     private final PostImgRepository postImgRepository;
     private final ReactionMapper reactionMapper;   // <-- injected mapper
+    private final NotificationService notificationService;
 
     @Transactional
     public ReactionResponse addOrUpdateReaction(ReactionRequest request) {
@@ -68,6 +72,11 @@ public class ReactionService {
 
         Reaction saved = reactionRepository.save(newReaction);
         updateTargetReactionCount(request.getTargetId(), request.getTargetType(), 1);
+        
+        if (request.getReactionType() == ReactionType.LIKE) {
+            createNotificationForReaction(saved, request.getTargetType());
+        }
+        
         return reactionMapper.toReactionResponse(saved);
     }
 
@@ -201,5 +210,66 @@ public class ReactionService {
         return reactions.stream()
                 .map(reactionMapper::toReactionResponse)
                 .collect(Collectors.toList());
+    }
+
+
+    private void createNotificationForReaction(Reaction reaction, ReactionTargetType targetType) {
+        try {
+            User actor = reaction.getUser();
+            Long targetId = reaction.getTargetId();
+            User recipient = null;
+            NotificationType notificationType = null;
+            String title = null;
+            String message = null;
+            String targetTypeStr = null;
+
+            switch (targetType) {
+                case POST -> {
+                    ForumPost post = forumPostRepository.findById(targetId).orElse(null);
+                    if (post != null) {
+                        recipient = post.getUser();
+                        notificationType = NotificationType.LIKE_POST;
+                        title = "Ai đó đã thích bài viết của bạn";
+                        message = String.format("%s đã thích bài viết \"%s\" của bạn",
+                                actor.getUsername() != null ? actor.getUsername() : "Người dùng",
+                                post.getTitle() != null && !post.getTitle().isEmpty() 
+                                        ? post.getTitle() 
+                                        : "của bạn");
+                        targetTypeStr = "POST";
+                    }
+                }
+                case COMMENT -> {
+                    ForumComment comment = forumCommentRepository.findById(targetId).orElse(null);
+                    if (comment != null) {
+                        recipient = comment.getUser();
+                        notificationType = NotificationType.LIKE_COMMENT;
+                        title = "Ai đó đã thích bình luận của bạn";
+                        String commentPreview = comment.getContent() != null && comment.getContent().length() > 50
+                                ? comment.getContent().substring(0, 50) + "..."
+                                : comment.getContent();
+                        message = String.format("%s đã thích bình luận của bạn: \"%s\"",
+                                actor.getUsername() != null ? actor.getUsername() : "Người dùng",
+                                commentPreview != null ? commentPreview : "");
+                        targetTypeStr = "COMMENT";
+                    }
+                }
+            }
+
+            // Tạo notification
+            if (recipient != null && recipient.getUserId() != actor.getUserId()) {
+                notificationService.createNotification(
+                        recipient.getUserId(),
+                        actor.getUserId(),
+                        notificationType,
+                        targetId,
+                        targetTypeStr,
+                        title,
+                        message
+                );
+                log.debug("Notification created for reaction: {} on {}", targetType, targetId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to create notification for reaction: {}", e.getMessage(), e);
+        }
     }
 }

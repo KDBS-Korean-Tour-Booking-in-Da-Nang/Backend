@@ -75,6 +75,18 @@ public class Booking {
     @JsonManagedReference
     private List<BookingGuest> guests;
 
+    @Column(name = "voucher_id")
+    private Long voucherId;
+
+    @Column(name = "voucher_code", length = 100)
+    private String voucherCode;
+
+    @Column(name = "voucher_discount_applied", precision = 15, scale = 2)
+    private java.math.BigDecimal voucherDiscountApplied;
+
+    @Column(name = "voucher_locked")
+    private Boolean voucherLocked;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

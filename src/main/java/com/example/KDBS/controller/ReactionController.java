@@ -20,7 +20,6 @@ public class ReactionController {
 
     // Compatibility with the provided API spec
     @PostMapping("/add")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ReactionResponse> addReactionLegacy(
             @RequestBody ReactionRequest request) {
 

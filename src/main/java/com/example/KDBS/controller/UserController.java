@@ -87,6 +87,14 @@ public class UserController {
                 .build();
     }
 
+    @PutMapping("/{userId}/ban")
+    public ApiResponse<UserResponse> banOrUnbanUser(@PathVariable("userId") int userId,
+                                                    @RequestParam("ban") boolean ban) {
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.setUserBanStatus(userId, ban))
+                .build();
+    }
+
     @PutMapping(path = "/update-business-license", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateBusinessLicense(
             @RequestPart("file") MultipartFile file,
