@@ -8,16 +8,15 @@ import com.example.KDBS.dto.response.BookingSummaryResponse;
 import com.example.KDBS.enums.BookingGuestType;
 import com.example.KDBS.enums.BookingStatus;
 import com.example.KDBS.enums.InsuranceStatus;
+import com.example.KDBS.enums.NotificationType;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.BookingMapper;
-import com.example.KDBS.model.Booking;
-import com.example.KDBS.model.BookingGuest;
-import com.example.KDBS.model.Tour;
-import com.example.KDBS.model.Transaction;
+import com.example.KDBS.model.*;
 import com.example.KDBS.repository.BookingGuestRepository;
 import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TourRepository;
+import com.example.KDBS.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -33,8 +33,10 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final BookingGuestRepository bookingGuestRepository;
     private final TourRepository tourRepository;
+    private final UserRepository userRepository;
     private final EmailService emailService;
     private final BookingMapper bookingMapper;
+    private final NotificationService notificationService;
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
@@ -50,7 +52,7 @@ public class BookingService {
         List<BookingGuest> savedGuests = saveBookingGuests(request.getBookingGuestRequests(), savedBooking);
         savedBooking.setGuests(savedGuests);
 
-        return buildBookingResponse(savedBooking, tour.getTourName(), savedGuests);
+        return buildBookingResponse(savedBooking, tour, savedGuests);
     }
 
     @Transactional
@@ -78,7 +80,7 @@ public class BookingService {
         // Set status to wait for approved after update
         existingBooking.setBookingStatus(BookingStatus.WAITING_FOR_APPROVED);
 
-        return buildBookingResponse(existingBooking, existingBooking.getTour().getTourName(), savedGuests);
+        return buildBookingResponse(existingBooking, existingBooking.getTour(), savedGuests);
     }
 
     private List<BookingGuest> saveBookingGuests(List<BookingGuestRequest> guestRequests, Booking booking) {
@@ -93,11 +95,48 @@ public class BookingService {
         return bookingGuestRepository.saveAll(guests);
     }
 
-    private BookingResponse buildBookingResponse(Booking booking, String tourName, List<BookingGuest> guests) {
+    private BookingResponse buildBookingResponse(Booking booking, Tour tour, List<BookingGuest> guests) {
         BookingResponse response = bookingMapper.toBookingResponse(booking);
-        response.setTourName(tourName);
+        response.setTourName(tour.getTourName());
         response.setGuests(bookingMapper.toBookingGuestResponses(guests));
+
+        // Tạo thông báo cho company (owner của tour)
+        createNotificationForBooking(booking, tour);
+
         return response;
+    }
+
+    private void createNotificationForBooking(Booking booking, Tour tour) {
+        try {
+            Optional<User> companyOpt = userRepository.findById(tour.getCompanyId());
+            if (companyOpt.isEmpty()) {
+                log.warn("Company not found for tour {} with companyId {}", tour.getTourId(), tour.getCompanyId());
+                return;
+            }
+
+            User company = companyOpt.get();
+            User bookingUser = null;
+            if (booking.getUserEmail() != null && !booking.getUserEmail().isEmpty()) {
+                bookingUser = userRepository.findByEmail(booking.getUserEmail()).orElse(null);
+            }
+
+            String actorName = bookingUser != null && bookingUser.getUsername() != null
+                    ? bookingUser.getUsername()
+                    : booking.getContactName() != null ? booking.getContactName() : "Người dùng";
+
+            notificationService.createNotification(
+                    company.getUserId(),
+                    bookingUser != null ? bookingUser.getUserId() : null,
+                    NotificationType.NEW_BOOKING,
+                    tour.getTourId(),
+                    "TOUR",
+                    "Có booking mới cho tour của bạn",
+                    String.format("%s đã đặt tour \"%s\" của bạn", actorName, tour.getTourName()));
+
+            log.debug("Notification created for new booking: {} on tour {}", booking.getBookingId(), tour.getTourId());
+        } catch (Exception e) {
+            log.error("Failed to create notification for booking: {}", e.getMessage(), e);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -244,8 +283,10 @@ public class BookingService {
             log.info("Processing transaction orderInfo: {}", orderInfo);
             if (orderInfo != null && orderInfo.contains("Booking payment for booking ID:")) {
 
-                //Get booking ID by parsing orderInfo replace and split then get first part and trim
-                //Example: "Booking payment for booking ID: 123 | Tour: Amazing Tour - 2 guests on 2023-10-15"
+                // Get booking ID by parsing orderInfo replace and split then get first part and
+                // trim
+                // Example: "Booking payment for booking ID: 123 | Tour: Amazing Tour - 2 guests
+                // on 2023-10-15"
                 String bookingIdStr = orderInfo.replace("Booking payment for booking ID:", "")
                         .split("\\|")[0]
                         .trim();
@@ -278,8 +319,8 @@ public class BookingService {
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
         booking.setBookingStatus(status);
 
-        if(status.equals(BookingStatus.WAITING_FOR_UPDATE)) {
-            //TODO send notification for user to update booking
+        if (status.equals(BookingStatus.WAITING_FOR_UPDATE)) {
+            // TODO send notification for user to update booking
         }
 
         bookingRepository.save(booking);

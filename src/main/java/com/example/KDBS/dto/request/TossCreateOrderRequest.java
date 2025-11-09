@@ -15,6 +15,14 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @RequiredArgsConstructor
 public class TossCreateOrderRequest {
-    @NotNull
-    private Long bookingId;
+    @NotBlank(message = "User email is required")
+    @Email(message = "Invalid email format")
+    @Size(max = 100, message = "Email must not exceed 100 characters")
+    private String userEmail;
+
+    @NotNull(message = "Amount is required")
+    private BigDecimal amount;
+
+    @NotBlank(message = "Order information is required")
+    private String orderInfo;
 }

@@ -71,14 +71,12 @@ public class VoucherService {
 
     @Transactional(readOnly = true)
     public ApplyVoucherResponse previewApplyVoucher(ApplyVoucherRequest request) {
-        List<ApplyVoucherResponse> availableVouchers = previewAllAvailableVouchers(request.getBookingId());
-        
-        ApplyVoucherResponse found = availableVouchers.stream()
-                .filter(v -> v.getVoucherCode().equals(request.getVoucherCode()))
-                .findFirst()
+        Booking booking = bookingRepository.findById(request.getBookingId())
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
+        Voucher voucher = voucherRepository.findByCompanyIdAndCode(booking.getTour().getCompanyId(), request.getVoucherCode())
                 .orElseThrow(() -> new AppException(ErrorCode.VOUCHER_NOT_FOUND));
-        
-        return found;
+        return voucherMapper.toApplyVoucherResponse(voucher);
     }
 
     @Transactional
@@ -190,7 +188,7 @@ public class VoucherService {
     public List<ApplyVoucherResponse> previewAllAvailableVouchers(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        Tour tour = tourRepository.findById(booking.getTourId())
+        Tour tour = tourRepository.findById(booking.getTour().getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         List<Voucher> vouchers = voucherRepository.findByCompanyId(tour.getCompanyId());
