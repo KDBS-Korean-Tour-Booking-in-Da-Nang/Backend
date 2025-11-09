@@ -4,6 +4,7 @@ import com.example.KDBS.enums.ArticleStatus;
 import com.example.KDBS.model.Article;
 import com.example.KDBS.repository.ArticleRepository;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -12,18 +13,13 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class ArticleService {
     private final ArticleRepository articleRepository;
-
-    public ArticleService(ArticleRepository articleRepository) {
-        this.articleRepository = articleRepository;
-    }
 
     public List<Article> getAllArticles() {
         return articleRepository.findAll();
@@ -42,7 +38,6 @@ public class ArticleService {
         return articleRepository.findById(articleId)
                 .map(article -> {
                     article.setArticleStatus(newStatus);
-                    articleRepository.save(article);
                     log.info("Updated article {} status to {}", articleId, newStatus);
                     return article;
                 })
@@ -63,8 +58,24 @@ public class ArticleService {
             //select all articles
             Elements articles = doc.select("li.tintuccat");
 
+            List<String> links = new ArrayList<>();
             int count = 0;
             for(Element article : articles) {
+                if (count >= 5) break;
+                String link = article.select("h3 > a").attr("abs:href").trim();
+
+                if (!link.isEmpty()) {
+                    links.add(link);
+                    count++;
+                }
+            }
+
+            Set<String> existingLinks = new HashSet<>(
+                articleRepository.findExistingArticleLinks(links)
+            );
+
+            count = 0;
+            for (Element article : articles) {
                 if (count >= 5) break;
                 String link = article.select("h3 > a").attr("abs:href").trim();
 
@@ -74,7 +85,7 @@ public class ArticleService {
 
                 //If we already have this article, stop crawling further
                 //since danangxanh lists newest articles first
-                if (articleRepository.findByArticleLink(link).isPresent()) {
+                if (existingLinks.contains(link)) {
                     log.info("Existing article found ({}). Stopping crawl early.", link);
                     break;
                 }
@@ -100,9 +111,12 @@ public class ArticleService {
                         .build();
 
                 crawledArticles.add(newArticle);
-
-                articleRepository.save(newArticle);
                 count++;
+            }
+
+            if (!crawledArticles.isEmpty()) {
+                articleRepository.saveAll(crawledArticles);
+                log.info("Saved {} new articles in batch", crawledArticles.size());
             }
         }
         catch (IOException e) {

@@ -43,6 +43,9 @@ public class User {
     @Column(name = "dob")
     private LocalDate dob;
 
+    @Column(name = "address", length = 500)
+    private String address;
+
     @Column(name = "cccd", length = 12, unique = true)
     private String cccd;
 

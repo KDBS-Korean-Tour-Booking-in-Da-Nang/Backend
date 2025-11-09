@@ -23,4 +23,6 @@ public class UserUpdateRequest {
 
     @Size(max = 3, message = "Gender must not exceed 3 characters")
     private String gender;
+
+    private String address;
 }

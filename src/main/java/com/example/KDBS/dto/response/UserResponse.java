@@ -19,6 +19,7 @@ public class UserResponse {
     private String avatar;
     private String phone;
     private LocalDate dob;
+    private String address;
     private String cccd;
     private BigDecimal balance;
     private String gender;

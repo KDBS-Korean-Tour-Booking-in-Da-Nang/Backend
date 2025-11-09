@@ -2,14 +2,15 @@ package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.BookingPaymentRequest;
 import com.example.KDBS.dto.request.BookingRequest;
-import com.example.KDBS.dto.request.InsuranceRequest;
+import com.example.KDBS.dto.request.TossCreateOrderRequest;
 import com.example.KDBS.dto.response.BookingGuestResponse;
 import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
-import com.example.KDBS.dto.response.InsuranceResponse;
+import com.example.KDBS.dto.response.TossCreateOrderResponse;
+import com.example.KDBS.enums.BookingStatus;
+import com.example.KDBS.enums.InsuranceStatus;
 import com.example.KDBS.service.BookingService;
-import com.example.KDBS.service.VoucherService;
-import com.example.KDBS.service.VNPayService;
+import com.example.KDBS.service.TossPaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,8 +26,7 @@ import java.util.Map;
 public class BookingController {
 
     private final BookingService bookingService;
-    private final VNPayService vnpayService;
-    private final VoucherService voucherService;
+    private final TossPaymentService tossPaymentService;
 
     @PostMapping
     public ResponseEntity<BookingResponse> createBooking(@Valid @RequestBody BookingRequest request) {
@@ -34,49 +34,33 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/payment")
-    public ResponseEntity<Map<String, Object>> createBookingPayment(@Valid @RequestBody BookingPaymentRequest request) {
-        try {
-            // booking details
-            BookingResponse booking = bookingService.getBookingById(request.getBookingId());
-            BigDecimal totalAmount = bookingService.calculateBookingTotal(request.getBookingId());
-
-            if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
-                var preview = voucherService.previewApplyVoucher(
-                        com.example.KDBS.dto.request.ApplyVoucherRequest.builder()
-                                .bookingId(request.getBookingId())
-                                .voucherCode(request.getVoucherCode())
-                                .build());
-                voucherService.attachVoucherToBookingPending(request.getBookingId(), preview);
-                totalAmount = preview.getFinalTotal();
-            }
-            
-            //  order info
-            String orderInfo = String.format(
-                    "Booking payment for booking ID:%d | Tour:%s - %d guests on %s",
-                    request.getBookingId(),
-                    booking.getTourName(), 
-                    booking.getTotalGuests(), 
-                    booking.getDepartureDate());
-
-            //  VNPay payment
-            var result = vnpayService.createPayment(
-                    booking.getContactEmail(), 
-                    totalAmount, 
-                    orderInfo
-            );
-
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of(
-                            "success", false,
-                            "message", "Failed to create payment: " + e.getMessage()
-                    ));
-        }
+    @PutMapping("/{bookingId}")
+    public ResponseEntity<BookingResponse> updateBooking(@PathVariable long bookingId, @Valid @RequestBody BookingRequest request) {
+        BookingResponse response = bookingService.updateBooking(bookingId, request);
+        return ResponseEntity.ok(response);
     }
 
-    // Specific endpoints first (no path variables)
+    @PutMapping("/change-status/{bookingId}")
+    public ResponseEntity<BookingResponse> changeBookingStatus(@PathVariable long bookingId, @RequestParam BookingStatus status) {
+        BookingResponse response = bookingService.changeBookingStatus(bookingId, status);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/booking-guest/insurance/change-status/{guestId}")
+    public ResponseEntity<BookingGuestResponse> changeBookingGuestInsuranceStatus(@PathVariable long guestId, @RequestParam InsuranceStatus status) {
+        BookingGuestResponse response = bookingService.changeBookingGuestInsuranceStatus(guestId, status);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/payment")
+    public ResponseEntity<TossCreateOrderResponse> createBookingPayment(
+            @Valid @RequestBody BookingPaymentRequest request) {
+        TossCreateOrderResponse resp = tossPaymentService.createOrder(
+                TossCreateOrderRequest.builder().bookingId(request.getBookingId()).build()
+        );
+        return ResponseEntity.ok(resp);
+    }
+
     @GetMapping("/email/{email}")
     public ResponseEntity<List<BookingResponse>> getBookingsByEmail(@PathVariable String email) {
         List<BookingResponse> responses = bookingService.getBookingsByEmail(email);
@@ -122,10 +106,5 @@ public class BookingController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", "false", "message", "Failed to send email: " + e.getMessage()));
         }
-    }
-
-    @PostMapping("/insurance/register")
-    public ResponseEntity<InsuranceResponse> registerInsurance(@RequestBody InsuranceRequest request) {
-        return ResponseEntity.ok(bookingService.registerInsurance(request));
     }
 }

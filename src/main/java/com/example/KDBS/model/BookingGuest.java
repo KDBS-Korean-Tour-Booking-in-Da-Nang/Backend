@@ -50,9 +50,6 @@ public class BookingGuest {
     @Column(name = "guest_type", nullable = false)
     private BookingGuestType bookingGuestType;
 
-    @Column(name = "insurance_number", length = 100)
-    private String insuranceNumber;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "insurance_status", length = 50)
     private InsuranceStatus insuranceStatus;

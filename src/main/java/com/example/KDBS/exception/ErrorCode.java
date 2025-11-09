@@ -79,12 +79,17 @@ public enum ErrorCode {
     CANNOT_MODIFY_ANOTHER_ACCOUNT(1062,"You are not authorized to modify another user's account",HttpStatus.FORBIDDEN),
     WRONG_EMAIL(1063, "Wrong email", HttpStatus.NOT_FOUND),
     WRONG_PASSWORD(1064, "Wrong password", HttpStatus.FORBIDDEN),
-    NOTIFICATION_NOT_FOUND(1065, "Notification not found", HttpStatus.NOT_FOUND),
-    NO_PERMISSION(1066, "You do not have permission to perform this action", HttpStatus.FORBIDDEN),
-    VOUCHER_NOT_FOUND(1067, "Voucher not found", HttpStatus.NOT_FOUND),
-    VOUCHER_ALREADY_EXISTED(1068, "Voucher already existed", HttpStatus.BAD_REQUEST),
-    VOUCHER_INVALID(1069, "Voucher is invalid or cannot be applied", HttpStatus.BAD_REQUEST),
-    RUN_TIME_EXCEPTION(1999, "Runtime exception occurred", HttpStatus.INTERNAL_SERVER_ERROR)
+    RUN_TIME_EXCEPTION(1999, "Runtime exception occurred", HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_AMOUNT(1065, "Invalid amount", HttpStatus.BAD_REQUEST),
+    AMOUNT_MISMATCH(1066, "Amount does not match", HttpStatus.BAD_REQUEST),
+    INVALID_REQUEST(1067, "Invalid request: %s", HttpStatus.BAD_REQUEST),
+    TOSS_PAYMENT_CONFIRM_FAILED(1067, "Toss payment confirmation failed", HttpStatus.BAD_REQUEST),
+    VN_PAY_PAYMENT_FAILED(1068, "VN Pay payment failed", HttpStatus.BAD_REQUEST),
+    UNKNOWN_ERROR(1099, "Unknown error occurred", HttpStatus.INTERNAL_SERVER_ERROR),
+    EXTERNAL_SERVICE_ERROR(1069, "External service error: %s", HttpStatus.SERVICE_UNAVAILABLE),
+    TRANSACTION_INVALID_STATE(1070, "Transaction is in an invalid state for this operation", HttpStatus.BAD_REQUEST),
+    TRANSACTION_AMOUNT_NOT_MATCH(1071, "Transaction amount does not match the expected amount", HttpStatus.BAD_REQUEST),
+    BOOKING_CANNOT_BE_UPDATE(1072, "Booking cannot be updated in its current status", HttpStatus.BAD_REQUEST)
     ;
 
     private final int code;
