@@ -58,8 +58,37 @@ public class BookingController {
     }
 
     @PostMapping("/payment")
-    public ResponseEntity<TossCreateOrderResponse> createPayment(@RequestBody TossCreateOrderRequest req) {
-        return ResponseEntity.ok(tossPaymentService.createOrder(req));
+    public ResponseEntity<TossCreateOrderResponse> createBookingPayment(@RequestBody BookingPaymentRequest request) {
+        // booking details
+        BookingResponse booking = bookingService.getBookingById(request.getBookingId());
+        BigDecimal totalAmount = bookingService.calculateBookingTotal(request.getBookingId());
+
+        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
+            var preview = voucherService.previewApplyVoucher(
+                    com.example.KDBS.dto.request.ApplyVoucherRequest.builder()
+                            .bookingId(request.getBookingId())
+                            .voucherCode(request.getVoucherCode())
+                            .build());
+            voucherService.attachVoucherToBookingPending(request.getBookingId(), preview);
+            totalAmount = preview.getFinalTotal();
+        }
+
+        //  order info
+        String orderInfo = String.format(
+                "Booking payment for booking ID:%d | Tour:%s - %d guests on %s",
+                request.getBookingId(),
+                booking.getTourName(),
+                booking.getTotalGuests(),
+                booking.getDepartureDate());
+
+        TossCreateOrderRequest orderRequest = TossCreateOrderRequest.builder()
+                .userEmail(booking.getContactEmail())
+                .amount(totalAmount)
+                .orderInfo(orderInfo)
+                .build();
+        var result = tossPaymentService.createOrder(orderRequest);
+
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/email/{email}")

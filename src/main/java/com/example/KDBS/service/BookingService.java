@@ -12,11 +12,7 @@ import com.example.KDBS.enums.NotificationType;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.BookingMapper;
-import com.example.KDBS.model.Booking;
-import com.example.KDBS.model.BookingGuest;
-import com.example.KDBS.model.Tour;
-import com.example.KDBS.model.Transaction;
-import com.example.KDBS.model.User;
+import com.example.KDBS.model.*;
 import com.example.KDBS.repository.BookingGuestRepository;
 import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TourRepository;
@@ -29,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -57,7 +52,7 @@ public class BookingService {
         List<BookingGuest> savedGuests = saveBookingGuests(request.getBookingGuestRequests(), savedBooking);
         savedBooking.setGuests(savedGuests);
 
-        return buildBookingResponse(savedBooking, tour.getTourName(), savedGuests);
+        return buildBookingResponse(savedBooking, tour, savedGuests);
     }
 
     @Transactional
@@ -85,7 +80,7 @@ public class BookingService {
         // Set status to wait for approved after update
         existingBooking.setBookingStatus(BookingStatus.WAITING_FOR_APPROVED);
 
-        return buildBookingResponse(existingBooking, existingBooking.getTour().getTourName(), savedGuests);
+        return buildBookingResponse(existingBooking, existingBooking.getTour(), savedGuests);
     }
 
     private List<BookingGuest> saveBookingGuests(List<BookingGuestRequest> guestRequests, Booking booking) {
@@ -100,13 +95,13 @@ public class BookingService {
         return bookingGuestRepository.saveAll(guests);
     }
 
-    private BookingResponse buildBookingResponse(Booking booking, String tourName, List<BookingGuest> guests) {
+    private BookingResponse buildBookingResponse(Booking booking, Tour tour, List<BookingGuest> guests) {
         BookingResponse response = bookingMapper.toBookingResponse(booking);
-        response.setTourName(tourName);
+        response.setTourName(tour.getTourName());
         response.setGuests(bookingMapper.toBookingGuestResponses(guests));
 
         // Tạo thông báo cho company (owner của tour)
-        createNotificationForBooking(savedBooking, tour);
+        createNotificationForBooking(booking, tour);
 
         return response;
     }

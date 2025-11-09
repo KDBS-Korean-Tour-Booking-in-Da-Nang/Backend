@@ -141,31 +141,30 @@ public class TossPaymentService {
                             TransactionStatus.SUCCESS,
                             BookingStatus.WAITING_FOR_APPROVED,
                             "Toss success");
-                }
-                return builder
-                        .success(true)
-                        .transactionStatus(TransactionStatus.SUCCESS)
-                        .bookingStatus(BookingStatus.WAITING_FOR_APPROVED)
-                        .responseTime(LocalDateTime.now().toString())
-                        .build();
-            }
 
+                    return builder
+                            .success(true)
+                            .transactionStatus(TransactionStatus.SUCCESS)
+                            .orderInfo(tx.getOrderInfo())
+                            .responseTime(LocalDateTime.now().toString())
+                            .build();
+                }
+                return null;
+            }
             // 5) Thất bại từ Toss → cập nhật FAILED + PENDING booking
             if (tx != null) {
                 updateTxAndBooking(tx,
                         TransactionStatus.FAILED,
                         BookingStatus.PENDING_PAYMENT,
                         "Toss failed");
+                return builder
+                        .success(false)
+                        .transactionStatus(TransactionStatus.FAILED)
+                        .orderInfo(tx.getOrderInfo())
+                        .responseTime(LocalDateTime.now().toString())
+                        .build();
             }
-            return builder
-                    .success(false)
-                    .transactionStatus(TransactionStatus.FAILED)
-                    .bookingStatus(BookingStatus.PENDING_PAYMENT)
-                    .code(json.path("code").asText("CONFIRM_FAILED"))
-                    .message(json.path("message").asText("Toss confirm failed"))
-                    .responseTime(LocalDateTime.now().toString())
-                    .build();
-
+            return null;
         } catch (Exception e) {
             log.error("Toss confirm error", e);
 
@@ -180,9 +179,6 @@ public class TossPaymentService {
             return baseConfirmBuilder(req)
                     .success(false)
                     .transactionStatus(TransactionStatus.FAILED)
-                    .bookingStatus(BookingStatus.PENDING_PAYMENT)
-                    .code("CONFIRM_FAILED")
-                    .message("Runtime error: " + e.getMessage())
                     .responseTime(LocalDateTime.now().toString())
                     .build();
         }
@@ -191,7 +187,6 @@ public class TossPaymentService {
     private TossConfirmResponse.TossConfirmResponseBuilder baseConfirmBuilder(TossConfirmRequest req) {
         return TossConfirmResponse.builder()
                 .orderId(req.getOrderId())
-                .paymentKey(req.getPaymentKey())
                 .amount(req.getAmount())
                 .payType("TOSS");
     }
