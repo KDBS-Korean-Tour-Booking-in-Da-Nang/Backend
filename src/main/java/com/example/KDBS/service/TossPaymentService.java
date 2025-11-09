@@ -14,22 +14,19 @@ import com.example.KDBS.model.User;
 import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TransactionRepository;
 import com.example.KDBS.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Base64;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service xử lý TossPayments (tạo order + confirm).
@@ -39,6 +36,7 @@ import java.util.*;
 @Slf4j
 public class TossPaymentService {
 
+    private final VoucherService voucherService;
     @Value("${toss.client-key}")
     private String clientKey;
 
@@ -105,37 +103,14 @@ public class TossPaymentService {
                 .build();
     }
 
-    public TossConfirmResponse confirmPayment(TossConfirmRequest req) {
+    public TossConfirmResponse confirmPayment(TossConfirmRequest req, boolean isSuccess) {
         try {
-            // 1) Gọi Toss confirm
-            String url = tossApiUrl + "/v1/payments/confirm";
-            String basic = Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Basic " + basic);
-
-            ObjectNode body = mapper.createObjectNode();
-            body.put("paymentKey", req.getPaymentKey());
-            body.put("orderId", req.getOrderId());
-            body.put("amount", req.getAmount()); // number
-
-            HttpEntity<String> entity = new HttpEntity<>(mapper.writeValueAsString(body), headers);
-            ResponseEntity<String> res = restTemplate.postForEntity(url, entity, String.class);
-
-            // 2) Parse JSON của Toss (status, code, message,...)
-            JsonNode json = mapper.readTree(res.getBody());
-
-            // 3) Lấy transaction theo orderId
             Optional<Transaction> txOpt = transactionRepository.findByOrderId(req.getOrderId());
             Transaction tx = txOpt.orElse(null);
 
             // Mặc định response DTO
             TossConfirmResponse.TossConfirmResponseBuilder builder = baseConfirmBuilder(req);
-
-            // 4) Thành công (HTTP 200 và có trường "status")
-            boolean ok = res.getStatusCode().is2xxSuccessful() && json.hasNonNull("status");
-            if (ok) {
+            if (isSuccess) {
                 if (tx != null) {
                     updateTxAndBooking(tx,
                             TransactionStatus.SUCCESS,
@@ -202,6 +177,12 @@ public class TossPaymentService {
         if (bookingId != null) {
             bookingRepository.findById(bookingId).ifPresent(b -> {
                 b.setBookingStatus(bookingStatus);
+                if (txStatus == TransactionStatus.SUCCESS) {
+                    voucherService.lockVoucherOnPaymentSuccess(bookingId);
+                }
+                else {
+                    voucherService.unlockVoucherOnBookingCancelled(bookingId);
+                }
                 bookingRepository.save(b);
             });
         }
