@@ -9,18 +9,16 @@ import com.example.KDBS.enums.PaymentMethod;
 import com.example.KDBS.enums.TransactionStatus;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
-import com.example.KDBS.model.Booking;
-import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.Transaction;
 import com.example.KDBS.model.User;
 import com.example.KDBS.repository.BookingRepository;
-import com.example.KDBS.repository.TourRepository;
 import com.example.KDBS.repository.TransactionRepository;
 import com.example.KDBS.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.minidev.json.JSONObject;
-import net.minidev.json.parser.JSONParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -57,32 +55,32 @@ public class TossPaymentService {
     private String failUrl;
 
     private final BookingRepository bookingRepository;
-    private final TourRepository tourRepository;
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final RestTemplate restTemplate;
 
+    private final ObjectMapper mapper = new ObjectMapper();
+
     public TossCreateOrderResponse createOrder(TossCreateOrderRequest req) {
-        Booking booking = bookingRepository.findById(req.getBookingId())
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        Tour tour = tourRepository.findById(booking.getTour().getTourId())
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
-        // Tính tổng tiền booking (giống logic của bạn)
-        BigDecimal amount = calcTotalAmount(booking, tour);
+        // 1) Lấy user
+        User user = userRepository.findByEmail(req.getUserEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
 
-        // customerKey: KHÔNG dùng email thô → mã hoá/đặt key ổn định theo user/email
-        String safeEmail = booking.getContactEmail() != null ? booking.getContactEmail() : booking.getUserEmail();
-        if (safeEmail == null) throw new AppException(ErrorCode.EMAIL_NOT_EXISTED);
+        // 2) Lấy amount từ FE
+        BigDecimal amount = req.getAmount();
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppException(ErrorCode.INVALID_AMOUNT);
+        }
+
+        // 3) customerKey = safe, theo email
         String customerKey = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(("cust:" + safeEmail).getBytes(StandardCharsets.UTF_8));
+                .encodeToString(("cust:" + user.getEmail()).getBytes(StandardCharsets.UTF_8));
 
-        // orderId unique
-        String orderId = "BOOKING_" + booking.getBookingId() + "_" + UUID.randomUUID();
+        // 4) Tạo orderId duy nhất (dùng cho mọi loại payment)
+        String orderId = "ORDER_" + System.currentTimeMillis() + "_" + UUID.randomUUID();
 
-        // Lưu transaction ở trạng thái PENDING
-        User user = userRepository.findByEmail(safeEmail)
-                .orElse(null); // nếu không có user trong hệ thống thì để null
+        // 5) Lưu transaction PENDING
         Transaction tx = new Transaction();
         tx.setTransactionId(UUID.randomUUID().toString());
         tx.setOrderId(orderId);
@@ -90,19 +88,20 @@ public class TossPaymentService {
         tx.setUser(user);
         tx.setStatus(TransactionStatus.PENDING);
         tx.setPaymentMethod(PaymentMethod.TOSS);
-        tx.setOrderInfo("Booking payment for booking ID:" + booking.getBookingId());
+        tx.setOrderInfo(req.getOrderInfo());
         tx.setCreatedTime(LocalDateTime.now());
         tx.setUpdatedTime(LocalDateTime.now());
         transactionRepository.save(tx);
 
+        // 6) Trả về dữ liệu cho FE gọi Toss widget
         return TossCreateOrderResponse.builder()
                 .success(true)
                 .clientKey(clientKey)
                 .customerKey(customerKey)
                 .amount(amount)
                 .orderId(orderId)
-                .successUrl(successUrl) // ex: http://localhost:8080/widget/success.html
-                .failUrl(failUrl)       // ex: http://localhost:8080/fail.html
+                .successUrl(successUrl)
+                .failUrl(failUrl)
                 .build();
     }
 
@@ -110,117 +109,78 @@ public class TossPaymentService {
         try {
             // 1) Gọi Toss confirm
             String url = tossApiUrl + "/v1/payments/confirm";
-
-            String basic = Base64.getEncoder()
-                    .encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
+            String basic = Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Basic " + basic);
 
-            JSONObject body = new JSONObject();
+            ObjectNode body = mapper.createObjectNode();
             body.put("paymentKey", req.getPaymentKey());
             body.put("orderId", req.getOrderId());
-            body.put("amount", req.getAmount()); // phải là number
+            body.put("amount", req.getAmount()); // number
 
-            HttpEntity<String> entity = new HttpEntity<>(body.toJSONString(), headers);
+            HttpEntity<String> entity = new HttpEntity<>(mapper.writeValueAsString(body), headers);
             ResponseEntity<String> res = restTemplate.postForEntity(url, entity, String.class);
 
             // 2) Parse JSON của Toss (status, code, message,...)
-            JSONObject json = (JSONObject) new JSONParser().parse(res.getBody());
+            JsonNode json = mapper.readTree(res.getBody());
 
             // 3) Lấy transaction theo orderId
             Optional<Transaction> txOpt = transactionRepository.findByOrderId(req.getOrderId());
             Transaction tx = txOpt.orElse(null);
 
             // Mặc định response DTO
-            TossConfirmResponse.TossConfirmResponseBuilder builder = TossConfirmResponse.builder()
-                    .orderId(req.getOrderId())
-                    .paymentKey(req.getPaymentKey())
-                    .amount(new BigDecimal(String.valueOf(req.getAmount())))
-                    .payType("TOSS");
+            TossConfirmResponse.TossConfirmResponseBuilder builder = baseConfirmBuilder(req);
 
             // 4) Thành công (HTTP 200 và có trường "status")
-            if (res.getStatusCode().is2xxSuccessful() && json.get("status") != null) {
+            boolean ok = res.getStatusCode().is2xxSuccessful() && json.hasNonNull("status");
+            if (ok) {
                 if (tx != null) {
-                    tx.setStatus(TransactionStatus.SUCCESS);
-                    tx.setMessage("Toss success");
-                    tx.setPayType("TOSS");
-                    tx.setResponseTime(LocalDateTime.now().toString());
-                    transactionRepository.save(tx);
-
-                    Long bookingId = extractBookingIdFromOrderInfo(tx.getOrderInfo());
-                    if (bookingId != null) {
-                        bookingRepository.findById(bookingId).ifPresent(b -> {
-                            b.setBookingStatus(BookingStatus.WAITING_FOR_APPROVED);
-                            bookingRepository.save(b);
-                        });
-                    }
+                    updateTxAndBooking(tx,
+                            TransactionStatus.SUCCESS,
+                            BookingStatus.WAITING_FOR_APPROVED,
+                            "Toss success");
                 }
-
-                builder.success(true)
+                return builder
+                        .success(true)
                         .transactionStatus(TransactionStatus.SUCCESS)
                         .bookingStatus(BookingStatus.WAITING_FOR_APPROVED)
-                        .responseTime(LocalDateTime.now().toString());
-
-                return builder.build();
+                        .responseTime(LocalDateTime.now().toString())
+                        .build();
             }
 
             // 5) Thất bại từ Toss → cập nhật FAILED + PENDING booking
             if (tx != null) {
-                tx.setStatus(TransactionStatus.FAILED);
-                tx.setMessage("Toss failed");
-                tx.setPayType("TOSS");
-                tx.setResponseTime(LocalDateTime.now().toString());
-                transactionRepository.save(tx);
-
-                Long bookingId = extractBookingIdFromOrderInfo(tx.getOrderInfo());
-                if (bookingId != null) {
-                    bookingRepository.findById(bookingId).ifPresent(b -> {
-                        b.setBookingStatus(BookingStatus.PENDING_PAYMENT);
-                        bookingRepository.save(b);
-                    });
-                }
+                updateTxAndBooking(tx,
+                        TransactionStatus.FAILED,
+                        BookingStatus.PENDING_PAYMENT,
+                        "Toss failed");
             }
-
-            builder.success(false)
+            return builder
+                    .success(false)
                     .transactionStatus(TransactionStatus.FAILED)
                     .bookingStatus(BookingStatus.PENDING_PAYMENT)
-                    .code((String) json.getOrDefault("code", "CONFIRM_FAILED"))
-                    .message((String) json.getOrDefault("message", "Toss confirm failed"))
-                    .responseTime(LocalDateTime.now().toString());
-
-            return builder.build();
+                    .code(json.path("code").asText("CONFIRM_FAILED"))
+                    .message(json.path("message").asText("Toss confirm failed"))
+                    .responseTime(LocalDateTime.now().toString())
+                    .build();
 
         } catch (Exception e) {
             log.error("Toss confirm error", e);
 
-            // Nếu có transaction thì cũng rollback về FAILED/PENDING cho đồng nhất
-            Optional<Transaction> txOpt = transactionRepository.findByOrderId(req.getOrderId());
-            txOpt.ifPresent(tx -> {
-                tx.setStatus(TransactionStatus.FAILED);
-                tx.setMessage("Toss runtime error");
-                tx.setPayType("TOSS");
-                tx.setResponseTime(LocalDateTime.now().toString());
-                transactionRepository.save(tx);
+            // 6) Runtime error → rollback FAILED/PENDING nếu có transaction
+            transactionRepository.findByOrderId(req.getOrderId()).ifPresent(tx ->
+                    updateTxAndBooking(tx,
+                            TransactionStatus.FAILED,
+                            BookingStatus.PENDING_PAYMENT,
+                            "Toss runtime error")
+            );
 
-                Long bookingId = extractBookingIdFromOrderInfo(tx.getOrderInfo());
-                if (bookingId != null) {
-                    bookingRepository.findById(bookingId).ifPresent(b -> {
-                        b.setBookingStatus(BookingStatus.PENDING_PAYMENT);
-                        bookingRepository.save(b);
-                    });
-                }
-            });
-
-            return TossConfirmResponse.builder()
+            return baseConfirmBuilder(req)
                     .success(false)
-                    .orderId(req.getOrderId())
-                    .paymentKey(req.getPaymentKey())
-                    .amount(new BigDecimal(String.valueOf(req.getAmount())))
                     .transactionStatus(TransactionStatus.FAILED)
                     .bookingStatus(BookingStatus.PENDING_PAYMENT)
-                    .payType("TOSS")
                     .code("CONFIRM_FAILED")
                     .message("Runtime error: " + e.getMessage())
                     .responseTime(LocalDateTime.now().toString())
@@ -228,12 +188,28 @@ public class TossPaymentService {
         }
     }
 
+    private TossConfirmResponse.TossConfirmResponseBuilder baseConfirmBuilder(TossConfirmRequest req) {
+        return TossConfirmResponse.builder()
+                .orderId(req.getOrderId())
+                .paymentKey(req.getPaymentKey())
+                .amount(req.getAmount())
+                .payType("TOSS");
+    }
 
-    private BigDecimal calcTotalAmount(Booking booking, Tour tour) {
-        BigDecimal adult = tour.getAdultPrice().multiply(BigDecimal.valueOf(booking.getAdultsCount()));
-        BigDecimal child = tour.getChildrenPrice().multiply(BigDecimal.valueOf(booking.getChildrenCount()));
-        BigDecimal baby  = tour.getBabyPrice().multiply(BigDecimal.valueOf(booking.getBabiesCount()));
-        return adult.add(child).add(baby);
+    private void updateTxAndBooking(Transaction tx,TransactionStatus txStatus,BookingStatus bookingStatus,String message) {
+        tx.setStatus(txStatus);
+        tx.setMessage(message);
+        tx.setPayType("TOSS");
+        tx.setResponseTime(LocalDateTime.now().toString());
+        transactionRepository.save(tx);
+
+        Long bookingId = extractBookingIdFromOrderInfo(tx.getOrderInfo());
+        if (bookingId != null) {
+            bookingRepository.findById(bookingId).ifPresent(b -> {
+                b.setBookingStatus(bookingStatus);
+                bookingRepository.save(b);
+            });
+        }
     }
 
     private Long extractBookingIdFromOrderInfo(String orderInfo) {

@@ -53,12 +53,8 @@ public class BookingController {
     }
 
     @PostMapping("/payment")
-    public ResponseEntity<TossCreateOrderResponse> createBookingPayment(
-            @Valid @RequestBody BookingPaymentRequest request) {
-        TossCreateOrderResponse resp = tossPaymentService.createOrder(
-                TossCreateOrderRequest.builder().bookingId(request.getBookingId()).build()
-        );
-        return ResponseEntity.ok(resp);
+    public ResponseEntity<TossCreateOrderResponse> createPayment(@RequestBody TossCreateOrderRequest req) {
+        return ResponseEntity.ok(tossPaymentService.createOrder(req));
     }
 
     @GetMapping("/email/{email}")
