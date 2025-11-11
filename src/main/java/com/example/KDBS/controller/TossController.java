@@ -46,8 +46,9 @@ public class TossController {
             // Redirect to frontend result page with info
             String redirectUrl = frontendUrl + "/transaction-result"
                     + "?orderId=" + res.getOrderId()
-                    + "&paymentMethod=" + "TOSS"
-                    + "&status=" + "SUCCESS";
+                    + "&paymentMethod=" + res.getPayType()
+                    + "&status=" + res.getTransactionStatus()
+                    + "&amount=" + res.getAmount();
 
             return ResponseEntity.status(302)
                     .header("Location", redirectUrl)

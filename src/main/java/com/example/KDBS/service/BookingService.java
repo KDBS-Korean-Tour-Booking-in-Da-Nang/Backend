@@ -47,6 +47,10 @@ public class BookingService {
 
         Booking booking = bookingMapper.toBooking(request);
         booking.setTour(tour);
+        int totalGuests = (request.getAdultsCount() != null ? request.getAdultsCount() : 1)
+                + (request.getChildrenCount() != null ? request.getChildrenCount() : 0)
+                + (request.getBabiesCount() != null ? request.getBabiesCount() : 0);
+        booking.setTotalGuests(totalGuests);
         Booking savedBooking = bookingRepository.save(booking);
 
         List<BookingGuest> savedGuests = saveBookingGuests(request.getBookingGuestRequests(), savedBooking);
@@ -67,6 +71,11 @@ public class BookingService {
         if (existingBooking.getBookingStatus() != BookingStatus.WAITING_FOR_UPDATE) {
             throw new AppException(ErrorCode.BOOKING_CANNOT_BE_UPDATE);
         }
+
+        int totalGuests = (request.getAdultsCount() != null ? request.getAdultsCount() : 1)
+                + (request.getChildrenCount() != null ? request.getChildrenCount() : 0)
+                + (request.getBabiesCount() != null ? request.getBabiesCount() : 0);
+        existingBooking.setTotalGuests(totalGuests);
 
         validateGuestCounts(request);
         bookingMapper.updateBookingFromRequest(request, existingBooking);
