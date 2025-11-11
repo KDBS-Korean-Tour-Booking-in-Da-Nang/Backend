@@ -26,6 +26,8 @@ public interface BookingMapper {
     @Mapping(target = "tour", ignore = true)   // tránh vòng lặp
     Booking toBooking(BookingRequest request);
 
+    @Mapping(source = "tour.tourId", target = "tourId")
+    @Mapping(source = "tour.tourName", target = "tourName")
     BookingResponse toBookingResponse(Booking booking);
 
     @Mapping(target = "bookingId", ignore = true)

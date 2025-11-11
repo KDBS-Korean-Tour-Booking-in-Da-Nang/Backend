@@ -106,7 +106,6 @@ public class BookingService {
 
     private BookingResponse buildBookingResponse(Booking booking, Tour tour, List<BookingGuest> guests) {
         BookingResponse response = bookingMapper.toBookingResponse(booking);
-        response.setTourName(tour.getTourName());
         response.setGuests(bookingMapper.toBookingGuestResponses(guests));
 
         // Tạo thông báo cho company (owner của tour)
