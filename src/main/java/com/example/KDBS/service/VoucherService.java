@@ -76,7 +76,24 @@ public class VoucherService {
 
         Voucher voucher = voucherRepository.findByCompanyIdAndCode(booking.getTour().getCompanyId(), request.getVoucherCode())
                 .orElseThrow(() -> new AppException(ErrorCode.VOUCHER_NOT_FOUND));
-        return voucherMapper.toApplyVoucherResponse(voucher);
+
+        Tour tour = tourRepository.findById(booking.getTour().getTourId())
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
+
+        BigDecimal original = calculateBookingOriginalTotal(tour, booking);
+
+        if (!isVoucherUsableForBooking(voucher, tour.getTourId(), booking, original)) {
+            throw new AppException(ErrorCode.VOUCHER_INVALID);
+        }
+
+        BigDecimal discount = calculateDiscountAmount(voucher, original);
+        BigDecimal finalTotal = original.subtract(discount).max(BigDecimal.ZERO);
+
+        ApplyVoucherResponse response = voucherMapper.toApplyVoucherResponse(voucher);
+        response.setOriginalTotal(original);
+        response.setDiscountAmount(discount);
+        response.setFinalTotal(finalTotal);
+        return response;
     }
 
     @Transactional
