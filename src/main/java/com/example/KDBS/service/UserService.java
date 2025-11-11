@@ -123,6 +123,12 @@ public class UserService {
         return true;
     }
 
+    public UserResponse getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        return userMapper.toUserResponse(user);
+    }
+
     @Transactional
     public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg) throws IOException {
         // Tìm user theo email

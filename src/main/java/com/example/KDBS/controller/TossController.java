@@ -30,13 +30,13 @@ public class TossController {
     }
 
     @GetMapping("/success")
-    public ResponseEntity<?> orderSuccess(@RequestParam TossConfirmRequest request) {
+    public ResponseEntity<?> orderSuccess(@ModelAttribute @Valid TossConfirmRequest request) {
         TossConfirmResponse res = tossPaymentService.confirmPayment(request, true);
         return getFrontendRedirect(res);
     }
 
     @GetMapping("/fail")
-    public ResponseEntity<?> orderFail(@RequestParam TossConfirmRequest request) {
+    public ResponseEntity<?> orderFail(@ModelAttribute @Valid TossConfirmRequest request) {
         TossConfirmResponse res = tossPaymentService.confirmPayment(request, false);
         return getFrontendRedirect(res);
     }
