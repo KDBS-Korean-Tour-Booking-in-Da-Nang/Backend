@@ -133,4 +133,9 @@ public class UserController {
     ) throws IOException {
         return ResponseEntity.ok(userService.updateUser(email, request, avatarImg));
     }
+
+    @GetMapping("/{email}")
+    public ResponseEntity<UserResponse> getUser(@PathVariable("email") String email) {
+        return ResponseEntity.ok(userService.getUserByEmail(email));
+    }
 }
