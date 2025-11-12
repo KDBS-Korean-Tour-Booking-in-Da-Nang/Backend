@@ -91,6 +91,24 @@ public class BookingController {
         return ResponseEntity.ok(result);
     }
 
+    @PutMapping("/{bookingId}/company-confirm-completion")
+    public ResponseEntity<Void> companyConfirmCompletion(@PathVariable long bookingId) {
+        bookingService.confirmedCompletion(bookingId, true);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{bookingId}/user-confirm-completion")
+    public ResponseEntity<Void> userConfirmCompletion(@PathVariable long bookingId) {
+        bookingService.confirmedCompletion(bookingId, false);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{bookingId}/tour-completion-status")
+    public ResponseEntity<Boolean> getTourCompletionStatus(@PathVariable long bookingId) {
+        Boolean isCompleted = bookingService.getTourCompletionStatus(bookingId);
+        return ResponseEntity.ok(isCompleted);
+    }
+
     @GetMapping("/email/{email}")
     public ResponseEntity<List<BookingResponse>> getBookingsByEmail(@PathVariable String email) {
         List<BookingResponse> responses = bookingService.getBookingsByEmail(email);

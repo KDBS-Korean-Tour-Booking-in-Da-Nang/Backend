@@ -34,4 +34,8 @@ public class BookingResponse {
     private Integer totalGuests;
     private LocalDateTime createdAt;
     private List<BookingGuestResponse> guests;
+    private Boolean companyConfirmedCompletion;
+    private Boolean userConfirmedCompletion;
+    private LocalDate tourEndDate;
+    private LocalDate autoConfirmedDate;
 }

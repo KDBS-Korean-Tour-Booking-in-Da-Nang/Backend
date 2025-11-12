@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -49,6 +50,7 @@ public class BookingService {
                 + (request.getChildrenCount() != null ? request.getChildrenCount() : 0)
                 + (request.getBabiesCount() != null ? request.getBabiesCount() : 0);
         booking.setTotalGuests(totalGuests);
+        booking.setTourEndDate(request.getDepartureDate().plusDays(tour.getTourIntDuration()));
         Booking savedBooking = bookingRepository.save(booking);
 
         List<BookingGuest> savedGuests = saveBookingGuests(request.getBookingGuestRequests(), savedBooking);
@@ -304,5 +306,27 @@ public class BookingService {
         guest.setInsuranceStatus(status);
         bookingGuestRepository.save(guest);
         return bookingMapper.toBookingGuestResponse(guest);
+    }
+
+    @Transactional
+    public void confirmedCompletion(Long bookingId, boolean isCompany) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        if (booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS)) {
+            if (isCompany) booking.setCompanyConfirmedCompletion(true);
+            else booking.setUserConfirmedCompletion(true);
+        }
+        else throw new AppException(ErrorCode.BOOKING_CANNOT_CONFIRM_COMPLETION);
+    }
+
+    @Transactional
+    public boolean getTourCompletionStatus(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        if (LocalDate.now().isAfter(booking.getTourEndDate())){
+            booking.setCompanyConfirmedCompletion(true);
+            booking.setUserConfirmedCompletion(true);
+        }
+        return booking.getCompanyConfirmedCompletion() && booking.getUserConfirmedCompletion();
     }
 }
