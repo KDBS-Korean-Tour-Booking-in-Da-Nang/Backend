@@ -87,9 +87,24 @@ public class Booking {
     @Column(name = "voucher_locked")
     private Boolean voucherLocked;
 
+    @Column(name = "company_confirmed_completion")
+    private Boolean companyConfirmedCompletion;
+
+    @Column(name = "user_confirmed_completion")
+    private Boolean userConfirmedCompletion;
+
+    @Column(name = "tour_end_date")
+    private LocalDate tourEndDate;
+
+    @Column(name = "auto_confirmed_date")
+    private LocalDate autoConfirmedDate;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.bookingStatus = BookingStatus.PENDING_PAYMENT;
+        this.companyConfirmedCompletion = false;
+        this.userConfirmedCompletion = false;
+        this.autoConfirmedDate = tourEndDate != null? tourEndDate.plusDays(3) : null;
     }
 }
