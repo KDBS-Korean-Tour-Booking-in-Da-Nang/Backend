@@ -41,6 +41,9 @@ public class Tour {
     @Column(name = "tour_duration")
     private String tourDuration;
 
+    @Column(name = "tour_int_duration")
+    private Integer tourIntDuration;
+
     @Column(name = "tour_departure_point")
     private String tourDeparturePoint;
 

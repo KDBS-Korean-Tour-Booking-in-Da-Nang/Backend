@@ -99,6 +99,8 @@ public enum ErrorCode {
         VOUCHER_NOT_FOUND(1075, "Voucher not found", HttpStatus.NOT_FOUND),
         VOUCHER_ALREADY_EXISTED(1076, "Voucher already existed", HttpStatus.BAD_REQUEST),
         VOUCHER_INVALID(1077, "Voucher is invalid or cannot be applied", HttpStatus.BAD_REQUEST),
+        BOOKING_CANNOT_CONFIRM_COMPLETION(1078, "Booking cannot be confirmed for completion in its current status",
+                HttpStatus.BAD_REQUEST),
         ;
 
         private final int code;

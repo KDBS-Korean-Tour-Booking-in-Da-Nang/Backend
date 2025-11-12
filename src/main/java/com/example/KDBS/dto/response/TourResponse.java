@@ -13,6 +13,7 @@ public class TourResponse {
     private String tourDescription;
     private String tourImgPath;
     private String tourDuration;
+    private Integer tourIntDuration;
     private String tourDeparturePoint;
     private String tourVehicle;
     private String tourType;
