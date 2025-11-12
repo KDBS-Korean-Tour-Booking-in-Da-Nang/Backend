@@ -5,14 +5,9 @@ import com.example.KDBS.dto.request.BookingRequest;
 import com.example.KDBS.dto.response.BookingGuestResponse;
 import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
-import com.example.KDBS.dto.response.GuestInsuranceResponse;
-import com.example.KDBS.enums.InsuranceStatus;
 import com.example.KDBS.model.Booking;
 import com.example.KDBS.model.BookingGuest;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.NullValuePropertyMappingStrategy;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -31,7 +26,15 @@ public interface BookingMapper {
     @Mapping(target = "tour", ignore = true)   // tránh vòng lặp
     Booking toBooking(BookingRequest request);
 
+    @Mapping(source = "tour.tourId", target = "tourId")
+    @Mapping(source = "tour.tourName", target = "tourName")
     BookingResponse toBookingResponse(Booking booking);
+
+    @Mapping(target = "bookingId", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "guests", ignore = true) // sẽ set riêng
+    @Mapping(target = "tour", ignore = true)   // tránh vòng lặp
+    void updateBookingFromRequest(BookingRequest request, @MappingTarget Booking booking);
 
     // ----- BookingGuest -----
     @Mapping(target = "bookingGuestId", ignore = true)
@@ -45,13 +48,5 @@ public interface BookingMapper {
     // ----- BookingSummary -----
     @Mapping(target = "tourName", expression = "java(tourName)")
     @Mapping(target = "totalAmount", expression = "java(totalAmount)")
-    @Mapping(target = "status", constant = "PENDING")
     BookingSummaryResponse toBookingSummaryResponse(Booking booking, String tourName, BigDecimal totalAmount);
-
-    GuestInsuranceResponse toGuestInsuranceResponse(
-            BookingGuestResponse guestResponse,
-            String insuranceNumber,
-            InsuranceStatus insuranceStatus
-    );
-
 }

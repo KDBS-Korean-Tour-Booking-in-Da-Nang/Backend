@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUserEmailOrderByCreatedAtDesc(String contactEmail);
     
-    List<Booking> findByTourIdOrderByCreatedAtDesc(Long tourId);
+    List<Booking> findByTour_TourIdOrderByCreatedAtDesc(Long tourId);
 
     @Query("SELECT b FROM Booking b LEFT JOIN FETCH b.guests WHERE b.bookingId = :bookingId")
     Optional<Booking> findByIdWithGuests(@Param("bookingId") Long bookingId);

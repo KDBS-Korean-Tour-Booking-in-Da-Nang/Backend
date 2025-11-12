@@ -24,11 +24,8 @@ public class Booking {
     @Column(name = "booking_id")
     private Long bookingId;
 
-    @Column(name = "tour_id", nullable = false)
-    private Long tourId;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tour_id", insertable = false, updatable = false)
+    @JoinColumn(name = "tour_id", nullable = false)
     private Tour tour;
 
     @Column(name = "user_email", length = 100)
@@ -41,7 +38,7 @@ public class Booking {
     @Column(name = "contact_name", nullable = false, length = 100)
     private String contactName;
 
-    @Column(name = "contact_address", length = 255)
+    @Column(name = "contact_address")
     private String contactAddress;
 
     @Column(name = "contact_phone", nullable = false, length = 20)
@@ -50,7 +47,7 @@ public class Booking {
     @Column(name = "contact_email", length = 100)
     private String contactEmail;
 
-    @Column(name = "pickup_point", length = 255)
+    @Column(name = "pickup_point")
     private String pickupPoint;
 
     @Column(name = "note", columnDefinition = "TEXT")
@@ -78,16 +75,21 @@ public class Booking {
     @JsonManagedReference
     private List<BookingGuest> guests;
 
+    @Column(name = "voucher_id")
+    private Long voucherId;
+
+    @Column(name = "voucher_code", length = 100)
+    private String voucherCode;
+
+    @Column(name = "voucher_discount_applied", precision = 15, scale = 2)
+    private java.math.BigDecimal voucherDiscountApplied;
+
+    @Column(name = "voucher_locked")
+    private Boolean voucherLocked;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        if (this.bookingStatus == null) {
-            this.bookingStatus = BookingStatus.PENDING;
-        }
-        this.adultsCount = 1;
-        this.childrenCount = 0;
-        this.babiesCount = 0;
-        // Calculate total guests
-        this.totalGuests = this.adultsCount + this.childrenCount + this.babiesCount;
+        this.bookingStatus = BookingStatus.PENDING_PAYMENT;
     }
 }
