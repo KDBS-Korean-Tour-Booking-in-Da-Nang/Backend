@@ -1,26 +1,18 @@
 package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.BusinessLicenseRequest;
-import com.example.KDBS.dto.request.UserRegisterRequest;
 import com.example.KDBS.dto.request.EmailVerificationRequest;
+import com.example.KDBS.dto.request.UserRegisterRequest;
 import com.example.KDBS.dto.request.UserUpdateRequest;
 import com.example.KDBS.dto.response.ApiResponse;
-import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
+import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.enums.OTPPurpose;
-import com.example.KDBS.enums.Role;
-import com.example.KDBS.enums.Status;
-import com.example.KDBS.exception.AppException;
-import com.example.KDBS.exception.ErrorCode;
-import com.example.KDBS.model.User;
-import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.security.IsOwner;
-import com.example.KDBS.service.UserService;
 import com.example.KDBS.service.OTPService;
+import com.example.KDBS.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,20 +26,11 @@ import java.util.List;
 @RequiredArgsConstructor
 @CrossOrigin("*")
 public class UserController {
-    @Autowired
-    private UserService userService;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-
-    @Autowired
-    private OTPService otpService;
-
-    @Autowired
-    private UserRepository userRepository;
+    private final UserService userService;
+    private final OTPService otpService;
 
     @PostMapping("/register")
-    public ApiResponse<String> register(@RequestBody @Valid UserRegisterRequest request) throws IOException {
+    public ApiResponse<String> register(@RequestBody @Valid UserRegisterRequest request) {
         return ApiResponse.<String>builder()
                 .result(userService.createUser(request))
                 .build();
@@ -70,21 +53,7 @@ public class UserController {
     @PostMapping("/verify-email")
     public ApiResponse<Boolean> verifyEmail(@RequestBody @Valid EmailVerificationRequest request) {
         try {
-            boolean isValid = otpService.verifyOTP(request.getEmail(), request.getOtpCode(), OTPPurpose.VERIFY_EMAIL);
-
-            if (isValid) {
-                // Update status = UNBANNED
-                User user = userRepository.findByEmail(request.getEmail())
-                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-                if (user.getRole() == Role.COMPANY) {
-                    user.setStatus(Status.COMPANY_PENDING);
-                } else {
-                    user.setStatus(Status.UNBANNED);
-                }
-                userRepository.save(user);
-            }
-
+            boolean isValid = userService.verifyEmail(request.getEmail(), request.getOtpCode());
             return ApiResponse.<Boolean>builder()
                     .result(isValid)
                     .message(isValid ? "Email verified successfully" : "Invalid OTP")
@@ -118,6 +87,14 @@ public class UserController {
                 .build();
     }
 
+    @PutMapping("/{userId}/ban")
+    public ApiResponse<UserResponse> banOrUnbanUser(@PathVariable("userId") int userId,
+                                                    @RequestParam("ban") boolean ban) {
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.setUserBanStatus(userId, ban))
+                .build();
+    }
+
     @PutMapping(path = "/update-business-license", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateBusinessLicense(
             @RequestPart("file") MultipartFile file,
@@ -147,7 +124,7 @@ public class UserController {
                 .build();
     }
 
-    @IsOwner(param = "email", jwtClaim = "sub")
+    @IsOwner()
     @PutMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UserResponse> updateUser(
             @RequestParam("email") String email,
@@ -157,4 +134,8 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(email, request, avatarImg));
     }
 
+    @GetMapping("/{email}")
+    public ResponseEntity<UserResponse> getUser(@PathVariable("email") String email) {
+        return ResponseEntity.ok(userService.getUserByEmail(email));
+    }
 }

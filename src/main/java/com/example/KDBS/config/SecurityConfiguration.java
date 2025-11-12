@@ -4,7 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
@@ -27,62 +27,37 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @EnableAspectJAutoProxy
+@RequiredArgsConstructor
 public class SecurityConfiguration {
-
-    private final String[] PUBLIC_ENDPOINTS = {
-            "/api/auth/login", "/api/auth/logout", "/api/auth/introspect", "/api/auth/login-username",
-            "/api/users/register", "/api/users/verify-account", "/api/users/sendOTP", "/api/users/verify-email",
-            "/api/users/regenerate-otp", "/api/users/update-business-license",
-            "/api/auth/google/login", "/api/auth/google/callback",
-            "/api/auth/naver/login", "/api/auth/naver/callback",
-            "/api/auth/forgot-password/request", "/api/auth/forgot-password/reset",
-            "/api/auth/forgot-password/verify-otp",
-            "/api/posts/**",
-            "/api/comments/**",
-            "/api/reactions/**",
-            "/api/hashtags/**",
-            "/api/saved-posts/**",
-            "/api/reports/**",
-            "/api/users/suggestions",
-            "/api/tour/**",
-            "/api/vnpay/return",
-            "/api/article/**",
-            "/api/chat/**",
-            "/api/tourRated/**"
-
-    };
-
     private final String[] PUBLIC_RESOURCES = {
-            "/", "/index.html", "/google-login.html", "/css/**", "/js/**", "/images/**", "/uploads/**"
+            "/", "/index.html", "/widget/**", "/css/**", "/js/**", "/images/**", "/uploads/**"
     };
 
-    private String signature = "OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";
+//    private final String signature = "OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";
 
-    @Autowired
     @Lazy
-    private CustomJwtDecoder customJwtDecoder;
+    private final CustomJwtDecoder customJwtDecoder;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.cors(cors -> cors.configurationSource(request -> {
             CorsConfiguration configuration = new CorsConfiguration();
-            configuration.setAllowedOrigins(Arrays.asList("*"));
-            configuration.setAllowedMethods(Arrays.asList("*"));
-            configuration.setAllowedHeaders(Arrays.asList("*"));
+            configuration.setAllowedOrigins(List.of("*"));
+            configuration.setAllowedMethods(List.of("*"));
+            configuration.setAllowedHeaders(List.of("*"));
             return configuration;
         })).authorizeHttpRequests(
                 authorizationManagerRequestMatcherRegistry -> authorizationManagerRequestMatcherRegistry
-                        .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.PUT, PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.DELETE, PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/users/change-pass/{email}").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/oauth2/redirectWithRedirectView").permitAll()
                         .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
                         .requestMatchers(PUBLIC_RESOURCES).permitAll()
@@ -93,12 +68,11 @@ public class SecurityConfiguration {
                 .oauth2Login(httpSecurityOAuth2LoginConfigurer -> httpSecurityOAuth2LoginConfigurer
                         .defaultSuccessUrl("/oauth2/redirectView", true));
 
-        httpSecurity.oauth2ResourceServer(httpSecurityOAuth2ResourceServerConfigurer -> {
-            httpSecurityOAuth2ResourceServerConfigurer.jwt(jwtConfigurer -> jwtConfigurer.decoder(customJwtDecoder)
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter()))
-                    .authenticationEntryPoint(new JwtAuthEntryPoint());
-
-        });
+        httpSecurity.oauth2ResourceServer(httpSecurityOAuth2ResourceServerConfigurer
+                -> httpSecurityOAuth2ResourceServerConfigurer.jwt(jwtConfigurer
+                -> jwtConfigurer.decoder(customJwtDecoder)
+                .jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                .authenticationEntryPoint(new JwtAuthEntryPoint()));
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
 
         return httpSecurity.build();
@@ -114,8 +88,11 @@ public class SecurityConfiguration {
         return jwtAuthenticationConverter;
     }
 
+
+    //Delete after done debugging
     @Component
-    public class DebugAuthFilter extends OncePerRequestFilter {
+    public static class DebugAuthFilter extends OncePerRequestFilter {
+        @SuppressWarnings("NullableProblems")
         @Override
         protected void doFilterInternal(HttpServletRequest request,
                                         HttpServletResponse response,

@@ -1,6 +1,5 @@
 package com.example.KDBS.dto.request;
 
-import com.example.KDBS.enums.BookingStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -22,9 +21,8 @@ public class BookingRequest {
 
     @Email(message = "Invalid email format")
     @Size(max = 100, message = "Email email must not exceed 100 characters")
+    @NotBlank(message = "User email is required")
     private String userEmail;
-
-    private BookingStatus bookingStatus;
 
     @NotBlank(message = "Contact name is required")
     @Size(max = 100, message = "Contact name must not exceed 100 characters")
@@ -40,6 +38,7 @@ public class BookingRequest {
 
     @Email(message = "Invalid email format")
     @Size(max = 100, message = "Contact email must not exceed 100 characters")
+    @NotBlank(message = "Contact email is required")
     private String contactEmail;
 
     @Size(max = 255, message = "Pickup point must not exceed 255 characters")
@@ -52,17 +51,15 @@ public class BookingRequest {
     private LocalDate departureDate;
 
     @Min(value = 0, message = "Adults count must be non-negative")
-    private Integer adultsCount = 0;
+    private Integer adultsCount;
 
     @Min(value = 0, message = "Children count must be non-negative")
-    private Integer childrenCount = 0;
+    private Integer childrenCount;
 
     @Min(value = 0, message = "Babies count must be non-negative")
-    private Integer babiesCount = 0;
+    private Integer babiesCount;
 
     @Valid
     @NotEmpty(message = "At least one guest is required")
     private List<BookingGuestRequest> bookingGuestRequests;
-
-
 }

@@ -3,25 +3,22 @@ package com.example.KDBS.controller;
 import com.example.KDBS.dto.request.ForumCommentRequest;
 import com.example.KDBS.dto.response.ForumCommentResponse;
 import com.example.KDBS.service.ForumCommentService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController
 @RequestMapping("api/comments")
+@RequiredArgsConstructor
 public class ForumCommentController {
-
-    @Autowired
-    private ForumCommentService forumCommentService;
+    private final ForumCommentService forumCommentService;
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ForumCommentResponse> createComment(@RequestBody ForumCommentRequest forumCommentRequest)
-            throws IOException {
+    public ResponseEntity<ForumCommentResponse> createComment(@RequestBody ForumCommentRequest forumCommentRequest) {
         ForumCommentResponse response = forumCommentService.createComment(forumCommentRequest);
         return ResponseEntity.ok(response);
     }
@@ -30,17 +27,18 @@ public class ForumCommentController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ForumCommentResponse> updateComment(
             @PathVariable Long id,
-            @RequestBody ForumCommentRequest updateRequest) throws IOException {
+            @RequestBody ForumCommentRequest updateRequest){
         ForumCommentResponse response = forumCommentService.updateComment(id, updateRequest);
         return ResponseEntity.ok(response);
     }
 
+    //use userEmail in PreAuthorize to check if the user can delete the comment
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated() and @forumCommentSecurity.canDeleteComment(#id, #userEmail)")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteComment(
             @PathVariable Long id,
             @RequestParam String userEmail) {
-        forumCommentService.deleteComment(id);
+        forumCommentService.deleteComment(id, userEmail);
         return ResponseEntity.noContent().build();
     }
 

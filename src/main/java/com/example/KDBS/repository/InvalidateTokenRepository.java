@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface InvalidateTokenRepository extends JpaRepository<InvalidateToken, String> {
-
+    void deleteByExpiryTimeBefore(java.util.Date date);
 }

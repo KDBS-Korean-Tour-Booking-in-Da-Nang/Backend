@@ -1,6 +1,5 @@
 package com.example.KDBS.model;
 
-import com.example.KDBS.enums.PremiumType;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -10,7 +9,6 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -42,15 +40,11 @@ public class User {
     @Column(name = "phone", length = 11, unique = true)
     private String phone;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "premium_type")
-    private PremiumType premiumType = PremiumType.FREE;
-
-    @Column(name = "premium_valid_until")
-    private LocalDateTime premiumValidUntil;
-
     @Column(name = "dob")
     private LocalDate dob;
+
+    @Column(name = "address", length = 500)
+    private String address;
 
     @Column(name = "cccd", length = 12, unique = true)
     private String cccd;
@@ -89,6 +83,6 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<TourRated> tourRatings = new ArrayList<>();
+    private List<TourRated> tourRatings;
 
 }

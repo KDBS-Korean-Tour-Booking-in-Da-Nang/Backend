@@ -13,6 +13,7 @@ public class ResetPasswordRequest {
     
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
+    @Size(max = 100, message = "Email must not exceed 100 characters")
     private String email;
     
     @NotBlank(message = "OTP code is required")
@@ -20,6 +21,6 @@ public class ResetPasswordRequest {
     private String otpCode;
     
     @NotBlank(message = "New password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
+    @Size(min = 8, max = 32, message = "Password must be at least 8 characters")
     private String newPassword;
 } 

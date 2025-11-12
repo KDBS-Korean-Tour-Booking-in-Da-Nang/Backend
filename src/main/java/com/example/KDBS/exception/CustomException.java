@@ -1,12 +1,10 @@
 package com.example.KDBS.exception;
 
-public class CustomException extends RuntimeException {
-    private String message;
+import lombok.RequiredArgsConstructor;
 
-    public CustomException(String message) {
-        super(message);
-        this.message = message;
-    }
+@RequiredArgsConstructor
+public class CustomException extends RuntimeException {
+    private final String message;
 
     @Override
     public String getMessage() {

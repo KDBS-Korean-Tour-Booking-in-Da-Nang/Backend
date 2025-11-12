@@ -4,13 +4,15 @@ import com.example.KDBS.dto.request.ForumPostRequest;
 import com.example.KDBS.dto.response.ForumPostResponse;
 import com.example.KDBS.dto.response.ReactionSummaryResponse;
 import com.example.KDBS.enums.ReactionTargetType;
+import com.example.KDBS.enums.Role;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.PostMapper;
 import com.example.KDBS.model.*;
 import com.example.KDBS.repository.*;
 import com.example.KDBS.utils.FileUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,31 +27,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class ForumPostService {
-
-    @Autowired
-    private ForumPostRepository forumPostRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PostImgRepository postImgRepository;
-
-    @Autowired
-    private ForumHashtagRepository forumHashtagRepository;
-
-    @Autowired
-    private PostHashtagRepository postHashtagRepository;
-
-    @Autowired
-    private SavedPostRepository savedPostRepository;
-
-    @Autowired
-    private PostMapper postMapper;
-
-    @Autowired
-    private ReactionService reactionService;
+    private final ForumPostRepository forumPostRepository;
+    private final UserRepository userRepository;
+    private final PostImgRepository postImgRepository;
+    private final ForumHashtagRepository forumHashtagRepository;
+    private final PostHashtagRepository postHashtagRepository;
+    private final SavedPostRepository savedPostRepository;
+    private final PostMapper postMapper;
+    private final ReactionService reactionService;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -73,7 +61,7 @@ public class ForumPostService {
     @Transactional
     public ForumPostResponse updatePost(Long id, ForumPostRequest updateRequest) throws IOException {
         ForumPost forumPost = forumPostRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND, id));
+                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
 
         User user = userRepository.findByEmail(updateRequest.getUserEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -96,12 +84,38 @@ public class ForumPostService {
     }
 
     @Transactional
-    public void deletePost(Long id) {
-        // Xóa các saved posts liên quan trước
-        deleteRelatedSavedPosts(id);
+    public void deletePost(Long postId, String userEmail) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        // Xóa bài
-        forumPostRepository.deleteById(id);
+        ForumPost post = forumPostRepository.findById(postId)
+                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_FOUND));
+
+        User owner = post.getUser();
+        Role currentRole = currentUser.getRole();
+        Role ownerRole = owner.getRole();
+
+        // Authorization checks
+        if (currentRole == Role.ADMIN) {
+            log.debug("Admin deleting post {}", postId);
+            // continue to delete
+        }else if (currentRole == Role.STAFF) {
+            if (ownerRole == Role.ADMIN) {
+                throw new AppException(ErrorCode.STAFF_CANNOT_DELETE_ADMIN_POSTS);
+            }
+        } else if (currentRole == Role.COMPANY || currentRole == Role.USER) {
+            if (!owner.getEmail().equals(userEmail)) {
+                throw new AppException(ErrorCode.USER_OR_COMPANY_CAN_ONLY_DELETE_THEIR_OWN_POSTS);
+            }
+        } else {
+            throw new AppException(ErrorCode.YOU_DO_NOT_HAVE_PERMISSION_TO_DELETE_THIS_POST);
+        }
+
+        // Delete related saved posts first
+        deleteRelatedSavedPosts(postId);
+
+        // Delete the post
+        forumPostRepository.delete(post);
     }
 
     @Transactional(readOnly = true)

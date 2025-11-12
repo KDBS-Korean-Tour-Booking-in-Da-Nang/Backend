@@ -1,6 +1,5 @@
 package com.example.KDBS.model;
 
-import com.example.KDBS.enums.PostStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -24,7 +23,6 @@ public class ForumPost {
     @Column(name = "forum_post_id")
     private Long forumPostId;
 
-    @Column(length = 255)
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -34,9 +32,6 @@ public class ForumPost {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    @Column(name = "status", length = 255)
-    private PostStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

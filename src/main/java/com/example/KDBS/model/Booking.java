@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -20,17 +19,13 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Booking {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "booking_id")
     private Long bookingId;
 
-    @Column(name = "tour_id", nullable = false)
-    private Long tourId;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tour_id", insertable = false, updatable = false)
+    @JoinColumn(name = "tour_id", nullable = false)
     private Tour tour;
 
     @Column(name = "user_email", length = 100)
@@ -38,12 +33,12 @@ public class Booking {
 
     @Column(name = "booking_status", nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
-    private BookingStatus bookingStatus = BookingStatus.PENDING;
+    private BookingStatus bookingStatus;
 
     @Column(name = "contact_name", nullable = false, length = 100)
     private String contactName;
 
-    @Column(name = "contact_address", length = 255)
+    @Column(name = "contact_address")
     private String contactAddress;
 
     @Column(name = "contact_phone", nullable = false, length = 20)
@@ -52,7 +47,7 @@ public class Booking {
     @Column(name = "contact_email", length = 100)
     private String contactEmail;
 
-    @Column(name = "pickup_point", length = 255)
+    @Column(name = "pickup_point")
     private String pickupPoint;
 
     @Column(name = "note", columnDefinition = "TEXT")
@@ -62,13 +57,13 @@ public class Booking {
     private LocalDate departureDate;
 
     @Column(name = "adults_count")
-    private Integer adultsCount = 0;
+    private Integer adultsCount;
 
     @Column(name = "children_count")
-    private Integer childrenCount = 0;
+    private Integer childrenCount;
 
     @Column(name = "babies_count")
-    private Integer babiesCount = 0;
+    private Integer babiesCount;
 
     @Column(name = "total_guests", nullable = false)
     private Integer totalGuests;
@@ -78,17 +73,23 @@ public class Booking {
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL)
     @JsonManagedReference
-    private List<BookingGuest> guests = new ArrayList<>();
+    private List<BookingGuest> guests;
+
+    @Column(name = "voucher_id")
+    private Long voucherId;
+
+    @Column(name = "voucher_code", length = 100)
+    private String voucherCode;
+
+    @Column(name = "voucher_discount_applied", precision = 15, scale = 2)
+    private java.math.BigDecimal voucherDiscountApplied;
+
+    @Column(name = "voucher_locked")
+    private Boolean voucherLocked;
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        if (this.bookingStatus == null) {
-            this.bookingStatus = BookingStatus.PENDING;
-        }
-        // Calculate total guests
-        this.totalGuests = (adultsCount != null ? adultsCount : 0) + 
-                          (childrenCount != null ? childrenCount : 0) + 
-                          (babiesCount != null ? babiesCount : 0);
+        this.bookingStatus = BookingStatus.PENDING_PAYMENT;
     }
 }

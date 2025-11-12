@@ -31,6 +31,8 @@ public interface PostMapper {
     @Mapping(target = "username", source = "user.username")
     @Mapping(target = "userAvatar", source = "user.avatar")
     @Mapping(target = "userEmail", source = "user.email")
+    @Mapping(target = "reactions", ignore = true) // Handled in service
+    @Mapping(target = "saveCount", ignore = true) // Handled in service
     ForumPostResponse toPostResponse(ForumPost entity);
 
     // default helper to convert hashtags

@@ -2,7 +2,6 @@ package com.example.KDBS.security;
 
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;

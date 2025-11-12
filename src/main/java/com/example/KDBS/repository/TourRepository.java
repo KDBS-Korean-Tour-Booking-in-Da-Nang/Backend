@@ -24,8 +24,8 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
     @Query("""
     SELECT t FROM Tour t
     LEFT JOIN t.ratings r
-    WHERE 
-        (:keyword IS NULL OR 
+    WHERE
+        (:keyword IS NULL OR
             LOWER(CAST(t.tourName AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
             OR LOWER(CAST(t.tourDescription AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
             OR (

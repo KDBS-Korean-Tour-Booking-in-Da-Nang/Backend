@@ -3,10 +3,6 @@ package com.example.KDBS.controller;
 import com.example.KDBS.dto.request.ForgotPasswordRequest;
 import com.example.KDBS.dto.request.ResetPasswordRequest;
 import com.example.KDBS.dto.response.ApiResponse;
-import com.example.KDBS.exception.AppException;
-import com.example.KDBS.exception.ErrorCode;
-import com.example.KDBS.model.User;
-import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.service.ForgotPasswordService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,14 +15,10 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin("*")
 @Slf4j
 public class ForgotPasswordController {
-    private final UserRepository userRepository;
-
     private final ForgotPasswordService forgotPasswordService;
 
     @PostMapping("/request")
     public ApiResponse<Void> requestPasswordReset(@Valid @RequestBody ForgotPasswordRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
         try {
             forgotPasswordService.requestPasswordReset(request);
             return ApiResponse.<Void>builder()

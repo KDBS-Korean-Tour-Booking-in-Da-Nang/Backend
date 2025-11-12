@@ -18,8 +18,8 @@ public class UserResponse {
     private String password;
     private String avatar;
     private String phone;
-    private Boolean isPremium;
     private LocalDate dob;
+    private String address;
     private String cccd;
     private BigDecimal balance;
     private String gender;

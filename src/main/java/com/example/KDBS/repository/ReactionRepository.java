@@ -1,7 +1,6 @@
 package com.example.KDBS.repository;
 
 import com.example.KDBS.enums.ReactionTargetType;
-import com.example.KDBS.enums.ReactionType;
 import com.example.KDBS.model.Reaction;
 import com.example.KDBS.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;

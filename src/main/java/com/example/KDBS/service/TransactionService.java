@@ -19,10 +19,6 @@ public class TransactionService {
         this.userRepository = userRepository;
     }
 
-    public void createTransaction(Transaction transaction) {
-        transactionRepository.save(transaction);
-    }
-
     public List<Transaction> getAllTransactions() {
         return transactionRepository.findAll();
     }
@@ -30,6 +26,6 @@ public class TransactionService {
     public List<Transaction> getAllTransactionsByUserEmail(String userEmail) {
         return userRepository.findByEmail(userEmail)
                 .map(transactionRepository::findByUser)
-                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED,userEmail));
+                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
     }
 }
