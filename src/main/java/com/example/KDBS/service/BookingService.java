@@ -323,7 +323,7 @@ public class BookingService {
     public boolean getTourCompletionStatus(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        if (LocalDate.now().isAfter(booking.getTourEndDate())){
+        if (LocalDate.now().isAfter(booking.getAutoConfirmedDate())){
             booking.setCompanyConfirmedCompletion(true);
             booking.setUserConfirmedCompletion(true);
         }
