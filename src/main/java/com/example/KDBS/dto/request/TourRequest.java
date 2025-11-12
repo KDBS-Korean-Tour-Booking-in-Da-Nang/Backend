@@ -24,6 +24,8 @@ public class TourRequest {
     private String tourDescription;
     @NotBlank(message = "Tour location is required")
     private String tourDuration;
+    @NotNull(message = "Tour integer duration is required")
+    private Integer tourIntDuration;
     @NotBlank(message = "Tour departure point is required")
     private String tourDeparturePoint;
     @NotBlank(message = "Tour vehicle is required")

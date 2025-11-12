@@ -2,6 +2,7 @@ package com.example.KDBS.dto.response;
 
 import com.example.KDBS.enums.Gender;
 import com.example.KDBS.enums.BookingGuestType;
+import com.example.KDBS.enums.InsuranceStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,4 +22,5 @@ public class BookingGuestResponse {
     private String idNumber;
     private String nationality;
     private BookingGuestType bookingGuestType;
+    private InsuranceStatus insuranceStatus;
 }
