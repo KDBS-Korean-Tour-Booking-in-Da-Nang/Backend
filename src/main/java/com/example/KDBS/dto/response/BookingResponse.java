@@ -38,4 +38,5 @@ public class BookingResponse {
     private Boolean userConfirmedCompletion;
     private LocalDate tourEndDate;
     private LocalDate autoConfirmedDate;
+    private int bookingCount;
 }

@@ -3,10 +3,7 @@ package com.example.KDBS.controller;
 import com.example.KDBS.dto.request.BookingPaymentRequest;
 import com.example.KDBS.dto.request.BookingRequest;
 import com.example.KDBS.dto.request.TossCreateOrderRequest;
-import com.example.KDBS.dto.response.BookingGuestResponse;
-import com.example.KDBS.dto.response.BookingResponse;
-import com.example.KDBS.dto.response.BookingSummaryResponse;
-import com.example.KDBS.dto.response.TossCreateOrderResponse;
+import com.example.KDBS.dto.response.*;
 import com.example.KDBS.enums.BookingStatus;
 import com.example.KDBS.enums.InsuranceStatus;
 import com.example.KDBS.service.BookingService;
@@ -116,8 +113,14 @@ public class BookingController {
     }
 
     @GetMapping("/tour/{tourId}")
-    public ResponseEntity<List<BookingResponse>> getBookingsByTourId(@PathVariable Long tourId) {
+    public ResponseEntity<BookingWithCountResponse> getBookingsByTourId(@PathVariable Long tourId) {
         List<BookingResponse> responses = bookingService.getBookingsByTourId(tourId);
+        return ResponseEntity.ok(new BookingWithCountResponse(responses));
+    }
+
+    @GetMapping("/company/{companyId}")
+    public ResponseEntity<BookingWithCountResponse> getBookingsByTourCompanyId(@PathVariable Long companyId) {
+        BookingWithCountResponse responses = bookingService.getAllBookingsByCompanyId(companyId);
         return ResponseEntity.ok(responses);
     }
 

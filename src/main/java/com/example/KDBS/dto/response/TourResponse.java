@@ -2,7 +2,9 @@ package com.example.KDBS.dto.response;
 
 import com.example.KDBS.enums.TourStatus;
 import lombok.Data;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -13,12 +15,14 @@ public class TourResponse {
     private String tourDescription;
     private String tourImgPath;
     private String tourDuration;
-    private Integer tourIntDuration;
+    private int tourIntDuration;
     private String tourDeparturePoint;
+    private LocalDate tourExpirationDate;
+    private int tourDeadline;
     private String tourVehicle;
     private String tourType;
     private String tourSchedule;
-    private Integer amount;
+    private int amount;
     private BigDecimal adultPrice;
     private BigDecimal childrenPrice;
     private BigDecimal babyPrice;
