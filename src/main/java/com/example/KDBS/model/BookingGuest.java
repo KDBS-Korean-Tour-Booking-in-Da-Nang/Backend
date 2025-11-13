@@ -53,4 +53,9 @@ public class BookingGuest {
     @Enumerated(EnumType.STRING)
     @Column(name = "insurance_status", length = 50)
     private InsuranceStatus insuranceStatus;
+
+    @PrePersist
+    protected void onCreate() {
+        insuranceStatus = InsuranceStatus.Pending;
+    }
 }
