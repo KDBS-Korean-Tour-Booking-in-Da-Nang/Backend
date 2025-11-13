@@ -37,7 +37,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthenticationService {
     private final UserRepository userRepository;
-    private final InvalidateTokenRepository invalidtokenrepository;
+    private final InvalidateTokenRepository invalidateTokenRepository;
     private final UserMapper userMapper;
     protected static final String signature = "OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";
 
@@ -133,7 +133,7 @@ public class AuthenticationService {
         }
 
         // Check if token is blacklisted
-        if (invalidtokenrepository.existsById(signedJWT.getJWTClaimsSet().getJWTID())) {
+        if (invalidateTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID())) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
@@ -152,7 +152,7 @@ public class AuthenticationService {
                     .expiryTime(expiryTime)
                     .build();
 
-            invalidtokenrepository.save(invalidatedToken);
+            invalidateTokenRepository.save(invalidatedToken);
         } catch (AppException exception) {
             log.info("Token already invalid or expired: {}", exception.getMessage());
         }

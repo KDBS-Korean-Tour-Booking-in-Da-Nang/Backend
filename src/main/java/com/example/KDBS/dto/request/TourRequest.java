@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
@@ -25,9 +26,13 @@ public class TourRequest {
     @NotBlank(message = "Tour location is required")
     private String tourDuration;
     @NotNull(message = "Tour integer duration is required")
-    private Integer tourIntDuration;
+    private int tourIntDuration;
     @NotBlank(message = "Tour departure point is required")
     private String tourDeparturePoint;
+    @NotNull(message = "Tour expiration date is required")
+    private LocalDate tourExpirationDate;
+    @NotNull(message = "Tour deadline is required")
+    private int tourDeadline;
     @NotBlank(message = "Tour vehicle is required")
     private String tourVehicle;
     @NotBlank(message = "Tour type is required")
@@ -35,7 +40,7 @@ public class TourRequest {
     @NotBlank(message = "Tour schedule is required")
     private String tourSchedule;
     @NotNull(message = "Tour amount is required")
-    private Integer amount;
+    private int amount;
 
     @NotNull(message = "Adult price is required")
     private BigDecimal adultPrice;
