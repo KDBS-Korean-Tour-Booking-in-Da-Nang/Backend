@@ -29,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,6 +62,11 @@ public class TourService {
 
         var company = userRepository.findByEmail(request.getCompanyEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND_WITH_EMAIL));
+
+        //Tour expiration date must be after tour deadline + 1 day(so if is 7 days, must be at least 8 days later)
+        if (LocalDate.now().plusDays(request.getTourDeadline() + 1).isAfter(request.getTourExpirationDate())){
+            throw new AppException(ErrorCode.TOUR_DEADLINE_EXCEEDS_EXPIRATION_DATE);
+        }
 
         Tour tour = tourMapper.toTour(request);
         tour.setCompanyId(company.getUserId());
