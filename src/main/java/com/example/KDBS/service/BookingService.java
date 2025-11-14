@@ -5,6 +5,7 @@ import com.example.KDBS.dto.request.BookingRequest;
 import com.example.KDBS.dto.response.BookingGuestResponse;
 import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
+import com.example.KDBS.dto.response.BookingWithCountResponse;
 import com.example.KDBS.enums.BookingGuestType;
 import com.example.KDBS.enums.BookingStatus;
 import com.example.KDBS.enums.InsuranceStatus;
@@ -43,6 +44,11 @@ public class BookingService {
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         validateGuestCounts(request);
+
+        if (request.getDepartureDate().isBefore(LocalDate.now().plusDays(tour.getTourDeadline() + 1))
+        || request.getDepartureDate().isAfter(tour.getTourExpirationDate())) {
+            throw new AppException(ErrorCode.DEPARTURE_DATE_INVALID);
+        }
 
         Booking booking = bookingMapper.toBooking(request);
         booking.setTour(tour);
@@ -150,6 +156,20 @@ public class BookingService {
         return bookings.stream()
                 .map(booking -> mapToBookingResponse(booking, tour))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public BookingWithCountResponse getAllBookingsByCompanyId(Long companyId) {
+        List<Booking> bookings = bookingRepository.findByTour_CompanyIdOrderByCreatedAtDesc(companyId);
+
+        List<BookingResponse> responses = bookings.stream()
+                .map(booking -> {
+                    Tour tour = booking.getTour();
+                    return mapToBookingResponse(booking, tour);
+                })
+                .toList();
+
+        return new BookingWithCountResponse(responses);
     }
 
     private BookingResponse mapToBookingResponse(Booking booking, Tour tour) {
@@ -323,7 +343,7 @@ public class BookingService {
     public boolean getTourCompletionStatus(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        if (LocalDate.now().isAfter(booking.getTourEndDate())){
+        if (LocalDate.now().isAfter(booking.getAutoConfirmedDate())){
             booking.setCompanyConfirmedCompletion(true);
             booking.setUserConfirmedCompletion(true);
         }

@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -42,7 +43,13 @@ public class Tour {
     private String tourDuration;
 
     @Column(name = "tour_int_duration")
-    private Integer tourIntDuration;
+    private int tourIntDuration;
+
+    @Column(name = "tour_expiration_date")
+    private LocalDate tourExpirationDate;
+
+    @Column(name = "tour_deadline")
+    private int tourDeadline;
 
     @Column(name = "tour_departure_point")
     private String tourDeparturePoint;
@@ -57,7 +64,7 @@ public class Tour {
     @Column(name = "tour_schedule", columnDefinition = "TEXT")
     private String tourSchedule;
 
-    private Integer amount;
+    private int amount;
 
     @Column(name = "adult_price", precision = 10, scale = 2)
     private BigDecimal adultPrice;
