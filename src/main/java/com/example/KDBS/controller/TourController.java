@@ -3,6 +3,7 @@ package com.example.KDBS.controller;
 import com.example.KDBS.dto.request.TourRequest;
 import com.example.KDBS.dto.response.TourPreviewResponse;
 import com.example.KDBS.dto.response.TourResponse;
+import com.example.KDBS.enums.TourStatus;
 import com.example.KDBS.service.TourService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -48,15 +49,15 @@ public class TourController {
     }
 
     /** Read one tour by id */
-    @GetMapping("/{id}")
-    public ResponseEntity<TourResponse> getTour(@PathVariable Long id) {
-        return ResponseEntity.ok(tourService.getTourById(id));
+    @GetMapping("/{tourId}")
+    public ResponseEntity<TourResponse> getTour(@PathVariable Long tourId) {
+        return ResponseEntity.ok(tourService.getTourById(tourId));
     }
 
     /** Get tours for preview /api/tour/preview/{id}*/
-    @GetMapping("/preview/{id}")
-    public ResponseEntity<TourPreviewResponse> getPreviewTourById(@PathVariable Long id) {
-        return ResponseEntity.ok(tourService.getTourPreviewById(id));
+    @GetMapping("/preview/{tourId}")
+    public ResponseEntity<TourPreviewResponse> getPreviewTourById(@PathVariable Long tourId) {
+        return ResponseEntity.ok(tourService.getTourPreviewById(tourId));
     }
 
     @GetMapping("/search")
@@ -74,21 +75,26 @@ public class TourController {
 
 
 
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/{tourId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('COMPANY')")
     public ResponseEntity<TourResponse> updateTour(
-            @PathVariable Long id,
+            @PathVariable Long tourId,
             @RequestPart("data") @Valid TourRequest request,
             @RequestPart(value = "tourImg", required = false) MultipartFile tourImg
     ) throws IOException {
-        return ResponseEntity.ok(tourService.updateTour(id, request, tourImg));
+        return ResponseEntity.ok(tourService.updateTour(tourId, request, tourImg));
     }
 
     /** Delete a tour */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{tourId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'COMPANY')")
-    public ResponseEntity<Void> deleteTour(@PathVariable Long id, @RequestParam String userEmail) {
-        tourService.deleteTour(id, userEmail);
+    public ResponseEntity<Void> deleteTour(@PathVariable Long tourId, @RequestParam String userEmail) {
+        tourService.deleteTour(tourId, userEmail);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/change-status/{tourId}")
+    public ResponseEntity<TourResponse> changeTourStatus(@PathVariable Long tourId, @RequestParam TourStatus status) {
+        return ResponseEntity.ok(tourService.changeTourStatus(tourId, status));
     }
 }

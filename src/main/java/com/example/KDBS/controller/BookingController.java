@@ -119,7 +119,7 @@ public class BookingController {
     }
 
     @GetMapping("/company/{companyId}")
-    public ResponseEntity<BookingWithCountResponse> getBookingsByTourCompanyId(@PathVariable Long companyId) {
+    public ResponseEntity<BookingWithCountResponse> getBookingsByTourCompanyId(@PathVariable int companyId) {
         BookingWithCountResponse responses = bookingService.getAllBookingsByCompanyId(companyId);
         return ResponseEntity.ok(responses);
     }

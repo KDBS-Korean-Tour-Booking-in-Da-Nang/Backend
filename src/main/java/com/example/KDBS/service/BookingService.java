@@ -159,7 +159,7 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public BookingWithCountResponse getAllBookingsByCompanyId(Long companyId) {
+    public BookingWithCountResponse getAllBookingsByCompanyId(int companyId) {
         List<Booking> bookings = bookingRepository.findByTour_CompanyIdOrderByCreatedAtDesc(companyId);
 
         List<BookingResponse> responses = bookings.stream()

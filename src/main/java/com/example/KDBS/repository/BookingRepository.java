@@ -15,8 +15,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     
     List<Booking> findByTour_TourIdOrderByCreatedAtDesc(Long tourId);
 
-    List<Booking> findByTour_CompanyIdOrderByCreatedAtDesc(Long tourCompanyId);
+    List<Booking> findByTour_CompanyIdOrderByCreatedAtDesc(int tour_companyId);
 
     @Query("SELECT b FROM Booking b LEFT JOIN FETCH b.guests WHERE b.bookingId = :bookingId")
     Optional<Booking> findByIdWithGuests(@Param("bookingId") Long bookingId);
+
+    Boolean existsByTour_TourId(Long tourTourId);
 }
