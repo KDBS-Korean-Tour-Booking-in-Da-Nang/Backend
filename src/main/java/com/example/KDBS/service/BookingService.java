@@ -2,6 +2,7 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.BookingGuestRequest;
 import com.example.KDBS.dto.request.BookingRequest;
+import com.example.KDBS.dto.request.ChangeBookingStatusRequest;
 import com.example.KDBS.dto.response.BookingGuestResponse;
 import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
@@ -159,7 +160,7 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public BookingWithCountResponse getAllBookingsByCompanyId(Long companyId) {
+    public BookingWithCountResponse getAllBookingsByCompanyId(int companyId) {
         List<Booking> bookings = bookingRepository.findByTour_CompanyIdOrderByCreatedAtDesc(companyId);
 
         List<BookingResponse> responses = bookings.stream()
@@ -306,12 +307,12 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse changeBookingStatus(Long bookingId, BookingStatus status) {
+    public BookingResponse changeBookingStatus(Long bookingId, ChangeBookingStatusRequest request) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        booking.setBookingStatus(status);
+        booking.setBookingStatus(request.getStatus());
 
-        if (status.equals(BookingStatus.WAITING_FOR_UPDATE)) {
+        if (request.getStatus().equals(BookingStatus.WAITING_FOR_UPDATE)) {
             // TODO send notification for user to update booking
         }
 
