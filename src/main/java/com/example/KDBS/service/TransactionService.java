@@ -1,7 +1,7 @@
 package com.example.KDBS.service;
 
+import com.example.KDBS.dto.request.TransactionStatusChangeRequest;
 import com.example.KDBS.dto.response.TransactionResponse;
-import com.example.KDBS.enums.TransactionStatus;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.TransactionMapper;
@@ -34,10 +34,10 @@ public class TransactionService {
     }
 
     @Transactional
-    public TransactionResponse changeTransactionStatus(Long transactionId, TransactionStatus status) {
-        Transaction transaction = transactionRepository.findById(transactionId)
+    public TransactionResponse changeTransactionStatus(TransactionStatusChangeRequest request) {
+        Transaction transaction = transactionRepository.findByOrderId(request.getOrderId())
                 .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
-        transaction.setStatus(status);
+        transaction.setStatus(request.getStatus());
         return transactionMapper.toTransactionResponse(transaction);
     }
 }

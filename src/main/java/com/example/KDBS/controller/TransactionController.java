@@ -1,7 +1,7 @@
 package com.example.KDBS.controller;
 
+import com.example.KDBS.dto.request.TransactionStatusChangeRequest;
 import com.example.KDBS.dto.response.TransactionResponse;
-import com.example.KDBS.enums.TransactionStatus;
 import com.example.KDBS.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -24,8 +24,8 @@ public class TransactionController {
         return transactionService.getAllTransactionsByUserId(userId);
     }
 
-    @PutMapping("/{transactionId}/status")
-    public TransactionResponse changeTransactionStatus(@PathVariable Long transactionId, @RequestParam TransactionStatus status) {
-        return transactionService.changeTransactionStatus(transactionId, status);
+    @PutMapping("/change-status")
+    public TransactionResponse changeTransactionStatus(@RequestBody TransactionStatusChangeRequest request) {
+        return transactionService.changeTransactionStatus(request);
     }
 }
