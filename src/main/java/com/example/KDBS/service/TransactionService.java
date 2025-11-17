@@ -1,31 +1,43 @@
 package com.example.KDBS.service;
 
+import com.example.KDBS.dto.request.TransactionStatusChangeRequest;
+import com.example.KDBS.dto.response.TransactionResponse;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
+import com.example.KDBS.mapper.TransactionMapper;
 import com.example.KDBS.model.Transaction;
 import com.example.KDBS.repository.TransactionRepository;
-import com.example.KDBS.repository.UserRepository;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class TransactionService {
     private final TransactionRepository transactionRepository;
-    private final UserRepository userRepository;
+    private final TransactionMapper transactionMapper;
 
-    public TransactionService(TransactionRepository transactionRepository, UserRepository userRepository) {
-        this.transactionRepository = transactionRepository;
-        this.userRepository = userRepository;
+    public List<TransactionResponse> getAllTransactions() {
+        List<Transaction> transactions = transactionRepository.findAll();
+        return transactions.stream()
+                .map(transactionMapper::toTransactionResponse)
+                .toList();
     }
 
-    public List<Transaction> getAllTransactions() {
-        return transactionRepository.findAll();
+    public List<TransactionResponse> getAllTransactionsByUserId(int userId) {
+        return transactionRepository.findByUser_UserId(userId)
+                .stream()
+                .map(transactionMapper::toTransactionResponse)
+                .toList();
     }
 
-    public List<Transaction> getAllTransactionsByUserEmail(String userEmail) {
-        return userRepository.findByEmail(userEmail)
-                .map(transactionRepository::findByUser)
-                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
+    @Transactional
+    public TransactionResponse changeTransactionStatus(TransactionStatusChangeRequest request) {
+        Transaction transaction = transactionRepository.findByOrderId(request.getOrderId())
+                .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
+        transaction.setStatus(request.getStatus());
+        return transactionMapper.toTransactionResponse(transaction);
     }
 }

@@ -4,6 +4,7 @@ import com.example.KDBS.dto.request.TourRequest;
 import com.example.KDBS.dto.response.TourPreviewResponse;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.enums.Role;
+import com.example.KDBS.enums.TourStatus;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.TourMapper;
@@ -11,10 +12,7 @@ import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.TourContent;
 import com.example.KDBS.model.TourContentImg;
 import com.example.KDBS.model.User;
-import com.example.KDBS.repository.TourContentImgRepository;
-import com.example.KDBS.repository.TourContentRepository;
-import com.example.KDBS.repository.TourRepository;
-import com.example.KDBS.repository.UserRepository;
+import com.example.KDBS.repository.*;
 import com.example.KDBS.utils.FileUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +38,7 @@ public class TourService {
     private final TourContentRepository tourContentRepository;
     private final TourContentImgRepository tourContentImgRepository;
     private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
     private final TourMapper tourMapper;
 
     @Value("${app.frontend.url}")
@@ -89,15 +88,15 @@ public class TourService {
     }
 
     /** Get one tour */
-    public TourResponse getTourById(Long id) {
-        Tour tour = tourRepository.findByIdWithContents(id)
+    public TourResponse getTourById(Long tourId) {
+        Tour tour = tourRepository.findByIdWithContents(tourId)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
         return tourMapper.toTourResponse(tour);
     }
 
     //**Get tours for preview */
-    public TourPreviewResponse getTourPreviewById(Long id) {
-        Tour tour = tourRepository.findById(id)
+    public TourPreviewResponse getTourPreviewById(Long tourId) {
+        Tour tour = tourRepository.findById(tourId)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
         TourPreviewResponse tourPreviewResponse = tourMapper.toTourPreviewResponse(tour);
         tourPreviewResponse.setTourUrl(frontendUrl + "/tour/" + tour.getTourId());
@@ -115,13 +114,11 @@ public class TourService {
                 .map(tourMapper::toTourResponse);
     }
 
-
-
     /** Update tour */
     @Transactional
-    public TourResponse updateTour(Long id, TourRequest request, MultipartFile tourImg) throws IOException {
+    public TourResponse updateTour(Long tourId, TourRequest request, MultipartFile tourImg) throws IOException {
         // Load existing tour
-        Tour existing = tourRepository.findById(id)
+        Tour existing = tourRepository.findById(tourId)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         // Update basic fields
@@ -152,8 +149,8 @@ public class TourService {
 
     /** Delete tour and cascade its contents & images */
     @Transactional
-    public void deleteTour(Long id, String userEmail) {
-        Tour tour = tourRepository.findById(id)
+    public void deleteTour(Long tourId, String userEmail) {
+        Tour tour = tourRepository.findById(tourId)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         User currentUser = userRepository.findByEmail(userEmail)
@@ -162,10 +159,23 @@ public class TourService {
         // Check authorization
         if (currentUser.getRole() == Role.COMPANY &&
                 tour.getCompanyId() != (currentUser.getUserId())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(ErrorCode.FORBIDDEN);
         }
 
-        tourRepository.deleteById(id);
+        boolean hasBookings = bookingRepository.existsByTour_TourId(tourId);
+
+        if (hasBookings) {
+            tour.setTourStatus(TourStatus.DISABLED);
+        }
+        else tourRepository.deleteById(tourId);
+    }
+
+    @Transactional
+    public TourResponse changeTourStatus(Long tourId, TourStatus tourStatus) {
+        Tour tour = tourRepository.findById(tourId)
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
+        tour.setTourStatus(tourStatus);
+        return tourMapper.toTourResponse(tour);
     }
 
     /** Helper to save nested content + extract image paths */

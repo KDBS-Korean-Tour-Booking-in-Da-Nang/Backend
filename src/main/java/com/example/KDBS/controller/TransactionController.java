@@ -1,12 +1,10 @@
 package com.example.KDBS.controller;
 
-import com.example.KDBS.model.Transaction;
+import com.example.KDBS.dto.request.TransactionStatusChangeRequest;
+import com.example.KDBS.dto.response.TransactionResponse;
 import com.example.KDBS.service.TransactionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -17,12 +15,17 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @GetMapping
-    public List<Transaction> getAllTransactions() {
+    public List<TransactionResponse> getAllTransactions() {
         return transactionService.getAllTransactions();
     }
 
-    @GetMapping("/{userEmail}")
-    public List<Transaction> getAllTransactionsByUserId(@PathVariable String userEmail) {
-        return transactionService.getAllTransactionsByUserEmail(userEmail);
+    @GetMapping("/{userId}")
+    public List<TransactionResponse> getAllTransactionsByUserId(@PathVariable int userId) {
+        return transactionService.getAllTransactionsByUserId(userId);
+    }
+
+    @PutMapping("/change-status")
+    public TransactionResponse changeTransactionStatus(@RequestBody TransactionStatusChangeRequest request) {
+        return transactionService.changeTransactionStatus(request);
     }
 }
