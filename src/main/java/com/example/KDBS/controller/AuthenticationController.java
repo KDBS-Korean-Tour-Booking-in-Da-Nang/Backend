@@ -7,6 +7,7 @@ import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.AuthenticationResponse;
 import com.example.KDBS.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +21,7 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
 
     @PostMapping("/login")
-    ApiResponse<AuthenticationResponse> login(@RequestBody AuthenticationRequest authenticationRequest) {
+    ApiResponse<AuthenticationResponse> login(@RequestBody @Valid AuthenticationRequest authenticationRequest) {
         var result = authenticationService.login(authenticationRequest);
         return ApiResponse.<AuthenticationResponse>builder()
                 .result(result)
@@ -28,7 +29,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login-username")
-    ApiResponse<AuthenticationResponse> loginUsername(@RequestBody UsernameAuthenticationRequest usernameAuthenticationRequest) {
+    ApiResponse<AuthenticationResponse> loginUsername(@RequestBody @Valid UsernameAuthenticationRequest usernameAuthenticationRequest) {
         var result = authenticationService.loginWithUsername(usernameAuthenticationRequest);
         return ApiResponse.<AuthenticationResponse>builder()
                 .result(result)
@@ -36,7 +37,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/logout")
-    ApiResponse<Void> logout(@RequestBody LogOutRequest request) throws ParseException, JOSEException {
+    ApiResponse<Void> logout(@RequestBody @Valid LogOutRequest request) throws ParseException, JOSEException {
         authenticationService.logout(request);
         return ApiResponse.<Void>builder().build();
     }

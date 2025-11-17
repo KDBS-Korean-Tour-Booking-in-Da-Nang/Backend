@@ -123,18 +123,18 @@ public class AuthenticationService {
 
         // Verify signature
         if (!signedJWT.verify(verifier)) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         // Check expiration using the token's actual exp claim
         Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
         if (expiryTime == null || !expiryTime.after(new Date())) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         // Check if token is blacklisted
         if (invalidateTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID())) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         return signedJWT;

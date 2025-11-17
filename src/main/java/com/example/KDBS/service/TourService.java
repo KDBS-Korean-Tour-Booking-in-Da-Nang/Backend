@@ -159,7 +159,7 @@ public class TourService {
         // Check authorization
         if (currentUser.getRole() == Role.COMPANY &&
                 tour.getCompanyId() != (currentUser.getUserId())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(ErrorCode.FORBIDDEN);
         }
 
         boolean hasBookings = bookingRepository.existsByTour_TourId(tourId);
