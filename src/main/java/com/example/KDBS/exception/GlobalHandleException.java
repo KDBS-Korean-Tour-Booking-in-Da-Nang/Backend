@@ -3,7 +3,9 @@ package com.example.KDBS.exception;
 import com.example.KDBS.dto.response.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -49,6 +51,17 @@ public class GlobalHandleException {
                 .status(ErrorCode.MISSING_PARAMETER.getStatusCode())
                 .body(api);
     }
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthorizationDenied(AuthorizationDeniedException ex) {
+        ApiResponse<Void> api = new ApiResponse<>();
+        api.setCode(ErrorCode.FORBIDDEN.getCode());
+        api.setMessage("Access denied. You do not have permission to access this resource.");
+
+        logger.error("AuthorizationDeniedException: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(api);
+    }
+
 
     @ExceptionHandler(value = Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(Exception exception){

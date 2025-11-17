@@ -102,7 +102,8 @@ public enum ErrorCode {
         BOOKING_CANNOT_CONFIRM_COMPLETION(1078, "Booking cannot be confirmed for completion in its current status",
                 HttpStatus.BAD_REQUEST),
     TOUR_DEADLINE_EXCEEDS_EXPIRATION_DATE(1079, "Tour deadline exceeds expiration date", HttpStatus.BAD_REQUEST),
-    DEPARTURE_DATE_INVALID(1080, "Departure date is invalid or has already passed", HttpStatus.BAD_REQUEST)
+    DEPARTURE_DATE_INVALID(1080, "Departure date is invalid or has already passed", HttpStatus.BAD_REQUEST),
+        FORBIDDEN(1081, "Access denied. You do not have permission to access this resource", HttpStatus.FORBIDDEN),
         ;
 
         private final int code;
