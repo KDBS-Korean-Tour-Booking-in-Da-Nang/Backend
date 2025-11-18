@@ -37,7 +37,7 @@ public class IsOwnerAspect {
         //  Lấy email từ JWT đang đăng nhập
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         String authEmail = extractEmailFromAuth(auth, jwtClaim);
