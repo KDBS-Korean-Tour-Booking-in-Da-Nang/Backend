@@ -3,6 +3,7 @@ package com.example.KDBS.controller;
 import com.example.KDBS.dto.request.ForumPostRequest;
 import com.example.KDBS.dto.response.ForumPostResponse;
 import com.example.KDBS.service.ForumPostService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,7 +24,7 @@ public class ForumPostController {
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ForumPostResponse> createPost(@ModelAttribute ForumPostRequest forumPostRequest) throws IOException {
+    public ResponseEntity<ForumPostResponse> createPost(@Valid @ModelAttribute ForumPostRequest forumPostRequest) throws IOException {
             // @ModelAttribute is needed since you're uploading MultipartFile(s)
             ForumPostResponse response = forumPostService.createPost(forumPostRequest);
             return ResponseEntity.ok(response);
@@ -31,7 +32,7 @@ public class ForumPostController {
 
     @PutMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ForumPostResponse> updatePost(
+    public ResponseEntity<ForumPostResponse> updatePost(@Valid
                     @PathVariable Long id,
                     @ModelAttribute ForumPostRequest updateRequest) throws IOException {
             ForumPostResponse response = forumPostService.updatePost(id, updateRequest);
