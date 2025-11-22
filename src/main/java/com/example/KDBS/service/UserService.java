@@ -58,27 +58,38 @@ public class UserService {
     private String uploadDir;
 
     public String createUser(UserRegisterRequest request) {
+        // 1. Check theo email trước
         Optional<User> existingByEmail = userRepository.findByEmail(request.getEmail());
-        Optional<User> existingByUsername = userRepository.findByUsername(request.getUsername());
-
-        if (existingByUsername.isPresent()) {
-            throw new AppException(ErrorCode.USERNAME_EXISTED);
-        }
 
         if (existingByEmail.isPresent()) {
             User user = existingByEmail.get();
 
             if (user.getStatus() == Status.UNVERIFIED) {
-                // If account created within 3 days → resend OTP
+                // Nếu tạo trong 3 ngày gần đây → chỉ resend OTP, KHÔNG tạo user mới
                 if (user.getCreatedAt().isAfter(LocalDateTime.now().minusDays(3))) {
                     otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
                     return "Email already registered but not verified. OTP resent.";
                 } else {
-                    // If expired → delete old unverified user
+                    // Quá hạn → xóa user cũ, cho phép đăng ký lại
                     userRepository.delete(user);
                 }
             } else {
                 throw new AppException(ErrorCode.EMAIL_EXISTED);
+            }
+        }
+
+        // 2. Sau khi xử lý email xong, mới check username
+        Optional<User> existingByUsername = userRepository.findByUsername(request.getUsername());
+
+        if (existingByUsername.isPresent()) {
+            User userByUsername = existingByUsername.get();
+
+            if (userByUsername.getStatus() == Status.UNVERIFIED) {
+                // Username đang thuộc về 1 tài khoản chưa verify -> xoá cho đăng ký lại
+                userRepository.delete(userByUsername);
+            } else {
+                // Username thuộc về tài khoản đã verify -> không cho dùng
+                throw new AppException(ErrorCode.USERNAME_EXISTED);
             }
         }
 
