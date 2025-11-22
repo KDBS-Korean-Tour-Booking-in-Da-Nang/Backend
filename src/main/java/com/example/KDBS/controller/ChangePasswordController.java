@@ -16,19 +16,14 @@ import org.springframework.web.bind.annotation.*;
 public class ChangePasswordController {
     private final ChangePasswordService changePasswordService;
 
-    @PostMapping()
+    @PostMapping
     public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        try {
-            changePasswordService.changePassword(request);
-            return ApiResponse.<Void>builder()
-                    .message("Password changed successfully")
-                    .build();
-        } catch (Exception e) {
-            log.error("Error changing password for email: {}", request.getEmail(), e);
-            return ApiResponse.<Void>builder()
-                    .message("Failed to change password: " + e.getMessage())
-                    .build();
-        }
+
+        changePasswordService.changePassword(request);
+
+        return ApiResponse.<Void>builder()
+                .message("Password changed successfully")
+                .build();
     }
 
 }

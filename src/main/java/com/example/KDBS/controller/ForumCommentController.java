@@ -3,6 +3,7 @@ package com.example.KDBS.controller;
 import com.example.KDBS.dto.request.ForumCommentRequest;
 import com.example.KDBS.dto.response.ForumCommentResponse;
 import com.example.KDBS.service.ForumCommentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,14 +19,14 @@ public class ForumCommentController {
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ForumCommentResponse> createComment(@RequestBody ForumCommentRequest forumCommentRequest) {
+    public ResponseEntity<ForumCommentResponse> createComment(@RequestBody @Valid ForumCommentRequest forumCommentRequest) {
         ForumCommentResponse response = forumCommentService.createComment(forumCommentRequest);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ForumCommentResponse> updateComment(
+    public ResponseEntity<ForumCommentResponse> updateComment(@Valid
             @PathVariable Long id,
             @RequestBody ForumCommentRequest updateRequest){
         ForumCommentResponse response = forumCommentService.updateComment(id, updateRequest);
