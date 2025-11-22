@@ -58,60 +58,67 @@ public class UserService {
     private String uploadDir;
 
     public String createUser(UserRegisterRequest request) {
-        // 1. Check theo email trước
-        Optional<User> existingByEmail = userRepository.findByEmail(request.getEmail());
+        LocalDateTime now = LocalDateTime.now();
 
-        if (existingByEmail.isPresent()) {
-            User user = existingByEmail.get();
+        // 1. Check theo EMAIL trước
+        User userByEmail = userRepository.findByEmail(request.getEmail()).orElse(null);
 
-            if (user.getStatus() == Status.UNVERIFIED) {
-                // Nếu tạo trong 3 ngày gần đây → chỉ resend OTP, KHÔNG tạo user mới
-                if (user.getCreatedAt().isAfter(LocalDateTime.now().minusDays(3))) {
-                    otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
-                    return "Email already registered but not verified. OTP resent.";
-                } else {
-                    // Quá hạn → xóa user cũ, cho phép đăng ký lại
-                    userRepository.delete(user);
-                }
-            } else {
+        if (userByEmail != null) {
+            // Email đã tồn tại
+            if (userByEmail.getStatus() != Status.UNVERIFIED) {
+                // Đã verify rồi -> không cho đăng ký lại
                 throw new AppException(ErrorCode.EMAIL_EXISTED);
+            }
+
+            // UNVERIFIED
+            if (userByEmail.getCreatedAt().isAfter(now.minusDays(3))) {
+                // Trong 3 ngày -> coi như user đăng ký lại -> UPDATE thông tin
+                userByEmail.setPassword(passwordEncoder.encode(request.getPassword()));
+                userByEmail.setRole(resolveRole(request.getRole()));
+                // (username giữ nguyên vì thường form đăng ký lại sẽ dùng cùng username)
+
+                userRepository.save(userByEmail);
+
+                otpService.generateAndSendOTP(userByEmail.getEmail(), OTPPurpose.VERIFY_EMAIL);
+                return "Email already registered but not verified. Info updated and OTP resent.";
+            } else {
+                // Quá 3 ngày -> xóa user cũ, cho phép tạo mới
+                userRepository.delete(userByEmail);
             }
         }
 
-        // 2. Sau khi xử lý email xong, mới check username
-        Optional<User> existingByUsername = userRepository.findByUsername(request.getUsername());
+        // 2. Check USERNAME
+        User userByUsername = userRepository.findByUsername(request.getUsername()).orElse(null);
 
-        if (existingByUsername.isPresent()) {
-            User userByUsername = existingByUsername.get();
-
+        if (userByUsername != null) {
             if (userByUsername.getStatus() == Status.UNVERIFIED) {
-                // Username đang thuộc về 1 tài khoản chưa verify -> xoá cho đăng ký lại
+                // Username thuộc user chưa verify -> xóa để ghi đè
                 userRepository.delete(userByUsername);
             } else {
-                // Username thuộc về tài khoản đã verify -> không cho dùng
+                // Username thuộc user đã verify -> chặn
                 throw new AppException(ErrorCode.USERNAME_EXISTED);
             }
         }
 
+        // 3. Tạo user mới
+        User newUser = userMapper.toUser(request);
+        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
+        newUser.setRole(resolveRole(request.getRole()));
+        newUser.setStatus(Status.UNVERIFIED);
+        newUser.setCreatedAt(now);
 
-        // Tạo user mới với status UNVERIFIED
-        User user = userMapper.toUser(request);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        Role role;
-        try {
-            role = Role.valueOf(request.getRole().toUpperCase());
-        } catch (IllegalArgumentException | NullPointerException e) {
-            // Nếu request gửi role sai hoặc null, mặc định là USER
-            role = Role.USER;
-        }
-        user.setRole(role);
-        user.setStatus(Status.UNVERIFIED);
-        user.setCreatedAt(LocalDateTime.now());
-        userRepository.save(user);
-
-        otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
+        userRepository.save(newUser);
+        otpService.generateAndSendOTP(newUser.getEmail(), OTPPurpose.VERIFY_EMAIL);
 
         return "Registration successful. Please check your email for verification code.";
+    }
+
+    private Role resolveRole(String roleStr) {
+        try {
+            return Role.valueOf(roleStr.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return Role.USER;
+        }
     }
 
     @Transactional
