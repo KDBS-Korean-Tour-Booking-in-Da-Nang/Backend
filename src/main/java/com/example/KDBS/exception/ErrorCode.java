@@ -32,7 +32,8 @@ public enum ErrorCode {
         PASSWORD_RESET_FAILED(1015, "Password reset failed. Please try again", HttpStatus.BAD_REQUEST),
 
         BUSINESS_LICENSE_EXISTED(1016, "Business license has existed", HttpStatus.CONFLICT),
-
+        INVALID_OLD_PASSWORD(1083, "Invalid old password", HttpStatus.BAD_REQUEST),
+        NEW_PASSWORD_SAME_AS_OLD(108, "New password cannot be the same as the old password", HttpStatus.BAD_REQUEST),
         // User / post / comment / entity not found
         POST_NOT_FOUND(1017, "Post not found with id: %s", HttpStatus.NOT_FOUND),
         POST_NOT_SAVED(1020, "Post not saved", HttpStatus.NOT_FOUND),
