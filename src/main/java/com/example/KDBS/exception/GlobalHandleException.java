@@ -3,7 +3,10 @@ package com.example.KDBS.exception;
 import com.example.KDBS.dto.response.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,7 +24,7 @@ public class GlobalHandleException {
         apiResponse.setMessage(errorCode.getMessage());
 
         logger.error("AppException: Code: {}, Message: {}", errorCode.getCode(), errorCode.getMessage());
-        return ResponseEntity.badRequest().body(apiResponse);
+        return ResponseEntity.status(errorCode.getStatusCode()).body(apiResponse);
     }
 
     @ExceptionHandler(value = CustomException.class)
@@ -49,6 +52,17 @@ public class GlobalHandleException {
                 .status(ErrorCode.MISSING_PARAMETER.getStatusCode())
                 .body(api);
     }
+    @ExceptionHandler({ AuthorizationDeniedException.class, AccessDeniedException.class })
+    public ResponseEntity<ApiResponse<Void>> handleAuthorizationDenied(Exception ex) {
+        ApiResponse<Void> api = new ApiResponse<>();
+        api.setCode(ErrorCode.FORBIDDEN.getCode());
+        api.setMessage(ErrorCode.FORBIDDEN.getMessage());
+
+        logger.error("Authorization error: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(api);
+    }
+
 
     @ExceptionHandler(value = Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(Exception exception){
@@ -57,6 +71,6 @@ public class GlobalHandleException {
         apiResponse.setMessage(ErrorCode.RUN_TIME_EXCEPTION.getMessage());
 
         logger.error("Exception: Code: {}, Message: {}", ErrorCode.RUN_TIME_EXCEPTION.getCode(), ErrorCode.RUN_TIME_EXCEPTION.getMessage(), exception);
-        return ResponseEntity.badRequest().body(apiResponse);
+        return ResponseEntity.status(ErrorCode.RUN_TIME_EXCEPTION.getStatusCode()).body(apiResponse);
     }
 }
