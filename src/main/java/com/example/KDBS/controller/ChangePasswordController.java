@@ -18,9 +18,7 @@ public class ChangePasswordController {
 
     @PostMapping
     public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-
         changePasswordService.changePassword(request);
-
         return ApiResponse.<Void>builder()
                 .message("Password changed successfully")
                 .build();

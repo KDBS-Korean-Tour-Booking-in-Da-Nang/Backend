@@ -1,5 +1,6 @@
 package com.example.KDBS.mapper;
 
+import com.example.KDBS.dto.request.StaffCreateRequest;
 import com.example.KDBS.dto.request.UserRegisterRequest;
 import com.example.KDBS.dto.request.UserUpdateRequest;
 import com.example.KDBS.dto.response.UserResponse;
@@ -14,6 +15,12 @@ public interface UserMapper {
     @Mapping(target = "password", source = "password")
     @Mapping(target = "role", source = "role")
     User toUser(UserRegisterRequest request);
+
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(target = "username", source = "username")
+    @Mapping(target = "password", source = "password")
+    @Mapping(target = "staffTask", source = "staffTask")
+    User toStaff(StaffCreateRequest request);
 
     UserResponse toUserResponse(User user);
 

@@ -12,6 +12,7 @@ import com.example.KDBS.service.VoucherService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -28,12 +29,14 @@ public class BookingController {
     private final VoucherService voucherService;
 
     @PostMapping
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<BookingResponse> createBooking(@Valid @RequestBody BookingRequest request) {
         BookingResponse response = bookingService.createBooking(request);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{bookingId}")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<BookingResponse> updateBooking(@PathVariable long bookingId,
             @Valid @RequestBody BookingRequest request) {
         BookingResponse response = bookingService.updateBooking(bookingId, request);

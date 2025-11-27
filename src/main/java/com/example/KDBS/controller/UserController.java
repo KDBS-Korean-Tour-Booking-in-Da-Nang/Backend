@@ -1,9 +1,6 @@
 package com.example.KDBS.controller;
 
-import com.example.KDBS.dto.request.BusinessLicenseRequest;
-import com.example.KDBS.dto.request.EmailVerificationRequest;
-import com.example.KDBS.dto.request.UserRegisterRequest;
-import com.example.KDBS.dto.request.UserUpdateRequest;
+import com.example.KDBS.dto.request.*;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
 import com.example.KDBS.dto.response.UserResponse;
@@ -15,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -87,14 +85,6 @@ public class UserController {
                 .build();
     }
 
-    @PutMapping("/{userId}/ban")
-    public ApiResponse<UserResponse> banOrUnbanUser(@PathVariable("userId") int userId,
-                                                    @RequestParam("ban") boolean ban) {
-        return ApiResponse.<UserResponse>builder()
-                .result(userService.setUserBanStatus(userId, ban))
-                .build();
-    }
-
     @PutMapping(path = "/update-business-license", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateBusinessLicense(
             @RequestPart("file") MultipartFile file,
@@ -138,4 +128,5 @@ public class UserController {
     public ResponseEntity<UserResponse> getUser(@PathVariable("email") String email) {
         return ResponseEntity.ok(userService.getUserByEmail(email));
     }
+
 }

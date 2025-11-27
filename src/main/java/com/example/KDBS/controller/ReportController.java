@@ -36,7 +36,7 @@ public class ReportController {
     }
 
     @PutMapping("/{reportId}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ReportResponse> updateReportStatus(@Valid
             @PathVariable Long reportId,
             @RequestBody UpdateReportRequest request,
