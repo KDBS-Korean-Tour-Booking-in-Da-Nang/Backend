@@ -1,7 +1,6 @@
 package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.StaffCreateRequest;
-import com.example.KDBS.dto.request.UsernameAuthenticationRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.enums.Role;
@@ -36,7 +35,8 @@ public class StaffController {
                 .build();
     }
 
-    @PutMapping("/{userId}/role")
+    //Dùng để up role USER lên COMPANY
+    @PutMapping("/update-role/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ApiResponse<UserResponse> updateUserRole(@PathVariable int userId, @RequestParam("role") Role newRole) {
 
