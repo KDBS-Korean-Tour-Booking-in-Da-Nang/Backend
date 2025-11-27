@@ -13,9 +13,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 @Aspect
@@ -28,13 +31,13 @@ public class IsOwnerAspect {
         String targetParam = isOwner.param();
         String jwtClaim = isOwner.jwtClaim();
 
-        // Lấy email từ tham số method (ưu tiên theo tên @RequestParam/@PathVariable)
+        // 1) Lấy email từ tham số method (param, path, body, part)
         String requestedEmail = extractParamByName(jp, targetParam);
         if (requestedEmail == null) {
             throw new AppException(ErrorCode.MISSING_PARAMETER);
         }
 
-        //  Lấy email từ JWT đang đăng nhập
+        // 2) Lấy email từ JWT đang đăng nhập
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
@@ -58,8 +61,8 @@ public class IsOwnerAspect {
         Annotation[][] paramAnns = method.getParameterAnnotations();
         String[] paramNames = sig.getParameterNames();
 
+        // 1) Ưu tiên @RequestParam / @PathVariable (như code cũ)
         for (int i = 0; i < args.length; i++) {
-            // Ưu tiên đọc tên từ @RequestParam / @PathVariable
             for (Annotation ann : paramAnns[i]) {
                 if (ann instanceof RequestParam rp && targetName.equals(rp.value())) {
                     return args[i] != null ? args[i].toString() : null;
@@ -69,10 +72,78 @@ public class IsOwnerAspect {
                 }
             }
         }
-        // Fallback: khớp theo tên biến (cần biên dịch với -parameters, nhưng nhiều IDE đã bật)
+
+        // 2) Fallback: khớp theo tên biến param (ví dụ: String email, String userEmail)
+        if (paramNames != null) {
+            for (int i = 0; i < args.length; i++) {
+                if (targetName.equals(paramNames[i])) {
+                    return args[i] != null ? args[i].toString() : null;
+                }
+            }
+        }
+
+        // 3) NEW: tìm trong các DTO @RequestBody / @RequestPart hoặc object param
         for (int i = 0; i < args.length; i++) {
-            if (paramNames != null && targetName.equals(paramNames[i])) {
-                return args[i] != null ? args[i].toString() : null;
+            Object arg = args[i];
+            if (arg == null) continue;
+
+            boolean isBodyLike = false;
+            for (Annotation ann : paramAnns[i]) {
+                if (ann instanceof RequestBody || ann instanceof RequestPart) {
+                    isBodyLike = true;
+                    break;
+                }
+            }
+
+            // Nếu có @RequestBody/@RequestPart thì chắc chắn đây là DTO
+            // Nếu không có, nhưng type là custom object (không phải String, primitive wrapper) vẫn có thể thử
+            if (isBodyLike || isProbablyDto(arg)) {
+                Object value = getFieldValueByPath(arg, targetName);
+                if (value != null) {
+                    return value.toString();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** Đoán xem đây có phải DTO không (rất đơn giản) */
+    private boolean isProbablyDto(Object arg) {
+        Package p = arg.getClass().getPackage();
+        if (p == null) return false;
+        String pkgName = p.getName();
+        // tuỳ dự án, bạn có thể chỉnh cho đúng package DTO của bạn
+        return pkgName.contains(".dto") || pkgName.contains(".request") || pkgName.contains(".model");
+    }
+
+    /**
+     * Hỗ trợ cả dạng "email" hoặc "user.email" (nếu sau này bạn muốn nested path)
+     */
+    private Object getFieldValueByPath(Object obj, String path) {
+        if (obj == null || path == null) return null;
+
+        String[] parts = path.split("\\.");
+        Object current = obj;
+
+        for (String part : parts) {
+            if (current == null) return null;
+            current = getSingleFieldValue(current, part);
+        }
+        return current;
+    }
+
+    private Object getSingleFieldValue(Object obj, String fieldName) {
+        Class<?> clazz = obj.getClass();
+        while (clazz != null) {
+            try {
+                Field f = clazz.getDeclaredField(fieldName);
+                f.setAccessible(true);
+                return f.get(obj);
+            } catch (NoSuchFieldException e) {
+                clazz = clazz.getSuperclass();
+            } catch (IllegalAccessException e) {
+                return null;
             }
         }
         return null;
@@ -84,7 +155,7 @@ public class IsOwnerAspect {
         if (principal instanceof Jwt jwt) {
             String v = jwt.getClaimAsString(jwtClaim);
             if (v == null && "sub".equals(jwtClaim)) {
-                // thử fallback sang "email" nếu bạn set email ở claim "email"
+                // fallback sang "email" nếu bạn set email ở claim "email"
                 v = jwt.getClaimAsString("email");
             }
             return v;

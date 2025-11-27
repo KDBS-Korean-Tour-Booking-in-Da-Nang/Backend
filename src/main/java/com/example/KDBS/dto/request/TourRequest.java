@@ -23,7 +23,7 @@ public class TourRequest {
 
     @NotBlank(message = "Tour description is required")
     private String tourDescription;
-    @NotBlank(message = "Tour location is required")
+    @NotBlank(message = "Tour duration is required")
     private String tourDuration;
     @NotNull(message = "Tour integer duration is required")
     private int tourIntDuration;

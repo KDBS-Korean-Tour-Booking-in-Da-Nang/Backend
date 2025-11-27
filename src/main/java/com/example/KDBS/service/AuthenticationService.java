@@ -5,6 +5,7 @@ import com.example.KDBS.dto.request.LogOutRequest;
 import com.example.KDBS.dto.request.UsernameAuthenticationRequest;
 import com.example.KDBS.dto.response.AuthenticationResponse;
 import com.example.KDBS.dto.response.UserResponse;
+import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
@@ -58,12 +59,22 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.USER_IS_BANNED);
         }
 
+        // Chỉ cho User và Company được login qua email
+        if (!(user.getRole() == Role.USER || user.getRole() == Role.COMPANY)) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
         return authenticateAndBuildResponse(user, authenticationRequest.getPassword());
     }
 
     public AuthenticationResponse loginWithUsername(UsernameAuthenticationRequest usernameAuthenticationRequest) {
         User user = userRepository.findByUsername(usernameAuthenticationRequest.getUsername())
                 .orElseThrow(() -> new AppException(ErrorCode.USERNAME_NOT_EXISTED));
+
+        // Chỉ Staff và Admin được login qua username
+        if (!(user.getRole() == Role.STAFF || user.getRole() == Role.ADMIN)) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
 
         return authenticateAndBuildResponse(user, usernameAuthenticationRequest.getPassword());
     }
