@@ -1,10 +1,7 @@
 package com.example.KDBS.service;
 
-import com.example.KDBS.dto.request.BusinessLicenseRequest;
-import com.example.KDBS.dto.request.UserRegisterRequest;
-import com.example.KDBS.dto.request.UserUpdateRequest;
+import com.example.KDBS.dto.request.*;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
-import com.example.KDBS.dto.request.IdCardApiRequest;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.enums.Role;
@@ -38,7 +35,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -148,29 +144,29 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    @Transactional
-    public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg) throws IOException {
-        // Tìm user theo email
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        @Transactional
+        public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg) throws IOException {
+            // Tìm user theo email
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        if (request.getUsername() != null) {
-            userRepository.findByUsername(request.getUsername())
-                    .filter(u -> u.getUserId() != user.getUserId())
-                    .ifPresent(u -> { throw new AppException(ErrorCode.USERNAME_EXISTED); });
+            if (request.getUsername() != null) {
+                userRepository.findByUsername(request.getUsername())
+                        .filter(u -> u.getUserId() != user.getUserId())
+                        .ifPresent(u -> { throw new AppException(ErrorCode.USERNAME_EXISTED); });
+            }
+
+            if (request.getPhone() != null) {
+                userRepository.findByPhone(request.getPhone())
+                        .filter(u -> u.getUserId() != user.getUserId())
+                        .ifPresent(u -> { throw new AppException(ErrorCode.PHONE_EXISTED); });
+            }
+
+            userMapper.updateUserFromDto(request, user);
+            user.setAvatar(FileUtils.convertFileToPath(avatarImg, uploadDir, "/users/avatar"));
+            userRepository.save(user);
+            return userMapper.toUserResponse(user);
         }
-
-        if (request.getPhone() != null) {
-            userRepository.findByPhone(request.getPhone())
-                    .filter(u -> u.getUserId() != user.getUserId())
-                    .ifPresent(u -> { throw new AppException(ErrorCode.PHONE_EXISTED); });
-        }
-
-        userMapper.updateUserFromDto(request, user);
-        user.setAvatar(FileUtils.convertFileToPath(avatarImg, uploadDir, "/users/avatar"));
-        userRepository.save(user);
-        return userMapper.toUserResponse(user);
-    }
 
     @GetMapping
     public List<UserResponse> getAllUsers() {
@@ -178,20 +174,6 @@ public class UserService {
         return users.stream()
                 .map(userMapper::toUserResponse)
                 .toList();
-    }
-
-    @Transactional
-    public UserResponse setUserBanStatus(int userId, boolean ban) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        if (ban) {
-            user.setStatus(Status.BANNED);
-        } else {
-            user.setStatus(Status.UNBANNED);
-        }
-
-        return userMapper.toUserResponse(user);
     }
 
     public void updateBusinessLicense(BusinessLicenseRequest request) throws IOException {
@@ -294,4 +276,6 @@ public class UserService {
 
         return mapper.treeToValue(data, IdCardApiRequest.class);
     }
+
+
 }
