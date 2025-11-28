@@ -1,6 +1,9 @@
 package com.example.KDBS.controller;
 
-import com.example.KDBS.dto.request.*;
+import com.example.KDBS.dto.request.BusinessLicenseRequest;
+import com.example.KDBS.dto.request.EmailVerificationRequest;
+import com.example.KDBS.dto.request.UserRegisterRequest;
+import com.example.KDBS.dto.request.UserUpdateRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
 import com.example.KDBS.dto.response.UserResponse;
@@ -12,7 +15,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -100,8 +102,7 @@ public class UserController {
                 .backImageData(idCardBack)
                 .build();
 
-        userService.updateBusinessLicense(request);
-        userService.processAndSaveIdCard(request);
+        userService.updateBusinessLicenseAndIdCard(request);
 
         return ResponseEntity.noContent().build();
     }
