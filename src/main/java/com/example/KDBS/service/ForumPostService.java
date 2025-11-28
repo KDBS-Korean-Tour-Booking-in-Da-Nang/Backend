@@ -10,10 +10,9 @@ import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.PostMapper;
 import com.example.KDBS.model.*;
 import com.example.KDBS.repository.*;
-import com.example.KDBS.utils.FileUtils;
+import com.example.KDBS.utils.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -38,9 +37,7 @@ public class ForumPostService {
     private final SavedPostRepository savedPostRepository;
     private final PostMapper postMapper;
     private final ReactionService reactionService;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
+    private final FileStorageService fileStorageService;
 
     @Transactional
     public ForumPostResponse createPost(ForumPostRequest forumPostRequest) throws IOException {
@@ -137,7 +134,7 @@ public class ForumPostService {
             List<PostImg> postImgs = new ArrayList<>();
 
             for (MultipartFile image : images) {
-                String filePath = FileUtils.convertFileToPath(image, uploadDir, "/posts/images");
+                String filePath = fileStorageService.uploadFile(image, "/posts/images");
 
                 PostImg postImg = PostImg.builder()
                         .imgPath(filePath)
