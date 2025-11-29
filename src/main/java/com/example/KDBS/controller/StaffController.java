@@ -1,6 +1,7 @@
 package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.StaffCreateRequest;
+import com.example.KDBS.dto.request.StaffTaskUpdateRequest;
 import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.enums.Role;
@@ -23,6 +24,14 @@ public class StaffController {
     public ApiResponse<UserResponse> createStaff(@RequestBody @Valid StaffCreateRequest request) {
         return ApiResponse.<UserResponse>builder()
                 .result(staffService.createStaffAccount(request))
+                .build();
+    }
+
+    @PutMapping("/staffTask")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<UserResponse> updateStaffTask(@RequestBody @Valid StaffTaskUpdateRequest request) {
+        return ApiResponse.<UserResponse>builder()
+                .result(staffService.updateStaffTask(request))
                 .build();
     }
 

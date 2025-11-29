@@ -1,15 +1,10 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.enums.ArticleStatus;
-import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.StaffTask;
-import com.example.KDBS.exception.AppException;
-import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.model.Article;
-import com.example.KDBS.model.User;
 import com.example.KDBS.repository.ArticleRepository;
 import com.example.KDBS.repository.UserRepository;
-import com.example.KDBS.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,8 +21,8 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class ArticleService {
-    private final UserRepository userRepository;
     private final ArticleRepository articleRepository;
+    private final StaffService staffService;
 
     public List<Article> getAllArticles() {
         return articleRepository.findAll();
@@ -43,19 +38,7 @@ public class ArticleService {
 
     @Transactional
     public Article updateArticleStatus(Long articleId, ArticleStatus newStatus) {
-        // Lấy username từ token
-        String username = SecurityUtils.getCurrentUsername();
-
-        // Tìm user hiện tại
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
-
-        // Nếu là STAFF → cần check staffTask
-        if (user.getRole() == Role.STAFF) {
-            if (user.getStaffTask() != StaffTask.COMPANY_REQUEST_AND_APPROVE_ARTICLE) {
-                throw new AppException(ErrorCode.THIS_STAFF_ACCOUNT_IS_NOT_AUTHORIZED_FOR_THIS_ACTION);
-            }
-        }
+        staffService.getAuthorizedStaff(StaffTask.COMPANY_REQUEST_AND_APPROVE_ARTICLE);
 
         return articleRepository.findById(articleId)
                 .map(article -> {
