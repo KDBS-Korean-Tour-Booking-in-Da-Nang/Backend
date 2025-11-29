@@ -5,6 +5,8 @@ import com.example.KDBS.dto.response.ForumPostResponse;
 import com.example.KDBS.dto.response.ReactionSummaryResponse;
 import com.example.KDBS.enums.ReactionTargetType;
 import com.example.KDBS.enums.Role;
+import com.example.KDBS.enums.UserActionTarget;
+import com.example.KDBS.enums.UserActionType;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.PostMapper;
@@ -38,6 +40,7 @@ public class ForumPostService {
     private final SavedPostRepository savedPostRepository;
     private final PostMapper postMapper;
     private final ReactionService reactionService;
+    private final UserActionLogService userActionLogService;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -50,6 +53,17 @@ public class ForumPostService {
         ForumPost forumPost = postMapper.toForumPost(forumPostRequest);
         forumPost.setUser(user);
         forumPost = forumPostRepository.save(forumPost);
+
+        userActionLogService.logAction(
+                user,
+                UserActionType.CREATE_POST,
+                UserActionTarget.POST,
+                forumPost.getForumPostId(),
+                Map.of(
+                        "title", forumPost.getTitle() != null ? forumPost.getTitle() : "",
+                        "hasImages", forumPostRequest.getImages() != null && !forumPostRequest.getImages().isEmpty()
+                )
+        );
 
         handleImages(forumPostRequest.getImages(), forumPost);
         handleHashtags(forumPostRequest.getHashtags(), forumPost);

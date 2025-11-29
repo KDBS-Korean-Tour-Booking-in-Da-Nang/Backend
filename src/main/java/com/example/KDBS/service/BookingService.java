@@ -10,6 +10,9 @@ import com.example.KDBS.dto.response.BookingWithCountResponse;
 import com.example.KDBS.enums.BookingGuestType;
 import com.example.KDBS.enums.BookingStatus;
 import com.example.KDBS.enums.InsuranceStatus;
+import com.example.KDBS.enums.NotificationType;
+import com.example.KDBS.enums.UserActionTarget;
+import com.example.KDBS.enums.UserActionType;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.BookingMapper;
@@ -17,9 +20,11 @@ import com.example.KDBS.model.Booking;
 import com.example.KDBS.model.BookingGuest;
 import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.Transaction;
+import com.example.KDBS.model.User;
 import com.example.KDBS.repository.BookingGuestRepository;
 import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TourRepository;
+import com.example.KDBS.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +44,9 @@ public class BookingService {
     private final TourRepository tourRepository;
     private final EmailService emailService;
     private final BookingMapper bookingMapper;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
+    private final UserActionLogService userActionLogService;
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
@@ -62,6 +71,9 @@ public class BookingService {
 
         List<BookingGuest> savedGuests = saveBookingGuests(request.getBookingGuestRequests(), savedBooking);
         savedBooking.setGuests(savedGuests);
+
+        sendNewBookingNotification(savedBooking);
+        logBookingCreated(savedBooking);
 
         return buildBookingResponse(savedBooking, savedGuests);
     }
@@ -95,6 +107,9 @@ public class BookingService {
 
         // Set status to wait for approved after update
         existingBooking.setBookingStatus(BookingStatus.WAITING_FOR_APPROVED);
+
+        // Notify company that user has updated booking information
+        sendBookingUpdatedByUserNotification(existingBooking);
 
         return buildBookingResponse(existingBooking, savedGuests);
     }
@@ -310,13 +325,12 @@ public class BookingService {
     public BookingResponse changeBookingStatus(Long bookingId, ChangeBookingStatusRequest request) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        BookingStatus oldStatus = booking.getBookingStatus();
         booking.setBookingStatus(request.getStatus());
 
-        if (request.getStatus().equals(BookingStatus.WAITING_FOR_UPDATE)) {
-            // TODO send notification for user to update booking
-        }
-
         bookingRepository.save(booking);
+        sendBookingStatusNotification(booking, request);
+        sendBookingStatusChangeEmails(booking, oldStatus, request.getMessage());
         return bookingMapper.toBookingResponse(booking);
     }
 
@@ -349,5 +363,224 @@ public class BookingService {
             booking.setUserConfirmedCompletion(true);
         }
         return booking.getCompanyConfirmedCompletion() && booking.getUserConfirmedCompletion();
+    }
+
+    private void sendNewBookingNotification(Booking booking) {
+        Integer actorId = resolveUserIdByEmail(booking.getUserEmail());
+        String title = "Booking mới - " + booking.getTour().getTourName();
+        String message = String.format("Khách %s vừa đặt tour khởi hành %s (%d khách).",
+                booking.getContactName(),
+                booking.getDepartureDate(),
+                booking.getTotalGuests());
+
+        notificationService.pushNotification(
+                booking.getTour().getCompanyId(),
+                actorId,
+                NotificationType.NEW_BOOKING,
+                title,
+                message,
+                booking.getBookingId(),
+                "BOOKING"
+        );
+    }
+
+    private void sendBookingUpdatedByUserNotification(Booking booking) {
+        Integer actorId = resolveUserIdByEmail(booking.getUserEmail());
+        Integer companyRecipientId = booking.getTour().getCompanyId();
+        if (companyRecipientId == null) {
+            return;
+        }
+
+        String title = "Khách hàng đã cập nhật booking";
+        String message = String.format("Khách %s đã cập nhật thông tin booking #%d cho tour %s.",
+                booking.getContactName(),
+                booking.getBookingId(),
+                booking.getTour().getTourName());
+
+        notificationService.pushNotification(
+                companyRecipientId,
+                actorId,
+                NotificationType.BOOKING_UPDATED_BY_USER,
+                title,
+                message,
+                booking.getBookingId(),
+                "BOOKING"
+        );
+    }
+
+    private void sendBookingStatusNotification(Booking booking, ChangeBookingStatusRequest request) {
+        NotificationType notificationType = mapStatusToNotificationType(request.getStatus());
+        if (notificationType == null) {
+            return;
+        }
+        Integer userRecipientId = resolveUserIdByEmail(booking.getUserEmail());
+        Integer companyRecipientId = booking.getTour().getCompanyId();
+        Integer actorId = companyRecipientId; // Company is the actor when changing status
+        
+        String defaultMessage;
+        if (notificationType == NotificationType.BOOKING_CONFIRMED) {
+            defaultMessage = "Booking của bạn đã được xác nhận.";
+        } else if (notificationType == NotificationType.BOOKING_REJECTED) {
+            defaultMessage = "Booking của bạn đã bị từ chối. Vui lòng liên hệ công ty để biết thêm chi tiết.";
+        } else if (notificationType == NotificationType.BOOKING_UPDATE_REQUEST) {
+            defaultMessage = "Công ty yêu cầu bạn cập nhật thông tin booking.";
+        } else {
+            defaultMessage = "";
+        }
+
+        String userTitle;
+        if (notificationType == NotificationType.BOOKING_CONFIRMED) {
+            userTitle = "Booking đã được xác nhận";
+        } else if (notificationType == NotificationType.BOOKING_REJECTED) {
+            userTitle = "Booking bị từ chối";
+        } else if (notificationType == NotificationType.BOOKING_UPDATE_REQUEST) {
+            userTitle = "Cần cập nhật booking";
+        } else {
+            userTitle = "Thông báo booking";
+        }
+
+        String message = request.getMessage() != null ? request.getMessage() : defaultMessage;
+
+        // Gửi notification cho user
+        notificationService.pushNotification(
+                userRecipientId,
+                actorId,
+                notificationType,
+                userTitle,
+                message,
+                booking.getBookingId(),
+                "BOOKING"
+        );
+
+        // Gửi notification cho company về thay đổi trạng thái booking
+        String companyTitle;
+        if (notificationType == NotificationType.BOOKING_CONFIRMED) {
+            companyTitle = "Booking đã được xác nhận";
+        } else if (notificationType == NotificationType.BOOKING_REJECTED) {
+            companyTitle = "Booking đã bị từ chối";
+        } else if (notificationType == NotificationType.BOOKING_UPDATE_REQUEST) {
+            companyTitle = "Yêu cầu cập nhật booking";
+        } else {
+            companyTitle = "Thông báo booking";
+        }
+
+        String companyMessage;
+        if (notificationType == NotificationType.BOOKING_CONFIRMED) {
+            companyMessage = String.format("Booking #%d cho tour %s đã được xác nhận.",
+                    booking.getBookingId(), booking.getTour().getTourName());
+        } else if (notificationType == NotificationType.BOOKING_REJECTED) {
+            companyMessage = String.format("Booking #%d cho tour %s đã bị từ chối.",
+                    booking.getBookingId(), booking.getTour().getTourName());
+        } else if (notificationType == NotificationType.BOOKING_UPDATE_REQUEST) {
+            companyMessage = String.format("Yêu cầu khách hàng cập nhật thông tin booking #%d.",
+                    booking.getBookingId());
+        } else {
+            companyMessage = "";
+        }
+
+        notificationService.pushNotification(
+                companyRecipientId,
+                actorId,
+                notificationType,
+                companyTitle,
+                companyMessage,
+                booking.getBookingId(),
+                "BOOKING"
+        );
+    }
+
+    private NotificationType mapStatusToNotificationType(BookingStatus status) {
+        if (status == null) {
+            return null;
+        }
+
+        if (status == BookingStatus.BOOKING_SUCCESS) {
+            return NotificationType.BOOKING_CONFIRMED;
+        } else if (status == BookingStatus.BOOKING_REJECTED) {
+            return NotificationType.BOOKING_REJECTED;
+        } else if (status == BookingStatus.WAITING_FOR_UPDATE) {
+            return NotificationType.BOOKING_UPDATE_REQUEST;
+        } else {
+            return null;
+        }
+    }
+
+    private void logBookingCreated(Booking booking) {
+        if (booking == null || booking.getUserEmail() == null || booking.getUserEmail().isBlank()) {
+            return;
+        }
+
+        userRepository.findByEmail(booking.getUserEmail()).ifPresent(user ->
+                userActionLogService.logAction(
+                        user,
+                        UserActionType.CREATE_BOOKING,
+                        UserActionTarget.BOOKING,
+                        booking.getBookingId(),
+                        Map.of(
+                                "tourId", booking.getTour().getTourId(),
+                                "tourName", booking.getTour().getTourName(),
+                                "departureDate", booking.getDepartureDate() != null ? booking.getDepartureDate().toString() : "",
+                                "totalGuests", booking.getTotalGuests()
+                        )
+                ));
+    }
+
+    private void sendBookingStatusChangeEmails(Booking booking, BookingStatus oldStatus, String message) {
+        try {
+            if (booking == null) {
+                return;
+            }
+
+            Tour tour = booking.getTour();
+            if (tour == null && booking.getTour() != null) {
+                tour = tourRepository.findById(booking.getTour().getTourId()).orElse(null);
+            }
+            if (tour == null) {
+                return;
+            }
+
+            String userEmail = booking.getContactEmail() != null && !booking.getContactEmail().isBlank()
+                    ? booking.getContactEmail()
+                    : booking.getUserEmail();
+
+            String companyEmail = userRepository.findById(tour.getCompanyId())
+                    .map(User::getEmail)
+                    .orElse(null);
+
+            if (userEmail != null && !userEmail.isBlank()) {
+                emailService.sendBookingStatusUpdateEmail(
+                        userEmail,
+                        booking,
+                        tour,
+                        oldStatus,
+                        booking.getBookingStatus(),
+                        false,
+                        message
+                );
+            }
+
+            if (companyEmail != null && !companyEmail.isBlank()) {
+                emailService.sendBookingStatusUpdateEmail(
+                        companyEmail,
+                        booking,
+                        tour,
+                        oldStatus,
+                        booking.getBookingStatus(),
+                        true,
+                        message
+                );
+            }
+        } catch (Exception e) {
+            log.error("Failed to send booking status change emails for booking {}", booking.getBookingId(), e);
+        }
+    }
+
+    private Integer resolveUserIdByEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        return userRepository.findByEmail(email)
+                .map(User::getUserId)
+                .orElse(null);
     }
 }

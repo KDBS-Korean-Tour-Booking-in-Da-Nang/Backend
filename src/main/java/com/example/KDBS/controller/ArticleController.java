@@ -34,9 +34,14 @@ public class ArticleController {
 
     // Get by ID
     @GetMapping("/{articleId}")
-    public ResponseEntity<Article> getArticleById(@PathVariable Long articleId) {
+    public ResponseEntity<Article> getArticleById(
+            @PathVariable Long articleId,
+            @RequestHeader(value = "User-Email", required = false) String userEmail) {
         return articleService.getArticleById(articleId)
-                .map(ResponseEntity::ok)
+                .map(article -> {
+                    articleService.logArticleRead(article, userEmail);
+                    return ResponseEntity.ok(article);
+                })
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
     }
 

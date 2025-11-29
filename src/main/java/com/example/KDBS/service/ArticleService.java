@@ -1,8 +1,11 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.enums.ArticleStatus;
+import com.example.KDBS.enums.UserActionTarget;
+import com.example.KDBS.enums.UserActionType;
 import com.example.KDBS.model.Article;
 import com.example.KDBS.repository.ArticleRepository;
+import com.example.KDBS.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,8 @@ import java.util.*;
 @Slf4j
 public class ArticleService {
     private final ArticleRepository articleRepository;
+    private final UserRepository userRepository;
+    private final UserActionLogService userActionLogService;
 
     public List<Article> getAllArticles() {
         return articleRepository.findAll();
@@ -31,6 +36,42 @@ public class ArticleService {
 
     public List<Article> getArticlesByStatus(ArticleStatus status) {
         return articleRepository.findByArticleStatus(status);
+    }
+
+    public void logArticleRead(Article article, String userEmail) {
+        try {
+            if (article == null) {
+                log.warn("Cannot log article read: article is null");
+                return;
+            }
+            
+            if (userEmail == null || userEmail.isBlank()) {
+                log.debug("Cannot log article read: userEmail is null or blank for article {}", article.getArticleId());
+                return;
+            }
+
+            log.debug("Attempting to log article read: articleId={}, userEmail={}", article.getArticleId(), userEmail);
+
+            userRepository.findByEmail(userEmail).ifPresentOrElse(
+                    user -> {
+                        log.debug("Found user {} for email {}, logging article read", user.getUserId(), userEmail);
+                        userActionLogService.logAction(
+                                user,
+                                UserActionType.READ_ARTICLE,
+                                UserActionTarget.ARTICLE,
+                                article.getArticleId(),
+                                Map.of(
+                                        "articleStatus", article.getArticleStatus() != null ? article.getArticleStatus().name() : "UNKNOWN",
+                                        "articleTitle", article.getArticleTitle() != null ? article.getArticleTitle() : ""
+                                )
+                        );
+                        log.info("Successfully logged article read: articleId={}, userId={}", article.getArticleId(), user.getUserId());
+                    },
+                    () -> log.warn("User not found for email: {}, cannot log article read for article {}", userEmail, article.getArticleId())
+            );
+        } catch (Exception e) {
+            log.error("Error logging article read for article {} and email {}", article != null ? article.getArticleId() : "null", userEmail, e);
+        }
     }
 
     @Transactional
