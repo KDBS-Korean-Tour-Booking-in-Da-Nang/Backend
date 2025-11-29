@@ -56,7 +56,7 @@ public class BookingService {
         validateGuestCounts(request);
 
         if (request.getDepartureDate().isBefore(LocalDate.now().plusDays(tour.getTourDeadline() + 1))
-        || request.getDepartureDate().isAfter(tour.getTourExpirationDate())) {
+                || request.getDepartureDate().isAfter(tour.getTourExpirationDate())) {
             throw new AppException(ErrorCode.DEPARTURE_DATE_INVALID);
         }
 
@@ -420,7 +420,7 @@ public class BookingService {
         Integer userRecipientId = resolveUserIdByEmail(booking.getUserEmail());
         Integer companyRecipientId = booking.getTour().getCompanyId();
         Integer actorId = companyRecipientId; // Company is the actor when changing status
-        
+
         String defaultMessage;
         if (notificationType == NotificationType.BOOKING_CONFIRMED) {
             defaultMessage = "Booking của bạn đã được xác nhận.";

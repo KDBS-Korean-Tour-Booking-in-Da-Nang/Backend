@@ -202,7 +202,7 @@ public class UserService {
                 .build();
 
         user.setBusinessLicense(license);
-        user.setStatus(Status.UNBANNED);
+        user.setStatus(Status.WAITING_FOR_APPROVAL);
 
         // ===== ID CARD =====
         String frontPath = fileStorageService.uploadFile(

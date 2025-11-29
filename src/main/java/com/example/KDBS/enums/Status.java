@@ -3,7 +3,7 @@ package com.example.KDBS.enums;
 public enum Status {
     BANNED,
     UNBANNED,
-    PENDING,
+    WAITING_FOR_APPROVAL,
     UNVERIFIED,
     COMPANY_PENDING
 }

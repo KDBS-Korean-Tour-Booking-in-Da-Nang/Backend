@@ -1,3 +1,4 @@
+
 package com.example.KDBS.mapper;
 
 import com.example.KDBS.dto.response.NotificationResponse;
@@ -29,5 +30,3 @@ public interface NotificationMapper {
                 .build();
     }
 }
-
-
