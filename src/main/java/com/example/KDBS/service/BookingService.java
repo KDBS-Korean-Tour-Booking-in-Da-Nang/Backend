@@ -328,6 +328,10 @@ public class BookingService {
         BookingStatus oldStatus = booking.getBookingStatus();
         booking.setBookingStatus(request.getStatus());
 
+        if (request.getMessage() != null && !request.getMessage().isBlank()) {
+            booking.setBookingMessage(request.getMessage());
+        }
+
         bookingRepository.save(booking);
         sendBookingStatusNotification(booking, request);
         sendBookingStatusChangeEmails(booking, oldStatus, request.getMessage());

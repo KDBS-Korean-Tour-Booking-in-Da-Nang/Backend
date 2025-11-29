@@ -39,4 +39,5 @@ public class BookingResponse {
     private LocalDate tourEndDate;
     private LocalDate autoConfirmedDate;
     private int bookingCount;
+    private String bookingMessage;
 }
