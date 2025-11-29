@@ -1,6 +1,9 @@
 package com.example.KDBS.service;
 
-import com.example.KDBS.dto.request.*;
+import com.example.KDBS.dto.request.BusinessLicenseRequest;
+import com.example.KDBS.dto.request.IdCardApiRequest;
+import com.example.KDBS.dto.request.UserRegisterRequest;
+import com.example.KDBS.dto.request.UserUpdateRequest;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.enums.OTPPurpose;
@@ -16,7 +19,7 @@ import com.example.KDBS.model.UserIdCard;
 import com.example.KDBS.repository.BusinessLicenseRepository;
 import com.example.KDBS.repository.UserIdCardRepository;
 import com.example.KDBS.repository.UserRepository;
-import com.example.KDBS.utils.FileUtils;
+import com.example.KDBS.utils.FileStorageService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -47,11 +50,12 @@ public class UserService {
     private final OTPService otpService;
     private final BusinessLicenseRepository businessLicenseRepository;
     private final UserIdCardRepository userIdCardRepository;
+    private final FileStorageService fileStorageService;
 
-    private static final String API_URL = "https://api.fpt.ai/vision/idr/vnm";
-    private static final String API_KEY = "0Ka4zpceIGAxLIlQ1f89RIaXbLaSHSVd";
-    @Value("${file.upload-dir}")
-    private String uploadDir;
+    @Value("${fpt.ai.url}")
+    private String API_URL;
+    @Value("${fpt.ai.key}")
+    private String API_KEY;
 
     public String createUser(UserRegisterRequest request) {
         LocalDateTime now = LocalDateTime.now();
@@ -163,7 +167,7 @@ public class UserService {
             }
 
             userMapper.updateUserFromDto(request, user);
-            user.setAvatar(FileUtils.convertFileToPath(avatarImg, uploadDir, "/users/avatar"));
+            user.setAvatar(fileStorageService.uploadFile(avatarImg, "/users/avatar"));
             userRepository.save(user);
             return userMapper.toUserResponse(user);
         }
@@ -176,43 +180,52 @@ public class UserService {
                 .toList();
     }
 
-    public void updateBusinessLicense(BusinessLicenseRequest request) throws IOException {
+    @Transactional
+    public void updateBusinessLicenseAndIdCard(BusinessLicenseRequest request) throws Exception {
+        // Fetch user once
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
 
+        // ===== BUSINESS LICENSE =====
         if (user.getBusinessLicense() != null) {
             throw new AppException(ErrorCode.BUSINESS_LICENSE_EXISTED);
         }
 
-        String filePath = FileUtils.convertFileToPath(request.getFileData(), uploadDir, "/business/registrationFile");
+        String businessFilePath = fileStorageService.uploadFile(
+                request.getFileData(),
+                "/business/registrationFile"
+        );
 
-        // Create new license and link it
         BusinessLicense license = BusinessLicense.builder()
                 .user(user)
-                .filePath(filePath)
+                .filePath(businessFilePath)
                 .build();
 
         user.setBusinessLicense(license);
         user.setStatus(Status.UNBANNED);
-        userRepository.save(user);
-    }
 
-    public void processAndSaveIdCard(BusinessLicenseRequest request) throws Exception {
-
-        String frontPath = FileUtils.convertFileToPath(request.getFrontImageData(), uploadDir, "/idcard/front");
-        String backPath = FileUtils.convertFileToPath(request.getBackImageData(), uploadDir, "/idcard/back");
+        // ===== ID CARD =====
+        String frontPath = fileStorageService.uploadFile(
+                request.getFrontImageData(),
+                "/idcard/front"
+        );
+        String backPath = fileStorageService.uploadFile(
+                request.getBackImageData(),
+                "/idcard/back"
+        );
 
         IdCardApiRequest frontData = callFptApi(request.getFrontImageData());
 
-        // Use mapper
-        UserIdCard entity = userIdCardMapper.toUserIdCard(frontData);
-        entity.setUser(userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)));
-        entity.setFrontImagePath(frontPath);
-        entity.setBackImagePath(backPath);
+        UserIdCard idCard = userIdCardMapper.toUserIdCard(frontData);
+        idCard.setUser(user);
+        idCard.setFrontImagePath(frontPath);
+        idCard.setBackImagePath(backPath);
 
-        userIdCardRepository.save(entity);
+        // Save all changes
+        userIdCardRepository.save(idCard);
+        userRepository.save(user);
     }
+
 
     public BusinessUploadStatusResponse getBusinessUploadStatusByEmail(String email) {
         var response = BusinessUploadStatusResponse.builder()

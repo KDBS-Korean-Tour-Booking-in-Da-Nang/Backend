@@ -15,6 +15,8 @@ import com.example.KDBS.model.TourContentImg;
 import com.example.KDBS.model.User;
 import com.example.KDBS.repository.*;
 import com.example.KDBS.utils.FileUtils;
+import com.example.KDBS.utils.FileStorageService;
+import com.example.KDBS.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
@@ -42,16 +44,14 @@ public class TourService {
     private final BookingRepository bookingRepository;
     private final TourMapper tourMapper;
     private final StaffService staffService;
+    private final FileStorageService fileStorageService;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-
     /** Handle TinyMCE inline image uploads */
     public String saveEditorImage(MultipartFile file) throws IOException {
-        return FileUtils.convertFileToPath(file, uploadDir, "/tours/content");
+        return fileStorageService.uploadFile(file, "/tours/content");
     }
 
     /** Create a tour with required banner image and extract content images */
@@ -71,7 +71,7 @@ public class TourService {
 
         Tour tour = tourMapper.toTour(request);
         tour.setCompanyId(company.getUserId());
-        tour.setTourImgPath(FileUtils.convertFileToPath(tourImg, uploadDir, "/tours/thumbnails"));
+        tour.setTourImgPath(fileStorageService.uploadFile(tourImg, "/tours/thumbnails"));
         tour.setTourStatus(TourStatus.NOT_APPROVED);
         tourRepository.save(tour);
         saveContents(request, tour);
@@ -130,7 +130,7 @@ public class TourService {
         // Optional new main image
         if (tourImg != null && !tourImg.isEmpty()) {
             // Ensure leading slash so returned path is "/uploads/tours/thumbnails/..."
-            String newPath = FileUtils.convertFileToPath(tourImg, uploadDir, "/tours/thumbnails");
+            String newPath = fileStorageService.uploadFile(tourImg, "/tours/thumbnails");
             existing.setTourImgPath(newPath);
         }
 
