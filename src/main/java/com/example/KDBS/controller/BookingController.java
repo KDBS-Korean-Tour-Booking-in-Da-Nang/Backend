@@ -44,6 +44,7 @@ public class BookingController {
     }
 
     @PutMapping("/change-status/{bookingId}")
+    @PreAuthorize("hasRole('COMPANY')")
     public ResponseEntity<BookingResponse> changeBookingStatus(@PathVariable long bookingId,
                                                                @RequestBody ChangeBookingStatusRequest request) {
         BookingResponse response = bookingService.changeBookingStatus(bookingId, request);
@@ -51,6 +52,7 @@ public class BookingController {
     }
 
     @PutMapping("/booking-guest/insurance/change-status/{guestId}")
+    @PreAuthorize("hasRole('COMPANY')")
     public ResponseEntity<BookingGuestResponse> changeBookingGuestInsuranceStatus(@PathVariable long guestId,
             @RequestParam InsuranceStatus status) {
         BookingGuestResponse response = bookingService.changeBookingGuestInsuranceStatus(guestId, status);
@@ -58,6 +60,7 @@ public class BookingController {
     }
 
     @PostMapping("/payment")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TossCreateOrderResponse> createBookingPayment(@RequestBody BookingPaymentRequest request) {
         // booking details
         BookingResponse booking = bookingService.getBookingById(request.getBookingId());
@@ -92,12 +95,14 @@ public class BookingController {
     }
 
     @PutMapping("/{bookingId}/company-confirm-completion")
+    @PreAuthorize("hasRole('COMPANY')")
     public ResponseEntity<Void> companyConfirmCompletion(@PathVariable long bookingId) {
         bookingService.confirmedCompletion(bookingId, true);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{bookingId}/user-confirm-completion")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Void> userConfirmCompletion(@PathVariable long bookingId) {
         bookingService.confirmedCompletion(bookingId, false);
         return ResponseEntity.noContent().build();

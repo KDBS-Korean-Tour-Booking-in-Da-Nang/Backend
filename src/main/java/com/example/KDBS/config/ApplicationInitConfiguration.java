@@ -39,7 +39,6 @@ public class ApplicationInitConfiguration {
             if (!hasAdmin) {
                 User admin = User.builder()
                         .username("admin")
-                        .email("admin@system.local")
                         .password(passwordEncoder.encode("admin"))
                         .role(Role.ADMIN)
                         .status(Status.UNBANNED)

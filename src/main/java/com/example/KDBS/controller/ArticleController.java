@@ -4,6 +4,7 @@ import com.example.KDBS.enums.ArticleStatus;
 import com.example.KDBS.model.Article;
 import com.example.KDBS.service.ArticleService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,6 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/article")
 @RequiredArgsConstructor
+@Slf4j
 public class ArticleController {
     private final ArticleService articleService;
 
@@ -33,9 +35,15 @@ public class ArticleController {
 
     // Get by ID
     @GetMapping("/{articleId}")
-    public ResponseEntity<Article> getArticleById(@PathVariable Long articleId) {
+    public ResponseEntity<Article> getArticleById(
+            @PathVariable Long articleId,
+            @RequestHeader(value = "User-Email", required = false) String userEmail) {
         return articleService.getArticleById(articleId)
-                .map(ResponseEntity::ok)
+                .map(article -> {
+                    log.info("User-Email {}", userEmail);
+                    articleService.logArticleRead(article, userEmail);
+                    return ResponseEntity.ok(article);
+                })
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
     }
 

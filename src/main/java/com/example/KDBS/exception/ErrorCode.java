@@ -168,7 +168,11 @@ public enum ErrorCode {
         EXTERNAL_SERVICE_ERROR_GENERIC(1070, "External service error: %s", HttpStatus.SERVICE_UNAVAILABLE),
 
         //Staff
-        THIS_STAFF_ACCOUNT_IS_NOT_AUTHORIZED_FOR_THIS_ACTION(1083,"This staff account is not authorized for this action", HttpStatus.FORBIDDEN);
+        THIS_STAFF_ACCOUNT_IS_NOT_AUTHORIZED_FOR_THIS_ACTION(1083,"This staff account is not authorized for this action", HttpStatus.FORBIDDEN),
+        THIS_ACCOUNT_IS_NOT_STAFF(1084,"This account is not staff", HttpStatus.BAD_REQUEST),
+
+        //Empty Text
+        TEXT_IS_EMPTY(1100, "Text is empty", HttpStatus.BAD_REQUEST);
 
         private final int code;
         private final String message;
