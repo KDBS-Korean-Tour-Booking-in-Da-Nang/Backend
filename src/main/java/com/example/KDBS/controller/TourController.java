@@ -87,13 +87,14 @@ public class TourController {
 
     /** Delete a tour */
     @DeleteMapping("/{tourId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'COMPANY')")
+    @PreAuthorize("hasRole('COMPANY')")
     public ResponseEntity<Void> deleteTour(@PathVariable Long tourId, @RequestParam String userEmail) {
         tourService.deleteTour(tourId, userEmail);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/change-status/{tourId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<TourResponse> changeTourStatus(@PathVariable Long tourId, @RequestParam TourStatus status) {
         return ResponseEntity.ok(tourService.changeTourStatus(tourId, status));
     }

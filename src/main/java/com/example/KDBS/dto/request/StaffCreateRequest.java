@@ -1,7 +1,7 @@
 package com.example.KDBS.dto.request;
 
+import com.example.KDBS.enums.StaffTask;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -9,12 +9,15 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @Builder
 @AllArgsConstructor
-@RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
-public class UsernameAuthenticationRequest {
+@NoArgsConstructor
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
+public class StaffCreateRequest {
+
     @NotBlank(message = "Username is required")
-    @Size(max = 100, message = "Username must not exceed 100 characters")
     String username;
+
     @NotBlank(message = "Password is required")
     String password;
+
+    StaffTask staffTask;
 }

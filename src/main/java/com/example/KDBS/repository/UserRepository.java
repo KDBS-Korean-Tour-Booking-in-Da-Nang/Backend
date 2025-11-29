@@ -1,5 +1,6 @@
 package com.example.KDBS.repository;
 
+import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
 import com.example.KDBS.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,5 +19,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     Optional<User> findByUsername(String username);
 
     Optional<User> findByPhone(String phone);
+
+    Optional<User> findByEmailAndRole(String email, Role role);
 
 }

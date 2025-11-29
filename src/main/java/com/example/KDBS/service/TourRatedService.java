@@ -13,6 +13,7 @@ import com.example.KDBS.repository.TourRepository;
 import com.example.KDBS.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,6 +28,7 @@ public class TourRatedService {
 
     /** Create tourRated */
     @Transactional
+    @PreAuthorize("hasRole('USER')")
     public TourRatedResponse createTourRated(TourRatedRequest tourRatedRequest) {
         Tour tour = tourRepository.findById(tourRatedRequest.getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
@@ -83,6 +85,7 @@ public class TourRatedService {
 
     /** Update tourRated */
     @Transactional
+    @PreAuthorize("hasRole('USER')")
     public TourRatedResponse updateTourRated(Long id, TourRatedRequest request) {
         TourRated existing = tourRatedRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
@@ -94,6 +97,7 @@ public class TourRatedService {
     }
 
     /** Delete tourRated */
+    @PreAuthorize("hasRole('USER')")
     public void delete(Long id) {
         if (!tourRatedRepository.existsById(id)) {
             throw new AppException(ErrorCode.TOUR_NOT_FOUND);
