@@ -1,6 +1,7 @@
 package com.example.KDBS.model;
 
 import com.example.KDBS.enums.Role;
+import com.example.KDBS.enums.StaffTask;
 import com.example.KDBS.enums.Status;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -64,6 +65,10 @@ public class User {
     @Column(name = "role", length = 255)
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @Column(name = "staffTask", length = 255)
+    @Enumerated(EnumType.STRING)
+    private StaffTask staffTask;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference

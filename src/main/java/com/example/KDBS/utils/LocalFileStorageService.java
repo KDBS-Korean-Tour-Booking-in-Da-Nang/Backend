@@ -1,5 +1,8 @@
 package com.example.KDBS.utils;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -7,7 +10,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class FileUtils {
+@Service
+@Profile("dev")
+@RequiredArgsConstructor
+public class LocalFileStorageService implements FileStorageService{
 
     // Supported image MIME types
     private static final String[] ALLOWED_IMAGE_TYPES = {
@@ -15,7 +21,13 @@ public class FileUtils {
             "image/webp", "image/svg+xml", "image/bmp", "image/tiff"
     };
 
-    public static String convertFileToPath(MultipartFile file, String uploadDir, String subDir) throws IOException {
+    @Override
+    public String uploadFile(MultipartFile file, String subDir) throws IOException {
+        String uploadDir = "./uploads";
+        return convertFileToPath(file, uploadDir, subDir);
+    }
+
+    private String convertFileToPath(MultipartFile file, String uploadDir, String subDir) throws IOException {
         // Validate file type for images
         if (subDir != null && (subDir.contains("thumbnails") || subDir.contains("images"))) {
             validateImageFile(file);

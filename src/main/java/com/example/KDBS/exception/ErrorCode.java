@@ -32,18 +32,20 @@ public enum ErrorCode {
         PASSWORD_RESET_FAILED(1015, "Password reset failed. Please try again", HttpStatus.BAD_REQUEST),
 
         BUSINESS_LICENSE_EXISTED(1016, "Business license has existed", HttpStatus.CONFLICT),
-
+        INVALID_OLD_PASSWORD(1083, "Invalid old password", HttpStatus.BAD_REQUEST),
+        NEW_PASSWORD_SAME_AS_OLD(108, "New password cannot be the same as the old password", HttpStatus.BAD_REQUEST),
         // User / post / comment / entity not found
         POST_NOT_FOUND(1017, "Post not found with id: %s", HttpStatus.NOT_FOUND),
         POST_NOT_SAVED(1020, "Post not saved", HttpStatus.NOT_FOUND),
 
+        STAFF_NOT_FOUND(1082, "Staff not found", HttpStatus.NOT_FOUND),
         USER_NOT_FOUND(1021, "User not found", HttpStatus.NOT_FOUND),
         REPORT_NOT_FOUND(1023, "Report not found", HttpStatus.NOT_FOUND),
         COMMENT_NOT_FOUND(1024, "Comment not found with id: %s", HttpStatus.NOT_FOUND),
 
         BOOKING_NOT_FOUND(1038, "Booking not found", HttpStatus.NOT_FOUND),
-        TOUR_NOT_FOUND(1042, "Tour not found with id: %s", HttpStatus.NOT_FOUND),
-        COMPANY_NOT_FOUND_WITH_EMAIL(1043, "Company not found with email: %s", HttpStatus.NOT_FOUND),
+        TOUR_NOT_FOUND(1042, "Tour not found", HttpStatus.NOT_FOUND),
+        COMPANY_NOT_FOUND_WITH_EMAIL(1043, "Company not found with email", HttpStatus.NOT_FOUND),
         FAILED_TO_RETRIVE_SAVED_TOUR(1045, "Failed to retrieve saved tour", HttpStatus.INTERNAL_SERVER_ERROR),
         FAILED_TO_RETRIVE_UPDATED_TOUR(1046, "Failed to retrieve updated tour", HttpStatus.INTERNAL_SERVER_ERROR),
         IMAGE_NOT_FOUND(1047, "Image not found", HttpStatus.NOT_FOUND),
@@ -163,7 +165,10 @@ public enum ErrorCode {
         RUN_TIME_EXCEPTION(1999, "Runtime exception occurred", HttpStatus.INTERNAL_SERVER_ERROR),
         UNKNOWN_ERROR(1099, "Unknown error occurred", HttpStatus.INTERNAL_SERVER_ERROR),
 
-        EXTERNAL_SERVICE_ERROR_GENERIC(1070, "External service error: %s", HttpStatus.SERVICE_UNAVAILABLE);
+        EXTERNAL_SERVICE_ERROR_GENERIC(1070, "External service error: %s", HttpStatus.SERVICE_UNAVAILABLE),
+
+        //Staff
+        THIS_STAFF_ACCOUNT_IS_NOT_AUTHORIZED_FOR_THIS_ACTION(1083,"This staff account is not authorized for this action", HttpStatus.FORBIDDEN);
 
         private final int code;
         private final String message;

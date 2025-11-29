@@ -1,10 +1,10 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.BusinessLicenseRequest;
+import com.example.KDBS.dto.request.IdCardApiRequest;
 import com.example.KDBS.dto.request.UserRegisterRequest;
 import com.example.KDBS.dto.request.UserUpdateRequest;
 import com.example.KDBS.dto.response.BusinessUploadStatusResponse;
-import com.example.KDBS.dto.request.IdCardApiRequest;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.enums.Role;
@@ -19,7 +19,7 @@ import com.example.KDBS.model.UserIdCard;
 import com.example.KDBS.repository.BusinessLicenseRepository;
 import com.example.KDBS.repository.UserIdCardRepository;
 import com.example.KDBS.repository.UserRepository;
-import com.example.KDBS.utils.FileUtils;
+import com.example.KDBS.utils.FileStorageService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -51,56 +50,75 @@ public class UserService {
     private final OTPService otpService;
     private final BusinessLicenseRepository businessLicenseRepository;
     private final UserIdCardRepository userIdCardRepository;
+    private final FileStorageService fileStorageService;
 
-    private static final String API_URL = "https://api.fpt.ai/vision/idr/vnm";
-    private static final String API_KEY = "0Ka4zpceIGAxLIlQ1f89RIaXbLaSHSVd";
-    @Value("${file.upload-dir}")
-    private String uploadDir;
+    @Value("${fpt.ai.url}")
+    private String API_URL;
+    @Value("${fpt.ai.key}")
+    private String API_KEY;
 
     public String createUser(UserRegisterRequest request) {
-        Optional<User> existingByEmail = userRepository.findByEmail(request.getEmail());
-        Optional<User> existingByUsername = userRepository.findByUsername(request.getUsername());
+        LocalDateTime now = LocalDateTime.now();
 
-        if (existingByUsername.isPresent()) {
-            throw new AppException(ErrorCode.USERNAME_EXISTED);
-        }
+        // 1. Check theo EMAIL trước
+        User userByEmail = userRepository.findByEmail(request.getEmail()).orElse(null);
 
-        if (existingByEmail.isPresent()) {
-            User user = existingByEmail.get();
-
-            if (user.getStatus() == Status.UNVERIFIED) {
-                // If account created within 3 days → resend OTP
-                if (user.getCreatedAt().isAfter(LocalDateTime.now().minusDays(3))) {
-                    otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
-                    return "Email already registered but not verified. OTP resent.";
-                } else {
-                    // If expired → delete old unverified user
-                    userRepository.delete(user);
-                }
-            } else {
+        if (userByEmail != null) {
+            // Email đã tồn tại
+            if (userByEmail.getStatus() != Status.UNVERIFIED) {
+                // Đã verify rồi -> không cho đăng ký lại
                 throw new AppException(ErrorCode.EMAIL_EXISTED);
+            }
+
+            // UNVERIFIED
+            if (userByEmail.getCreatedAt().isAfter(now.minusDays(3))) {
+                // Trong 3 ngày -> coi như user đăng ký lại -> UPDATE thông tin
+                userByEmail.setPassword(passwordEncoder.encode(request.getPassword()));
+                userByEmail.setRole(resolveRole(request.getRole()));
+                // (username giữ nguyên vì thường form đăng ký lại sẽ dùng cùng username)
+
+                userRepository.save(userByEmail);
+
+                otpService.generateAndSendOTP(userByEmail.getEmail(), OTPPurpose.VERIFY_EMAIL);
+                return "Email already registered but not verified. Info updated and OTP resent.";
+            } else {
+                // Quá 3 ngày -> xóa user cũ, cho phép tạo mới
+                userRepository.delete(userByEmail);
             }
         }
 
+        // 2. Check USERNAME
+        User userByUsername = userRepository.findByUsername(request.getUsername()).orElse(null);
 
-        // Tạo user mới với status UNVERIFIED
-        User user = userMapper.toUser(request);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        Role role;
-        try {
-            role = Role.valueOf(request.getRole().toUpperCase());
-        } catch (IllegalArgumentException | NullPointerException e) {
-            // Nếu request gửi role sai hoặc null, mặc định là USER
-            role = Role.USER;
+        if (userByUsername != null) {
+            if (userByUsername.getStatus() == Status.UNVERIFIED) {
+                // Username thuộc user chưa verify -> xóa để ghi đè
+                userRepository.delete(userByUsername);
+            } else {
+                // Username thuộc user đã verify -> chặn
+                throw new AppException(ErrorCode.USERNAME_EXISTED);
+            }
         }
-        user.setRole(role);
-        user.setStatus(Status.UNVERIFIED);
-        user.setCreatedAt(LocalDateTime.now());
-        userRepository.save(user);
 
-        otpService.generateAndSendOTP(user.getEmail(), OTPPurpose.VERIFY_EMAIL);
+        // 3. Tạo user mới
+        User newUser = userMapper.toUser(request);
+        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
+        newUser.setRole(resolveRole(request.getRole()));
+        newUser.setStatus(Status.UNVERIFIED);
+        newUser.setCreatedAt(now);
+
+        userRepository.save(newUser);
+        otpService.generateAndSendOTP(newUser.getEmail(), OTPPurpose.VERIFY_EMAIL);
 
         return "Registration successful. Please check your email for verification code.";
+    }
+
+    private Role resolveRole(String roleStr) {
+        try {
+            return Role.valueOf(roleStr.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return Role.USER;
+        }
     }
 
     @Transactional
@@ -130,29 +148,29 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    @Transactional
-    public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg) throws IOException {
-        // Tìm user theo email
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        @Transactional
+        public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg) throws IOException {
+            // Tìm user theo email
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        if (request.getUsername() != null) {
-            userRepository.findByUsername(request.getUsername())
-                    .filter(u -> u.getUserId() != user.getUserId())
-                    .ifPresent(u -> { throw new AppException(ErrorCode.USERNAME_EXISTED); });
+            if (request.getUsername() != null) {
+                userRepository.findByUsername(request.getUsername())
+                        .filter(u -> u.getUserId() != user.getUserId())
+                        .ifPresent(u -> { throw new AppException(ErrorCode.USERNAME_EXISTED); });
+            }
+
+            if (request.getPhone() != null) {
+                userRepository.findByPhone(request.getPhone())
+                        .filter(u -> u.getUserId() != user.getUserId())
+                        .ifPresent(u -> { throw new AppException(ErrorCode.PHONE_EXISTED); });
+            }
+
+            userMapper.updateUserFromDto(request, user);
+            user.setAvatar(fileStorageService.uploadFile(avatarImg, "/users/avatar"));
+            userRepository.save(user);
+            return userMapper.toUserResponse(user);
         }
-
-        if (request.getPhone() != null) {
-            userRepository.findByPhone(request.getPhone())
-                    .filter(u -> u.getUserId() != user.getUserId())
-                    .ifPresent(u -> { throw new AppException(ErrorCode.PHONE_EXISTED); });
-        }
-
-        userMapper.updateUserFromDto(request, user);
-        user.setAvatar(FileUtils.convertFileToPath(avatarImg, uploadDir, "/users/avatar"));
-        userRepository.save(user);
-        return userMapper.toUserResponse(user);
-    }
 
     @GetMapping
     public List<UserResponse> getAllUsers() {
@@ -163,56 +181,51 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse setUserBanStatus(int userId, boolean ban) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        if (ban) {
-            user.setStatus(Status.BANNED);
-        } else {
-            user.setStatus(Status.UNBANNED);
-        }
-
-        return userMapper.toUserResponse(user);
-    }
-
-    public void updateBusinessLicense(BusinessLicenseRequest request) throws IOException {
+    public void updateBusinessLicenseAndIdCard(BusinessLicenseRequest request) throws Exception {
+        // Fetch user once
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
 
+        // ===== BUSINESS LICENSE =====
         if (user.getBusinessLicense() != null) {
             throw new AppException(ErrorCode.BUSINESS_LICENSE_EXISTED);
         }
 
-        String filePath = FileUtils.convertFileToPath(request.getFileData(), uploadDir, "/business/registrationFile");
+        String businessFilePath = fileStorageService.uploadFile(
+                request.getFileData(),
+                "/business/registrationFile"
+        );
 
-        // Create new license and link it
         BusinessLicense license = BusinessLicense.builder()
                 .user(user)
-                .filePath(filePath)
+                .filePath(businessFilePath)
                 .build();
 
         user.setBusinessLicense(license);
         user.setStatus(Status.UNBANNED);
-        userRepository.save(user);
-    }
 
-    public void processAndSaveIdCard(BusinessLicenseRequest request) throws Exception {
-
-        String frontPath = FileUtils.convertFileToPath(request.getFrontImageData(), uploadDir, "/idcard/front");
-        String backPath = FileUtils.convertFileToPath(request.getBackImageData(), uploadDir, "/idcard/back");
+        // ===== ID CARD =====
+        String frontPath = fileStorageService.uploadFile(
+                request.getFrontImageData(),
+                "/idcard/front"
+        );
+        String backPath = fileStorageService.uploadFile(
+                request.getBackImageData(),
+                "/idcard/back"
+        );
 
         IdCardApiRequest frontData = callFptApi(request.getFrontImageData());
 
-        // Use mapper
-        UserIdCard entity = userIdCardMapper.toUserIdCard(frontData);
-        entity.setUser(userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)));
-        entity.setFrontImagePath(frontPath);
-        entity.setBackImagePath(backPath);
+        UserIdCard idCard = userIdCardMapper.toUserIdCard(frontData);
+        idCard.setUser(user);
+        idCard.setFrontImagePath(frontPath);
+        idCard.setBackImagePath(backPath);
 
-        userIdCardRepository.save(entity);
+        // Save all changes
+        userIdCardRepository.save(idCard);
+        userRepository.save(user);
     }
+
 
     public BusinessUploadStatusResponse getBusinessUploadStatusByEmail(String email) {
         var response = BusinessUploadStatusResponse.builder()
@@ -276,4 +289,6 @@ public class UserService {
 
         return mapper.treeToValue(data, IdCardApiRequest.class);
     }
+
+
 }

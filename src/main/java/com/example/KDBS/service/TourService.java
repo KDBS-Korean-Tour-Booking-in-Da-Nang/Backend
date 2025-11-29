@@ -4,6 +4,7 @@ import com.example.KDBS.dto.request.TourRequest;
 import com.example.KDBS.dto.response.TourPreviewResponse;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.enums.Role;
+import com.example.KDBS.enums.StaffTask;
 import com.example.KDBS.enums.TourStatus;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
@@ -13,7 +14,8 @@ import com.example.KDBS.model.TourContent;
 import com.example.KDBS.model.TourContentImg;
 import com.example.KDBS.model.User;
 import com.example.KDBS.repository.*;
-import com.example.KDBS.utils.FileUtils;
+import com.example.KDBS.utils.FileStorageService;
+import com.example.KDBS.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
@@ -40,16 +42,14 @@ public class TourService {
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final TourMapper tourMapper;
+    private final FileStorageService fileStorageService;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-
     /** Handle TinyMCE inline image uploads */
     public String saveEditorImage(MultipartFile file) throws IOException {
-        return FileUtils.convertFileToPath(file, uploadDir, "/tours/content");
+        return fileStorageService.uploadFile(file, "/tours/content");
     }
 
     /** Create a tour with required banner image and extract content images */
@@ -58,9 +58,9 @@ public class TourService {
         if (tourImg == null || tourImg.isEmpty()) {
             throw new AppException(ErrorCode.MAIN_TOUR_IMAGE_IS_REQUIRED);
         }
-
-        var company = userRepository.findByEmail(request.getCompanyEmail())
+        var company = userRepository.findByEmailAndRole(request.getCompanyEmail(), Role.COMPANY)
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND_WITH_EMAIL));
+
 
         //Tour expiration date must be after tour deadline + 1 day(so if is 7 days, must be at least 8 days later)
         if (LocalDate.now().plusDays(request.getTourDeadline() + 1).isAfter(request.getTourExpirationDate())){
@@ -69,13 +69,14 @@ public class TourService {
 
         Tour tour = tourMapper.toTour(request);
         tour.setCompanyId(company.getUserId());
-        tour.setTourImgPath(FileUtils.convertFileToPath(tourImg, uploadDir, "/tours/thumbnails"));
-
+        tour.setTourImgPath(fileStorageService.uploadFile(tourImg, "/tours/thumbnails"));
+        tour.setTourStatus(TourStatus.NOT_APPROVED);
         tourRepository.save(tour);
         saveContents(request, tour);
         // Fetch the tour with contents to ensure they are included in the response
         Tour savedTour = tourRepository.findByIdWithContents(tour.getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.MAIN_TOUR_IMAGE_IS_REQUIRED));
+
         return tourMapper.toTourResponse(savedTour);
     }
 
@@ -127,7 +128,7 @@ public class TourService {
         // Optional new main image
         if (tourImg != null && !tourImg.isEmpty()) {
             // Ensure leading slash so returned path is "/uploads/tours/thumbnails/..."
-            String newPath = FileUtils.convertFileToPath(tourImg, uploadDir, "/tours/thumbnails");
+            String newPath = fileStorageService.uploadFile(tourImg, "/tours/thumbnails");
             existing.setTourImgPath(newPath);
         }
 
@@ -172,6 +173,20 @@ public class TourService {
 
     @Transactional
     public TourResponse changeTourStatus(Long tourId, TourStatus tourStatus) {
+        // Lấy username từ token
+        String username = SecurityUtils.getCurrentUsername();
+
+        // Tìm user hiện tại
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
+
+        // Nếu là STAFF → cần check staffTask
+        if (user.getRole() == Role.STAFF) {
+            if (user.getStaffTask() != StaffTask.APPROVE_TOUR_BOOKING) {
+                throw new AppException(ErrorCode.THIS_STAFF_ACCOUNT_IS_NOT_AUTHORIZED_FOR_THIS_ACTION);
+            }
+        }
+
         Tour tour = tourRepository.findById(tourId)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
         tour.setTourStatus(tourStatus);

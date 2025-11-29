@@ -20,7 +20,7 @@ public class BookingRequest {
     private Long tourId;
 
     @Email(message = "Invalid email format")
-    @Size(max = 100, message = "Email email must not exceed 100 characters")
+    @Size(max = 100, message = "User email must not exceed 100 characters")
     @NotBlank(message = "User email is required")
     private String userEmail;
 

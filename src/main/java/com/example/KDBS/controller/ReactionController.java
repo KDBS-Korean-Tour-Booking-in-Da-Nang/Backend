@@ -5,6 +5,7 @@ import com.example.KDBS.dto.response.ReactionResponse;
 import com.example.KDBS.dto.response.ReactionSummaryResponse;
 import com.example.KDBS.enums.ReactionTargetType;
 import com.example.KDBS.service.ReactionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,8 +21,7 @@ public class ReactionController {
 
     // Compatibility with the provided API spec
     @PostMapping("/add")
-    public ResponseEntity<ReactionResponse> addReactionLegacy(
-            @RequestBody ReactionRequest request) {
+    public ResponseEntity<ReactionResponse> addReactionLegacy(@Valid @RequestBody ReactionRequest request) {
 
         ReactionResponse response = reactionService.addOrUpdateReaction(request);
         return ResponseEntity.ok(response);
@@ -31,8 +31,7 @@ public class ReactionController {
     // /api/reactions/{targetType}/{targetId}
     @PostMapping("/delete")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> removeReactionLegacy(
-            @RequestBody ReactionRequest request) {
+    public ResponseEntity<Void> removeReactionLegacy(@Valid @RequestBody ReactionRequest request) {
         reactionService.removeReaction(request);
         return ResponseEntity.noContent().build();
     }

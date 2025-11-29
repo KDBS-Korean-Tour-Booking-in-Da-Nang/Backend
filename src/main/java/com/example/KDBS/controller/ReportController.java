@@ -7,6 +7,7 @@ import com.example.KDBS.dto.response.ReportSummaryResponse;
 import com.example.KDBS.enums.ReportStatus;
 import com.example.KDBS.enums.ReportTargetType;
 import com.example.KDBS.service.ReportService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +28,7 @@ public class ReportController {
 
     @PostMapping("/create")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ReportResponse> createReport(
+    public ResponseEntity<ReportResponse> createReport(@Valid
             @RequestBody ReportRequest request,
             @RequestParam String userEmail) {
         ReportResponse response = reportService.createReport(request, userEmail);
@@ -35,8 +36,8 @@ public class ReportController {
     }
 
     @PutMapping("/{reportId}/status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ReportResponse> updateReportStatus(
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<ReportResponse> updateReportStatus(@Valid
             @PathVariable Long reportId,
             @RequestBody UpdateReportRequest request,
             @RequestParam String adminEmail) {

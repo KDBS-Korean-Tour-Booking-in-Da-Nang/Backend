@@ -87,14 +87,6 @@ public class UserController {
                 .build();
     }
 
-    @PutMapping("/{userId}/ban")
-    public ApiResponse<UserResponse> banOrUnbanUser(@PathVariable("userId") int userId,
-                                                    @RequestParam("ban") boolean ban) {
-        return ApiResponse.<UserResponse>builder()
-                .result(userService.setUserBanStatus(userId, ban))
-                .build();
-    }
-
     @PutMapping(path = "/update-business-license", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateBusinessLicense(
             @RequestPart("file") MultipartFile file,
@@ -110,8 +102,7 @@ public class UserController {
                 .backImageData(idCardBack)
                 .build();
 
-        userService.updateBusinessLicense(request);
-        userService.processAndSaveIdCard(request);
+        userService.updateBusinessLicenseAndIdCard(request);
 
         return ResponseEntity.noContent().build();
     }
@@ -138,4 +129,5 @@ public class UserController {
     public ResponseEntity<UserResponse> getUser(@PathVariable("email") String email) {
         return ResponseEntity.ok(userService.getUserByEmail(email));
     }
+
 }

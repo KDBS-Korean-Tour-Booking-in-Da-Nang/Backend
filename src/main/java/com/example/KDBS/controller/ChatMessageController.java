@@ -3,6 +3,7 @@ package com.example.KDBS.controller;
 import com.example.KDBS.dto.request.ChatMessageRequest;
 import com.example.KDBS.dto.response.ChatMessageResponse;
 import com.example.KDBS.service.ChatMessageService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +35,7 @@ public class ChatMessageController {
     }
 
     @PostMapping("/send")
-    public ResponseEntity<List<ChatMessageResponse>> sendMessage(@RequestBody ChatMessageRequest chatMessageRequest) {
+    public ResponseEntity<List<ChatMessageResponse>> sendMessage(@RequestBody @Valid ChatMessageRequest chatMessageRequest) {
         List<ChatMessageResponse> updatedConversation = chatMessageService.sendMessage(chatMessageRequest);
         return ResponseEntity.ok(updatedConversation);
     }

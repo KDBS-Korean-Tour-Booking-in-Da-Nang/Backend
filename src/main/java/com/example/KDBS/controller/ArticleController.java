@@ -3,20 +3,19 @@ package com.example.KDBS.controller;
 import com.example.KDBS.enums.ArticleStatus;
 import com.example.KDBS.model.Article;
 import com.example.KDBS.service.ArticleService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/article")
+@RequiredArgsConstructor
 public class ArticleController {
     private final ArticleService articleService;
-
-    public ArticleController(ArticleService articleService) {
-        this.articleService = articleService;
-    }
 
     // Endpoint to trigger crawling articles
     // e.g., GET /api/article/crawl
@@ -47,6 +46,7 @@ public class ArticleController {
     }
 
     @PutMapping("/{articleId}/status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<Article> updateStatus(
             @PathVariable Long articleId,
             @RequestParam("status") ArticleStatus status) {
