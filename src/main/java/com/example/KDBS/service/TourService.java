@@ -15,7 +15,6 @@ import com.example.KDBS.model.TourContentImg;
 import com.example.KDBS.model.User;
 import com.example.KDBS.repository.*;
 import com.example.KDBS.utils.FileUtils;
-import com.example.KDBS.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
@@ -42,6 +41,7 @@ public class TourService {
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final TourMapper tourMapper;
+    private final StaffService staffService;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
@@ -175,19 +175,7 @@ public class TourService {
 
     @Transactional
     public TourResponse changeTourStatus(Long tourId, TourStatus tourStatus) {
-        // Lấy username từ token
-        String username = SecurityUtils.getCurrentUsername();
-
-        // Tìm user hiện tại
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
-
-        // Nếu là STAFF → cần check staffTask
-        if (user.getRole() == Role.STAFF) {
-            if (user.getStaffTask() != StaffTask.APPROVE_TOUR_BOOKING) {
-                throw new AppException(ErrorCode.THIS_STAFF_ACCOUNT_IS_NOT_AUTHORIZED_FOR_THIS_ACTION);
-            }
-        }
+        staffService.getAuthorizedStaff(StaffTask.APPROVE_TOUR_BOOKING);
 
         Tour tour = tourRepository.findById(tourId)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));

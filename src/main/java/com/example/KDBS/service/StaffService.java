@@ -1,7 +1,7 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.StaffCreateRequest;
-import com.example.KDBS.dto.request.UsernameAuthenticationRequest;
+import com.example.KDBS.dto.request.StaffTaskUpdateRequest;
 import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.StaffTask;
@@ -45,6 +45,22 @@ public class StaffService {
     }
 
     @Transactional
+    public UserResponse updateStaffTask(StaffTaskUpdateRequest request) {
+        // Check trùng username
+        User staff = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new AppException(ErrorCode.USERNAME_NOT_EXISTED));
+
+        if (staff.getRole() != Role.STAFF) {
+            throw new AppException(ErrorCode.THIS_ACCOUNT_IS_NOT_STAFF);
+        }
+
+        staff.setStaffTask(request.getStaffTask());
+        userRepository.save(staff);
+
+        return userMapper.toUserResponse(staff);
+    }
+
+    @Transactional
     public UserResponse setUserBanStatus(int userId, boolean ban) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -60,19 +76,7 @@ public class StaffService {
 
     @Transactional
     public UserResponse updateUserRole(int userId, Role newRole) {
-        // Lấy username từ token
-        String username = SecurityUtils.getCurrentUsername();
-
-        // Tìm user hiện tại
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
-
-        // Nếu là STAFF → cần check staffTask
-        if (user.getRole() == Role.STAFF) {
-            if (user.getStaffTask() != StaffTask.COMPANY_REQUEST_AND_APPROVE_ARTICLE) {
-                throw new AppException(ErrorCode.THIS_STAFF_ACCOUNT_IS_NOT_AUTHORIZED_FOR_THIS_ACTION);
-            }
-        }
+        getAuthorizedStaff(StaffTask.COMPANY_REQUEST_AND_APPROVE_ARTICLE);
 
         // Check user target
         User target = userRepository.findById(userId)
@@ -83,6 +87,30 @@ public class StaffService {
 
         return userMapper.toUserResponse(target);
     }
+
+    public void getAuthorizedStaff(StaffTask requiredTask) {
+        Integer currentUserId = SecurityUtils.getCurrentUserId();
+        if (currentUserId == null) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
+
+        // ADMIN được phép làm tất cả
+        if (user.getRole() == Role.ADMIN) {
+            return;
+        }
+
+        // STAFF phải có đúng task yêu cầu
+        if (user.getRole() == Role.STAFF) {
+            if (user.getStaffTask() != requiredTask) {
+                throw new AppException(ErrorCode.THIS_STAFF_ACCOUNT_IS_NOT_AUTHORIZED_FOR_THIS_ACTION);
+            }
+        }
+    }
+
+
 
 
 }
