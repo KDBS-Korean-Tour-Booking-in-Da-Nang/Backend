@@ -5,6 +5,8 @@ import com.example.KDBS.dto.response.ReactionResponse;
 import com.example.KDBS.dto.response.ReactionSummaryResponse;
 import com.example.KDBS.enums.ReactionTargetType;
 import com.example.KDBS.enums.ReactionType;
+import com.example.KDBS.enums.UserActionTarget;
+import com.example.KDBS.enums.UserActionType;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.ReactionMapper;
@@ -32,6 +34,7 @@ public class ReactionService {
     private final UserRepository userRepository;
     private final PostImgRepository postImgRepository;
     private final ReactionMapper reactionMapper;   // <-- injected mapper
+    private final UserActionLogService userActionLogService;
 
     @Transactional
     public ReactionResponse addOrUpdateReaction(ReactionRequest request) {
@@ -51,12 +54,14 @@ public class ReactionService {
             if (reaction.getReactionType() == request.getReactionType()) {
                 reactionRepository.delete(reaction);
                 updateTargetReactionCount(request.getTargetId(), request.getTargetType(), -1);
+                logReactionAction(user, UserActionType.REMOVE_REACTION, request, reaction.getReactionType());
                 return null; // indicates removal
             }
 
             // Different type → update
             reaction.setReactionType(request.getReactionType());
             Reaction saved = reactionRepository.save(reaction);
+            logReactionAction(user, UserActionType.ADD_REACTION, request, saved.getReactionType());
             return reactionMapper.toReactionResponse(saved);
         }
 
@@ -70,7 +75,7 @@ public class ReactionService {
 
         Reaction saved = reactionRepository.save(newReaction);
         updateTargetReactionCount(request.getTargetId(), request.getTargetType(), 1);
-        
+        logReactionAction(user, UserActionType.ADD_REACTION, request, saved.getReactionType());
         return reactionMapper.toReactionResponse(saved);
     }
 
@@ -79,9 +84,13 @@ public class ReactionService {
         User user = userRepository.findByEmail(request.getUserEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
 
+        Optional<Reaction> existing = reactionRepository
+                .findByUserAndTargetIdAndTargetType(user, request.getTargetId(), request.getTargetType());
         reactionRepository.deleteByUserAndTargetIdAndTargetType(
                 user, request.getTargetId(), request.getTargetType());
         updateTargetReactionCount(request.getTargetId(), request.getTargetType(), -1);
+        existing.ifPresent(reaction ->
+                logReactionAction(user, UserActionType.REMOVE_REACTION, request, reaction.getReactionType()));
     }
 
     public ReactionSummaryResponse getReactionSummary(Long targetId,
@@ -204,5 +213,21 @@ public class ReactionService {
         return reactions.stream()
                 .map(reactionMapper::toReactionResponse)
                 .collect(Collectors.toList());
+    }
+
+    private void logReactionAction(User user,
+                                   UserActionType actionType,
+                                   ReactionRequest request,
+                                   ReactionType reactionType) {
+        userActionLogService.logAction(
+                user,
+                actionType,
+                UserActionTarget.REACTION,
+                request.getTargetId(),
+                Map.of(
+                        "targetType", request.getTargetType().name(),
+                        "reactionType", reactionType.name()
+                )
+        );
     }
 }

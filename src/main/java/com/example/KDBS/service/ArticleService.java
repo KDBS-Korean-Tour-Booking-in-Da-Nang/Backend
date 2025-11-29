@@ -2,6 +2,8 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.enums.ArticleStatus;
 import com.example.KDBS.enums.StaffTask;
+import com.example.KDBS.enums.UserActionTarget;
+import com.example.KDBS.enums.UserActionType;
 import com.example.KDBS.model.Article;
 import com.example.KDBS.repository.ArticleRepository;
 import com.example.KDBS.repository.UserRepository;
@@ -23,6 +25,8 @@ import java.util.*;
 public class ArticleService {
     private final ArticleRepository articleRepository;
     private final StaffService staffService;
+    private final UserRepository userRepository;
+    private final UserActionLogService userActionLogService;
 
     public List<Article> getAllArticles() {
         return articleRepository.findAll();
@@ -34,6 +38,45 @@ public class ArticleService {
 
     public List<Article> getArticlesByStatus(ArticleStatus status) {
         return articleRepository.findByArticleStatus(status);
+    }
+
+    public void logArticleRead(Article article, String userEmail) {
+        try {
+            if (article == null) {
+                log.warn("Cannot log article read: article is null");
+                return;
+            }
+
+            if (userEmail == null || userEmail.isBlank()) {
+                log.debug("Cannot log article read: userEmail is null or blank for article {}", article.getArticleId());
+                return;
+            }
+
+            log.debug("Attempting to log article read: articleId={}, userEmail={}", article.getArticleId(), userEmail);
+
+            userRepository.findByEmail(userEmail).ifPresentOrElse(
+                    user -> {
+                        log.debug("Found user {} for email {}, logging article read", user.getUserId(), userEmail);
+                        userActionLogService.logAction(
+                                user,
+                                UserActionType.READ_ARTICLE,
+                                UserActionTarget.ARTICLE,
+                                article.getArticleId(),
+                                Map.of(
+                                        "articleStatus",
+                                        article.getArticleStatus() != null ? article.getArticleStatus().name()
+                                                : "UNKNOWN",
+                                        "articleTitle",
+                                        article.getArticleTitle() != null ? article.getArticleTitle() : ""));
+                        log.info("Successfully logged article read: articleId={}, userId={}", article.getArticleId(),
+                                user.getUserId());
+                    },
+                    () -> log.warn("User not found for email: {}, cannot log article read for article {}", userEmail,
+                            article.getArticleId()));
+        } catch (Exception e) {
+            log.error("Error logging article read for article {} and email {}",
+                    article != null ? article.getArticleId() : "null", userEmail, e);
+        }
     }
 
     @Transactional
@@ -60,13 +103,14 @@ public class ArticleService {
         try {
             Document doc = Jsoup.connect(listArticlesUrl).get();
 
-            //select all articles
+            // select all articles
             Elements articles = doc.select("li.tintuccat");
 
             List<String> links = new ArrayList<>();
             int count = 0;
-            for(Element article : articles) {
-                if (count >= 5) break;
+            for (Element article : articles) {
+                if (count >= 5)
+                    break;
                 String link = article.select("h3 > a").attr("abs:href").trim();
 
                 if (!link.isEmpty()) {
@@ -76,20 +120,20 @@ public class ArticleService {
             }
 
             Set<String> existingLinks = new HashSet<>(
-                articleRepository.findExistingArticleLinks(links)
-            );
+                    articleRepository.findExistingArticleLinks(links));
 
             count = 0;
             for (Element article : articles) {
-                if (count >= 5) break;
+                if (count >= 5)
+                    break;
                 String link = article.select("h3 > a").attr("abs:href").trim();
 
                 if (link.isEmpty()) {
                     continue;
                 }
 
-                //If we already have this article, stop crawling further
-                //since danangxanh lists newest articles first
+                // If we already have this article, stop crawling further
+                // since danangxanh lists newest articles first
                 if (existingLinks.contains(link)) {
                     log.info("Existing article found ({}). Stopping crawl early.", link);
                     break;
@@ -123,8 +167,7 @@ public class ArticleService {
                 articleRepository.saveAll(crawledArticles);
                 log.info("Saved {} new articles in batch", crawledArticles.size());
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             log.error("Error fetching articles from DanangXanh: {}", e.getMessage());
         }
 
@@ -132,18 +175,18 @@ public class ArticleService {
     }
 
     private String extractDanangXanhArticleContent(String articleUrl) {
-        try{
+        try {
             Document doc = Jsoup.connect(articleUrl).get();
 
             StringBuilder contentBuilder = new StringBuilder();
 
-            //Extract introtext
+            // Extract introtext
             Element introText = doc.selectFirst("div.introtext");
             if (introText != null) {
                 contentBuilder.append(introText.outerHtml()).append("\n");
             }
 
-            //Extract fulltext
+            // Extract fulltext
             Element fullText = doc.selectFirst("div.fulltext");
             if (fullText != null) {
                 contentBuilder.append(fullText.outerHtml());

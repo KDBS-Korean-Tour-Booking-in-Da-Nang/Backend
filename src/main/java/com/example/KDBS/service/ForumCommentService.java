@@ -3,6 +3,8 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.request.ForumCommentRequest;
 import com.example.KDBS.dto.response.ForumCommentResponse;
 import com.example.KDBS.enums.Role;
+import com.example.KDBS.enums.UserActionTarget;
+import com.example.KDBS.enums.UserActionType;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.CommentMapper;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +32,7 @@ public class ForumCommentService {
         private final UserRepository userRepository;
         private final ForumPostRepository forumPostRepository;
         private final CommentMapper commentMapper;
+        private final UserActionLogService userActionLogService;
 
         @Transactional
         public ForumCommentResponse createComment(ForumCommentRequest forumCommentRequest) {
@@ -56,6 +60,18 @@ public class ForumCommentService {
                 }
 
                 comment = forumCommentRepository.save(comment);
+
+                userActionLogService.logAction(
+                        user,
+                        UserActionType.CREATE_COMMENT,
+                        UserActionTarget.COMMENT,
+                        comment.getForumCommentId(),
+                        Map.of(
+                                "postId", forumPost.getForumPostId(),
+                                "isReply", forumCommentRequest.getParentCommentId() != null
+                        )
+                );
+
                 return commentMapper.toCommentResponse(comment);
         }
 
