@@ -18,28 +18,27 @@ public class CozeChatController {
     private final CozeChatService cozeChatService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    @MessageMapping("/send")              // FE gửi về /app/send
+    @MessageMapping("/send")  // FE gửi tới /app/send
     public void processMessage(CozeChatRequest msg) {
+        if (msg == null || msg.getMessage() == null || msg.getMessage().isBlank()) {
+            return;
+        }
+        if (msg.getClientId() == null || msg.getClientId().isBlank()) {
+            return;
+        }
 
-        // gửi thông báo đang xử lý
-        messagingTemplate.convertAndSend(
-                "/topic/reply/" + msg.getUserEmail(),
-                "⏳ Bot đang phản hồi..."
-        );
+        String clientId = msg.getClientId();
+        String destination = "/topic/ai/reply/" + clientId;
 
-        // gọi Coze (kiểu STREAM hoặc Poll theo từng chunk)
-        cozeChatService.streamAnswer(msg.getUserEmail(), msg.getMessage(), chunk -> {
-            // chunk là một phần câu trả lời
-            messagingTemplate.convertAndSend(
-                    "/topic/reply/" + msg.getUserEmail(),
-                    chunk
-            );
+        // thông báo đang xử lý
+        messagingTemplate.convertAndSend(destination, "⏳ Bot đang phản hồi...");
+
+        // gọi Coze, stream từng chunk
+        cozeChatService.streamAnswer(clientId, msg.getMessage(), chunk -> {
+            messagingTemplate.convertAndSend(destination, chunk);
         });
 
         // hoàn tất
-        messagingTemplate.convertAndSend(
-                "/topic/reply/" + msg.getUserEmail(),
-                "✔️ Bot trả lời xong."
-        );
+        messagingTemplate.convertAndSend(destination, "✔️ Bot trả lời xong.");
     }
 }
