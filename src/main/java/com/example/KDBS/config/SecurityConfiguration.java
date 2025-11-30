@@ -41,7 +41,7 @@ public class SecurityConfiguration {
 
 //    private final String signature = "OG3aRIYXHjOowyfI2MOHbl8xSjoF/B/XwkK6b276SfXAhL3KbizWWuT8LB1YUVvh";
 
-    @Lazy
+    @Lazye 
     private final CustomJwtDecoder customJwtDecoder;
 
     @Bean
