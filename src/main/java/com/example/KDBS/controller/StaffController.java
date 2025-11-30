@@ -1,5 +1,6 @@
 package com.example.KDBS.controller;
 
+import com.example.KDBS.dto.request.BanUserRequest;
 import com.example.KDBS.dto.request.StaffCreateRequest;
 import com.example.KDBS.dto.request.StaffTaskUpdateRequest;
 import com.example.KDBS.dto.response.ApiResponse;
@@ -37,12 +38,13 @@ public class StaffController {
 
     @PutMapping("/ban-user/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    public ApiResponse<UserResponse> banOrUnbanUser(@PathVariable("userId") int userId,
-                                                    @RequestParam("ban") boolean ban) {
+    public ApiResponse<UserResponse> banOrUnbanUser(@PathVariable("userId") int userId, @RequestBody BanUserRequest request)
+     {
         return ApiResponse.<UserResponse>builder()
-                .result(staffService.setUserBanStatus(userId, ban))
+                .result(staffService.setUserBanStatus(userId, request.isBan(), request.getBanReason()))
                 .build();
     }
+
 
     //Dùng để up role USER lên COMPANY
     @PutMapping("/update-role/{userId}")

@@ -1,5 +1,6 @@
 package com.example.KDBS.repository;
 
+import com.example.KDBS.enums.TourStatus;
 import com.example.KDBS.model.Tour;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,15 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
 
     @Query("SELECT t FROM Tour t LEFT JOIN FETCH t.contents")
     List<Tour> findAllWithContents();
+
+    @Query("""
+    SELECT t 
+    FROM Tour t 
+    LEFT JOIN FETCH t.contents 
+    WHERE t.tourStatus = :status
+""")
+    List<Tour> findAllPublicTours(@Param("status") TourStatus status);
+
 
     // Tìm theo tourName hoặc tourDescription hoặc tourSchedule chứa keyword
     @Query("""

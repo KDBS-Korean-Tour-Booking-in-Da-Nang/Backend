@@ -1,6 +1,7 @@
 package com.example.KDBS.dto.response;
 
 import com.example.KDBS.enums.StaffTask;
+import com.example.KDBS.enums.Status;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -28,4 +29,6 @@ public class UserResponse {
     private String status;
     private String role;
     private StaffTask staffTask;
+    private Status banReason;
+
 }
