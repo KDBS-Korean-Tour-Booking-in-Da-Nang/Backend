@@ -9,56 +9,81 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class CozeChatService {
 
+    private final RestTemplate restTemplate;
+
     @Value("${coze.api.base-url}")
     private String baseUrl;
 
     @Value("${coze.api.token}")
-    private String cozeToken;
+    private String token;
 
     @Value("${coze.api.bot-id}")
     private String botId;
-    private final RestTemplate restTemplate = new RestTemplate();
 
-    public String chat(String userId, String userMessage) {
+    public void streamAnswer(String userId, String query, Consumer<String> callback) {
+        String chatId = createChat(userId, query);
+
+        String status;
+        do {
+            status = getChatStatus(chatId);
+            callback.accept("…");
+            sleep(600);
+        } while (!"completed".equals(status));
+
+        String answer = getFinalAnswer(chatId);
+
+        for (String w : answer.split(" ")) {
+            callback.accept(w + " ");
+            sleep(50);
+        }
+    }
+
+    private String createChat(String userId, String query) {
         String url = baseUrl + "/chat";
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(cozeToken);
-
-        // body theo mẫu docs Coze
+        HttpHeaders h = headers();
         Map<String, Object> body = Map.of(
                 "bot_id", botId,
                 "user_id", userId,
-                "stream", false,
-                "additional_messages", List.of(
-                        Map.of(
-                                "role", "user",
-                                "content_type", "text",
-                                "type", "question",
-                                "content", userMessage
-                        )
-                )
+                "query", query
         );
 
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+        var res = restTemplate.postForObject(url, new HttpEntity<>(body, h), Map.class);
+        return ((Map<?, ?>) res.get("data")).get("id").toString();
+    }
 
-        try {
-            ResponseEntity<String> response =
-                    restTemplate.postForEntity(url, entity, String.class);
+    private String getChatStatus(String chatId) {
+        String url = baseUrl + "/chat/retrieve?chat_id=" + chatId;
 
-            log.info("Coze chat success, status={}", response.getStatusCode());
-            return response.getBody(); // trả raw JSON, frontend tự parse
-        } catch (Exception e) {
-            log.error("Error calling Coze chat API", e);
-            // tuỳ bạn muốn ném AppException hay RuntimeException
-            throw new RuntimeException("Failed to call Coze API", e);
-        }
+        var res = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers()), Map.class).getBody();
+        return ((Map<?, ?>) res.get("data")).get("status").toString();
+    }
+
+    private String getFinalAnswer(String chatId) {
+        String url = baseUrl + "/chat/messages?chat_id=" + chatId;
+        var res = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers()), Map.class).getBody();
+        var msgs = (List<Map<String, Object>>) res.get("data");
+
+        return msgs.stream()
+                .filter(m -> "assistant".equals(m.get("role")))
+                .map(m -> m.get("content").toString())
+                .reduce("", (a, b) -> a + b);
+    }
+
+    private HttpHeaders headers() {
+        HttpHeaders h = new HttpHeaders();
+        h.set("Authorization", "Bearer " + token);
+        return h;
+    }
+
+    private void sleep(long ms) {
+        try { Thread.sleep(ms); } catch (Exception ignored) {}
     }
 }

@@ -10,5 +10,6 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CozeChatRequest {
+    private String userEmail;
     private String message;
 }

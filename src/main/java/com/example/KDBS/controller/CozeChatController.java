@@ -1,15 +1,11 @@
 package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.CozeChatRequest;
-import com.example.KDBS.model.User;
-import com.example.KDBS.repository.UserRepository;
 import com.example.KDBS.service.CozeChatService;
-import com.example.KDBS.service.UserActionLogService;
-import com.example.KDBS.exception.AppException;
-import com.example.KDBS.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,22 +16,30 @@ import org.springframework.web.bind.annotation.*;
 public class CozeChatController {
 
     private final CozeChatService cozeChatService;
-    private final UserRepository userRepository;
-    private final UserActionLogService userActionLogService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    @PostMapping("/chat")
-    public ResponseEntity<String> chatWithBot(
-            @RequestHeader("User-Email") String email,
-            @RequestBody CozeChatRequest request
-    ) {
-        // 1) Lấy user theo email (giống UserActionLogService)
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    @MessageMapping("/send")              // FE gửi về /app/send
+    public void processMessage(CozeChatRequest msg) {
 
-        String userId = String.valueOf(user.getUserId()); // hoặc dùng email cũng được
+        // gửi thông báo đang xử lý
+        messagingTemplate.convertAndSend(
+                "/topic/reply/" + msg.getUserEmail(),
+                "⏳ Bot đang phản hồi..."
+        );
 
-        // 2) Gọi Coze
-        String cozeResponse = cozeChatService.chat(userId, request.getMessage());
-        return ResponseEntity.ok(cozeResponse);
+        // gọi Coze (kiểu STREAM hoặc Poll theo từng chunk)
+        cozeChatService.streamAnswer(msg.getUserEmail(), msg.getMessage(), chunk -> {
+            // chunk là một phần câu trả lời
+            messagingTemplate.convertAndSend(
+                    "/topic/reply/" + msg.getUserEmail(),
+                    chunk
+            );
+        });
+
+        // hoàn tất
+        messagingTemplate.convertAndSend(
+                "/topic/reply/" + msg.getUserEmail(),
+                "✔️ Bot trả lời xong."
+        );
     }
 }
