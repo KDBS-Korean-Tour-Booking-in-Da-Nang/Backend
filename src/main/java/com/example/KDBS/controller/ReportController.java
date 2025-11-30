@@ -52,6 +52,12 @@ public class ReportController {
         return ResponseEntity.ok(reports);
     }
 
+    @GetMapping("/{reportId}")
+    public ResponseEntity<ReportResponse> getReportById(
+            @PathVariable Long reportId) {
+        return ResponseEntity.ok(reportService.getReportById(reportId));
+    }
+
     @GetMapping("/admin/stats")
     public ResponseEntity<Object> getReportStats() {
         Map<ReportStatus, Long> stats = reportService.getReportStatsByStatus();
