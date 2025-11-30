@@ -95,6 +95,15 @@ public class ReportService {
     }
 
     @Transactional(readOnly = true)
+    public ReportResponse getReportById(Long reportId) {
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
+
+        return reportMapper.toResponse(report);
+    }
+
+
+    @Transactional(readOnly = true)
     public Map<ReportStatus, Long> getReportStatsByStatus() {
         List<Object[]> stats = reportRepository.getReportStatsByStatus();
         Map<ReportStatus, Long> result = new HashMap<>();
