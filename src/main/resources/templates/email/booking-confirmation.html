@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>KDBS Booking</title>
+  <style>
+    :root {
+      --blue-soft: #cfe5ff;      /* xanh nhạt tổng thể */
+      --blue-card: #e6f1ff;      /* xanh pastel card */
+      --blue-accent: #5a8dee;    /* xanh đậm accent */
+      --red-soft: #ffe0e8;       /* đỏ pastel tổng thể */
+      --red-card: #ffe8f0;       /* đỏ pastel card */
+      --text-main: #1e293b;
+      --text-sub: #64748b;
+      --radius: 22px;
+      --shadow: 0 12px 32px rgba(30, 41, 59, 0.10);
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(160deg, var(--blue-soft), var(--red-soft));
+      font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+      color: var(--text-main);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Soft pastel blur shapes */
+    body::before,
+    body::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.3;
+    }
+
+    body::before {
+      width: 300px;
+      height: 300px;
+      top: -80px;
+      left: -100px;
+      background: var(--blue-soft);
+    }
+
+    body::after {
+      width: 280px;
+      height: 280px;
+      bottom: -100px;
+      right: -80px;
+      background: var(--red-soft);
+    }
+
+    .wrapper {
+      width: 100%;
+      padding: 32px 14px;
+      box-sizing: border-box;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 32px 26px 28px;
+      background: linear-gradient(135deg, var(--blue-card), var(--red-card));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(90, 141, 238, 0.12);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: linear-gradient(120deg, var(--blue-soft), var(--red-soft));
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--blue-accent);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      box-shadow: 0 3px 8px rgba(90, 141, 238, 0.18);
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--blue-accent);
+      margin-right: 6px;
+    }
+
+    h1 {
+      font-size: 23px;
+      font-weight: 600;
+      margin: 0 0 12px;
+      line-height: 1.45;
+      color: var(--text-main);
+    }
+
+    p {
+      font-size: 15px;
+      line-height: 1.75;
+      margin: 0 0 12px;
+      color: var(--text-main);
+    }
+
+    .sub {
+      font-size: 14px;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+
+    /* Section đa màu pastel */
+    .section {
+      margin-top: 20px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      border: 1px solid rgba(100, 116, 139, 0.12);
+    }
+
+    .section.tour {
+      background: #e6f1ff; /* xanh pastel */
+    }
+
+    .section.payment {
+      background: #ffe8f0; /* hồng pastel */
+    }
+
+    .section.contact {
+      background: #d9ecff; /* xanh nhạt khác */
+    }
+
+    .section-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-sub);
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .label {
+      color: var(--text-sub);
+    }
+
+    .value {
+      font-weight: 600;
+      color: var(--blue-accent);
+    }
+
+    .footer {
+      margin-top: 28px;
+      font-size: 11px;
+      color: var(--text-sub);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+
+      <div class="badge">
+        <span class="badge-dot"></span>
+        KDBS BOOKING
+      </div>
+
+      <h1>여행 예약이 완료되었습니다</h1>
+      <p>{contactName} 고객님, 안녕하세요.</p>
+      <p class="sub">
+        KDBS를 이용해 주셔서 감사합니다. 아래에서 예약하신 투어 정보를 확인하실 수 있습니다.
+      </p>
+
+      <div class="section tour">
+        <div class="section-title">투어 정보</div>
+        <div class="row">
+          <span class="label">상품명</span>
+          <span class="value">{tourName}</span>
+        </div>
+        <div class="row">
+          <span class="label">예약 번호</span>
+          <span class="value">#{bookingId}</span>
+        </div>
+        <div class="row">
+          <span class="label">출발일</span>
+          <span class="value">{departureDate}</span>
+        </div>
+        <div class="row">
+          <span class="label">픽업 장소</span>
+          <span class="value">{pickupPoint}</span>
+        </div>
+        <div class="row">
+          <span class="label">인원</span>
+          <span class="value">{totalGuests}명</span>
+        </div>
+      </div>
+
+      <div class="section payment">
+        <div class="section-title">예상 결제 정보</div>
+        <div class="row">
+          <span class="label">성인</span>
+          <span class="value">{adultsCount}명 · {adultsPrice}원</span>
+        </div>
+        <div class="row">
+          <span class="label">아동</span>
+          <span class="value">{childrenCount}명 · {childrenPrice}원</span>
+        </div>
+        <div class="row">
+          <span class="label">유아</span>
+          <span class="value">{babiesCount}명 · {babiesPrice}원</span>
+        </div>
+        <div class="row" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(100, 116, 139, 0.15);">
+          <span class="label" style="font-weight: 600;">총 예상 금액</span>
+          <span class="value" style="font-size: 15px;">{totalAmount}원</span>
+        </div>
+      </div>
+
+      <div class="section contact">
+        <div class="section-title">연락처 정보</div>
+        <div class="row">
+          <span class="label">이름</span>
+          <span class="value">{contactName}</span>
+        </div>
+        <div class="row">
+          <span class="label">이메일</span>
+          <span class="value">{contactEmail}</span>
+        </div>
+        <div class="row">
+          <span class="label">전화번호</span>
+          <span class="value">{contactPhone}</span>
+        </div>
+        <div class="row">
+          <span class="label">주소</span>
+          <span class="value">{contactAddress}</span>
+        </div>
+      </div>
+
+      <p style="margin-top: 22px;">
+        예약 변경이나 문의가 필요하신 경우 언제든지 KDBS 고객센터로 연락해 주세요.
+      </p>
+
+      <p>
+        감사합니다.<br>
+        <strong>KDBS 드림</strong>
+      </p>
+
+      <div class="footer">
+        본 메일은 발신 전용으로 회신이 불가합니다.
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
+
+

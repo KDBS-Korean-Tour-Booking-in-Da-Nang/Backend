@@ -13,8 +13,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class GeminiController {
     private final GeminiService geminiService;
 
+    //Chỉ dùng để test Gemini API
     @GetMapping("/ask")
     public String askGemini(@RequestBody String prompt) {
         return geminiService.askGemini(prompt);
+    }
+
+    @GetMapping("/translate")
+    public String translateText(@RequestBody String text) {
+        return geminiService.translateText(text);
     }
 }

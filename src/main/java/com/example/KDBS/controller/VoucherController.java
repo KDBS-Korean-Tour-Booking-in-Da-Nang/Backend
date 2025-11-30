@@ -46,5 +46,3 @@ public class VoucherController {
         return ResponseEntity.ok(voucherService.getVouchersByCompanyId(companyId));
     }
 }
-
-

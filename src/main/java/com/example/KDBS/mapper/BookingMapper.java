@@ -24,6 +24,7 @@ public interface BookingMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "guests", ignore = true) // sẽ set riêng
     @Mapping(target = "tour", ignore = true)   // tránh vòng lặp
+    @Mapping(target = "bookingMessage", ignore = true)
     Booking toBooking(BookingRequest request);
 
     @Mapping(source = "tour.tourId", target = "tourId")
@@ -34,6 +35,7 @@ public interface BookingMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "guests", ignore = true) // sẽ set riêng
     @Mapping(target = "tour", ignore = true)   // tránh vòng lặp
+    @Mapping(target = "bookingMessage", ignore = true)
     void updateBookingFromRequest(BookingRequest request, @MappingTarget Booking booking);
 
     // ----- BookingGuest -----

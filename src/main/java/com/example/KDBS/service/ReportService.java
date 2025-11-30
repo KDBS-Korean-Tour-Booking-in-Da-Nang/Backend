@@ -6,7 +6,6 @@ import com.example.KDBS.dto.response.ReportResponse;
 import com.example.KDBS.dto.response.ReportSummaryResponse;
 import com.example.KDBS.enums.ReportStatus;
 import com.example.KDBS.enums.ReportTargetType;
-import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.StaffTask;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
@@ -19,7 +18,6 @@ import com.example.KDBS.repository.ForumCommentRepository;
 import com.example.KDBS.repository.ForumPostRepository;
 import com.example.KDBS.repository.ReportRepository;
 import com.example.KDBS.repository.UserRepository;
-import com.example.KDBS.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +37,7 @@ public class ReportService {
     private final ForumPostRepository forumPostRepository;
     private final ForumCommentRepository forumCommentRepository;
     private final ReportMapper reportMapper;
+    private final StaffService staffService;
 
     @Transactional
     public ReportResponse createReport(ReportRequest request, String userEmail) {
@@ -69,19 +68,7 @@ public class ReportService {
 
     @Transactional
     public ReportResponse updateReportStatus(Long reportId, UpdateReportRequest request, String adminEmail) {
-        // Lấy username từ token
-        String username = SecurityUtils.getCurrentUsername();
-
-        // Tìm user hiện tại
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
-
-        // Nếu là STAFF → cần check staffTask
-        if (user.getRole() == Role.STAFF) {
-            if (user.getStaffTask() != StaffTask.FORUM_REPORT) {
-                throw new AppException(ErrorCode.THIS_STAFF_ACCOUNT_IS_NOT_AUTHORIZED_FOR_THIS_ACTION);
-            }
-        }
+        staffService.getAuthorizedStaff(StaffTask.FORUM_REPORT);
 
         User admin = userRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -141,16 +128,16 @@ public class ReportService {
 
     private void validateTarget(ReportTargetType targetType, Long targetId) {
         switch (targetType) {
-            case POST:
+            case POST -> {
                 if (!forumPostRepository.existsById(targetId)) {
                     throw new AppException(ErrorCode.POST_NOT_FOUND);
                 }
-                break;
-            case COMMENT:
+            }
+            case COMMENT -> {
                 if (!forumCommentRepository.existsById(targetId)) {
                     throw new AppException(ErrorCode.COMMENT_NOT_FOUND);
                 }
-                break;
+            }
         }
     }
 

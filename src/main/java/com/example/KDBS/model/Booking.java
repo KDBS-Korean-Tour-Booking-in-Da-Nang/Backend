@@ -68,6 +68,10 @@ public class Booking {
     @Column(name = "total_guests", nullable = false)
     private Integer totalGuests;
 
+    //Optional fields for when booking have custom message
+    @Column(name = "booking_message", length = 500)
+    private String bookingMessage;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

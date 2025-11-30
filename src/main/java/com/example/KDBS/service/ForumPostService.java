@@ -5,6 +5,8 @@ import com.example.KDBS.dto.response.ForumPostResponse;
 import com.example.KDBS.dto.response.ReactionSummaryResponse;
 import com.example.KDBS.enums.ReactionTargetType;
 import com.example.KDBS.enums.Role;
+import com.example.KDBS.enums.UserActionTarget;
+import com.example.KDBS.enums.UserActionType;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.PostMapper;
@@ -38,6 +40,7 @@ public class ForumPostService {
     private final PostMapper postMapper;
     private final ReactionService reactionService;
     private final FileStorageService fileStorageService;
+    private final UserActionLogService userActionLogService;
 
     @Transactional
     public ForumPostResponse createPost(ForumPostRequest forumPostRequest) throws IOException {
@@ -47,6 +50,15 @@ public class ForumPostService {
         ForumPost forumPost = postMapper.toForumPost(forumPostRequest);
         forumPost.setUser(user);
         forumPost = forumPostRepository.save(forumPost);
+
+        userActionLogService.logAction(
+                user,
+                UserActionType.CREATE_POST,
+                UserActionTarget.POST,
+                forumPost.getForumPostId(),
+                Map.of(
+                        "title", forumPost.getTitle() != null ? forumPost.getTitle() : "",
+                        "hasImages", forumPostRequest.getImages() != null && !forumPostRequest.getImages().isEmpty()));
 
         handleImages(forumPostRequest.getImages(), forumPost);
         handleHashtags(forumPostRequest.getHashtags(), forumPost);
@@ -96,7 +108,7 @@ public class ForumPostService {
         if (currentRole == Role.ADMIN) {
             log.debug("Admin deleting post {}", postId);
             // continue to delete
-        }else if (currentRole == Role.STAFF) {
+        } else if (currentRole == Role.STAFF) {
             if (ownerRole == Role.ADMIN) {
                 throw new AppException(ErrorCode.STAFF_CANNOT_DELETE_ADMIN_POSTS);
             }
