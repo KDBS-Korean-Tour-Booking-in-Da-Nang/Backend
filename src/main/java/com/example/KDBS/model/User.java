@@ -70,6 +70,9 @@ public class User {
     @Enumerated(EnumType.STRING)
     private StaffTask staffTask;
 
+    @Column(name = "banReason", length = 255)
+    private String banReason;
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference
     private BusinessLicense businessLicense;

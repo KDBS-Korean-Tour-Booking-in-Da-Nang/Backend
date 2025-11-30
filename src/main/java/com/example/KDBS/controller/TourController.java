@@ -48,6 +48,11 @@ public class TourController {
         return ResponseEntity.ok(tourService.getAllTours());
     }
 
+    @GetMapping("/public")
+    public ResponseEntity<List<TourResponse>> getAllPublicTours() {
+        return ResponseEntity.ok(tourService.getAllPublicTours());
+    }
+
     /** Read one tour by id */
     @GetMapping("/{tourId}")
     public ResponseEntity<TourResponse> getTour(@PathVariable Long tourId) {
