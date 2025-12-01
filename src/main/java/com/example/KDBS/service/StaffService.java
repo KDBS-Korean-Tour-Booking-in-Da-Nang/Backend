@@ -113,8 +113,29 @@ public class StaffService {
                 throw new AppException(ErrorCode.THIS_STAFF_ACCOUNT_IS_NOT_AUTHORIZED_FOR_THIS_ACTION);
             }
         }
+
+
     }
 
+    @Transactional
+    public UserResponse deleteStaff(int staffId) {
+        // Tìm user theo id
+        User staff = userRepository.findById(staffId)
+                .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
+
+        // Chỉ xóa nếu đúng là STAFF
+        if (staff.getRole() != Role.STAFF) {
+            throw new AppException(ErrorCode.THIS_ACCOUNT_IS_NOT_STAFF);
+        }
+
+        // Map ra response trước khi xóa (nếu muốn trả về)
+        UserResponse response = userMapper.toUserResponse(staff);
+
+        // Xóa khỏi DB
+        userRepository.delete(staff);
+
+        return response;
+    }
 
 
 
