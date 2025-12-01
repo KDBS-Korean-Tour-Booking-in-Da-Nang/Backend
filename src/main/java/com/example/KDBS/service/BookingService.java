@@ -3,6 +3,9 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.request.BookingGuestRequest;
 import com.example.KDBS.dto.request.BookingRequest;
 import com.example.KDBS.dto.request.ChangeBookingStatusRequest;
+import com.example.KDBS.dto.request.CreateComplaintRequest;
+import com.example.KDBS.dto.request.ResolveComplaintRequest;
+import com.example.KDBS.dto.response.BookingComplaintResponse;
 import com.example.KDBS.dto.response.BookingGuestResponse;
 import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
@@ -12,6 +15,7 @@ import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.BookingMapper;
 import com.example.KDBS.model.*;
+import com.example.KDBS.repository.BookingComplaintRepository;
 import com.example.KDBS.repository.BookingGuestRepository;
 import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TourRepository;
@@ -38,6 +42,7 @@ public class BookingService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final UserActionLogService userActionLogService;
+    private final BookingComplaintRepository bookingComplaintRepository;
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
@@ -360,6 +365,72 @@ public class BookingService {
             booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS);
             distributeBookingRevenue(booking);
         }
+    }
+
+    @Transactional
+    public void createBookingComplaint(Long bookingId, CreateComplaintRequest request) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
+        if (!booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED)) {
+            throw new AppException(ErrorCode.BOOKING_CANNOT_CONFIRM_COMPLETION);
+        }
+
+        BookingComplaint complaint = BookingComplaint.builder()
+                .booking(booking)
+                .message(request.getMessage())
+                .build();
+
+        bookingComplaintRepository.save(complaint);
+        booking.setBookingStatus(BookingStatus.BOOKING_UNDER_COMPLAINT);
+    }
+
+    @Transactional
+    public void resolveBookingComplaint(Long complaintId, ResolveComplaintRequest request) {
+        BookingComplaint complaint = bookingComplaintRepository.findById(complaintId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
+        if (complaint.getResolutionType() != null) {
+            return;
+        }
+
+        complaint.setResolutionType(request.getResolutionType());
+        complaint.setResolvedAt(LocalDate.now().atStartOfDay());
+
+        Booking booking = complaint.getBooking();
+
+        switch (request.getResolutionType()) {
+            case USER_FAULT:
+                booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS);
+                distributeBookingRevenue(booking);
+            case NO_FAULT:
+                booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS);
+                distributeBookingRevenue(booking);
+                break;
+            case COMPANY_FAULT:
+                booking.setBookingStatus(BookingStatus.BOOKING_UNDER_COMPLAINT);
+                break;
+            default:
+                break;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingComplaintResponse> getComplaintsByBookingId(Long bookingId) {
+        bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
+        List<BookingComplaint> complaints = bookingComplaintRepository.findByBooking_BookingId(bookingId);
+
+        return complaints.stream().map(c -> {
+            BookingComplaintResponse dto = new BookingComplaintResponse();
+            dto.setComplaintId(c.getComplaintId());
+            dto.setMessage(c.getMessage());
+            dto.setCreatedAt(c.getCreatedAt());
+            dto.setResolvedAt(c.getResolvedAt());
+            dto.setResolutionType(c.getResolutionType());
+            return dto;
+        }).toList();
     }
 
     @Transactional

@@ -3,6 +3,8 @@ package com.example.KDBS.controller;
 import com.example.KDBS.dto.request.BookingPaymentRequest;
 import com.example.KDBS.dto.request.BookingRequest;
 import com.example.KDBS.dto.request.ChangeBookingStatusRequest;
+import com.example.KDBS.dto.request.CreateComplaintRequest;
+import com.example.KDBS.dto.request.ResolveComplaintRequest;
 import com.example.KDBS.dto.request.TossCreateOrderRequest;
 import com.example.KDBS.dto.response.*;
 import com.example.KDBS.enums.InsuranceStatus;
@@ -106,6 +108,28 @@ public class BookingController {
     public ResponseEntity<Void> userConfirmCompletion(@PathVariable long bookingId) {
         bookingService.confirmedCompletion(bookingId, false);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{bookingId}/complaint")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> createComplaint(@PathVariable long bookingId,
+                                                @Valid @RequestBody CreateComplaintRequest request) {
+        bookingService.createBookingComplaint(bookingId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/complaint/{complaintId}/resolve")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<Void> resolveComplaint(@PathVariable long complaintId,
+                                                 @Valid @RequestBody ResolveComplaintRequest request) {
+        bookingService.resolveBookingComplaint(complaintId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/id/{bookingId}/complaints")
+    public ResponseEntity<List<BookingComplaintResponse>> getComplaintsByBookingId(@PathVariable Long bookingId) {
+        List<BookingComplaintResponse> complaints = bookingService.getComplaintsByBookingId(bookingId);
+        return ResponseEntity.ok(complaints);
     }
 
     @GetMapping("/email/{email}")
