@@ -21,6 +21,18 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM Voucher v WHERE v.voucherId = :id")
     Optional<Voucher> findByIdForUpdate(@Param("id") Long id);
+
+    @Query(""" 
+            SELECT v FROM Voucher v
+            JOIN Tour t ON t.tourId = :tourId
+            LEFT JOIN VoucherTourMapping m ON m.voucher.voucherId = v.voucherId
+            WHERE m.tour.tourId = :tourId
+            OR (
+                    v.companyId = t.companyId
+                    AND m IS NULL
+                )
+        """)
+    List<Voucher> findAllVoucherByTourId(Long tourId);
 }
 
 

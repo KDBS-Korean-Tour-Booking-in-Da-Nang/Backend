@@ -1,9 +1,11 @@
 package com.example.KDBS.service;
 
+import com.example.KDBS.dto.response.TranslatedArticleResponse;
 import com.example.KDBS.enums.ArticleStatus;
 import com.example.KDBS.enums.StaffTask;
 import com.example.KDBS.enums.UserActionTarget;
 import com.example.KDBS.enums.UserActionType;
+import com.example.KDBS.mapper.ArticleMapper;
 import com.example.KDBS.model.Article;
 import com.example.KDBS.repository.ArticleRepository;
 import com.example.KDBS.repository.UserRepository;
@@ -27,6 +29,8 @@ public class ArticleService {
     private final StaffService staffService;
     private final UserRepository userRepository;
     private final UserActionLogService userActionLogService;
+    private final GeminiService geminiService;
+    private final ArticleMapper articleMapper;
 
     public List<Article> getAllArticles() {
         return articleRepository.findAll();
@@ -109,7 +113,7 @@ public class ArticleService {
             List<String> links = new ArrayList<>();
             int count = 0;
             for (Element article : articles) {
-                if (count >= 5)
+                if (count >= 2)
                     break;
                 String link = article.select("h3 > a").attr("abs:href").trim();
 
@@ -124,7 +128,7 @@ public class ArticleService {
 
             count = 0;
             for (Element article : articles) {
-                if (count >= 5)
+                if (count >= 2)
                     break;
                 String link = article.select("h3 > a").attr("abs:href").trim();
 
@@ -151,6 +155,9 @@ public class ArticleService {
 
                 String content = extractDanangXanhArticleContent(link);
 
+                //Translate languages to english and korean
+                TranslatedArticleResponse translatedArticleResponse = geminiService.translateArticleToEnglishAndKorean(title, description, content);
+
                 Article newArticle = Article.builder()
                         .articleTitle(title)
                         .articleLink(link)
@@ -158,6 +165,8 @@ public class ArticleService {
                         .articleDescription(description)
                         .articleContent(content)
                         .build();
+
+                articleMapper.mapTranslatedContentToArticle(translatedArticleResponse, newArticle);
 
                 crawledArticles.add(newArticle);
                 count++;

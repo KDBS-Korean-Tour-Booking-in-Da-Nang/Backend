@@ -167,7 +167,7 @@ public class BookingService {
     @Transactional(readOnly = true)
     public List<BookingResponse> getBookingsByTourId(Long tourId) {
         List<Booking> bookings = bookingRepository.findByTour_TourIdOrderByCreatedAtDesc(tourId);
-        Tour tour = tourRepository.findById(tourId).orElse(null);
+        Tour tour = tourRepository.findById(tourId).orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         return bookings.stream()
                 .map(booking -> mapToBookingResponse(booking, tour))
@@ -202,6 +202,9 @@ public class BookingService {
     @Transactional(readOnly = true)
     public List<BookingGuestResponse> getAllGuestsByBookingId(Long bookingId) {
         List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(bookingId);
+        if (guests.isEmpty()) {
+            throw new AppException(ErrorCode.BOOKING_NOT_FOUND);
+        }
         return bookingMapper.toBookingGuestResponses(guests);
     }
 
@@ -351,13 +354,20 @@ public class BookingService {
     public void confirmedCompletion(Long bookingId, boolean isCompany) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        if (booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS)) {
+        if (booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED)) {
             if (isCompany) booking.setCompanyConfirmedCompletion(true);
             else booking.setUserConfirmedCompletion(true);
         }
+
         else throw new AppException(ErrorCode.BOOKING_CANNOT_CONFIRM_COMPLETION);
+
+        if(booking.getUserConfirmedCompletion() && booking.getCompanyConfirmedCompletion()){
+            booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS);
+        }
     }
 
+
+    //Used later in schedule don't delete!
     @Transactional
     public boolean getTourCompletionStatus(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
@@ -498,7 +508,7 @@ public class BookingService {
             return null;
         }
 
-        if (status == BookingStatus.BOOKING_SUCCESS) {
+        if (status == BookingStatus.BOOKING_SUCCESS_PENDING) {
             return NotificationType.BOOKING_CONFIRMED;
         } else if (status == BookingStatus.BOOKING_REJECTED) {
             return NotificationType.BOOKING_REJECTED;

@@ -10,6 +10,7 @@ import com.example.KDBS.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -21,6 +22,7 @@ public class ChatMessageService {
     private final UserRepository userRepository;
     private final ChatMessageMapper chatMessageMapper;
 
+    @Transactional(readOnly = true)
     public List<ChatMessageResponse> GetConversation(String senderName, String receiverName) {
         var sender = getUserByUsername(senderName);
         var receiver = getUserByUsername(receiverName);
@@ -31,6 +33,7 @@ public class ChatMessageService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ChatMessageResponse> getAllMessageFromUser(String Username) {
         var user = getUserByUsername(Username);
         return chatMessageRepository.findBySenderOrReceiverOrderByTimestampDesc(user, user)
@@ -39,6 +42,7 @@ public class ChatMessageService {
                 .toList();
     }
 
+    @Transactional
     public List<ChatMessageResponse> sendMessage(ChatMessageRequest chatMessageRequest) {
         var sender = getUserByUsername(chatMessageRequest.getSenderName());
         var receiver = getUserByUsername(chatMessageRequest.getReceiverName());
@@ -48,7 +52,8 @@ public class ChatMessageService {
                 .content(chatMessageRequest.getContent())
                 .build();
         chatMessageRepository.save(newMessage);
-        log.info("Message sent from {} to {}", chatMessageRequest.getSenderName(), chatMessageRequest.getReceiverName());
+        log.info("Message sent from {} to {}", chatMessageRequest.getSenderName(),
+                chatMessageRequest.getReceiverName());
         return GetConversation(chatMessageRequest.getSenderName(), chatMessageRequest.getReceiverName());
     }
 

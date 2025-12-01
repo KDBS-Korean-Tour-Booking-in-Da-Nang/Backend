@@ -61,18 +61,23 @@ public class StaffService {
     }
 
     @Transactional
-    public UserResponse setUserBanStatus(int userId, boolean ban) {
+    public UserResponse setUserBanStatus(int userId, boolean ban, String banReason) {
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         if (ban) {
             user.setStatus(Status.BANNED);
+            user.setBanReason(banReason != null ? banReason : "No reason provided");
         } else {
             user.setStatus(Status.UNBANNED);
+            user.setBanReason(null); // xóa lý do ban
         }
 
+        userRepository.save(user);
         return userMapper.toUserResponse(user);
     }
+
 
     @Transactional
     public UserResponse updateUserRole(int userId, Role newRole) {

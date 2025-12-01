@@ -88,6 +88,14 @@ public class TourService {
                 .toList();
     }
 
+    public List<TourResponse> getAllPublicTours() {
+        return tourRepository.findAllPublicTours(TourStatus.PUBLIC)
+                .stream()
+                .map(tourMapper::toTourResponse)
+                .toList();
+    }
+
+
     /** Get one tour */
     public TourResponse getTourById(Long tourId) {
         Tour tour = tourRepository.findByIdWithContents(tourId)

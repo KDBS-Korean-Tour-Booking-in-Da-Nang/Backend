@@ -692,7 +692,7 @@ public class EmailService {
         if (!isCompanyRecipient) {
             // Email cho user - tiếng Hàn
             String statusMessageKo;
-            if (newStatus == BookingStatus.BOOKING_SUCCESS) {
+            if (newStatus == BookingStatus.BOOKING_SUCCESS_PENDING) {
                 statusMessageKo = "고객님의 여행 예약이 확정되었습니다.";
             } else if (newStatus == BookingStatus.BOOKING_REJECTED) {
                 statusMessageKo = "죄송하지만 예약이 취소되었습니다.";
@@ -912,7 +912,7 @@ public class EmailService {
 
         // Email cho company - tiếng Việt
         String statusMessageVi;
-        if (newStatus == BookingStatus.BOOKING_SUCCESS) {
+        if (newStatus == BookingStatus.BOOKING_SUCCESS_PENDING) {
             statusMessageVi = "Booking của khách đã được xác nhận.";
         } else if (newStatus == BookingStatus.BOOKING_REJECTED) {
             statusMessageVi = "Booking của khách đã bị từ chối.";
@@ -1123,7 +1123,7 @@ public class EmailService {
                 </div>
             </body>
             </html>
-                """,
+            """,
                 statusMessageVi,
                 tour.getTourName(),
                 booking.getBookingId(),

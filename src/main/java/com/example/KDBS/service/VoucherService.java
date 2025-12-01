@@ -188,6 +188,15 @@ public class VoucherService {
     }
 
     @Transactional(readOnly = true)
+    public List<Voucher> getAllVoucherByTourId(Long tourId) {
+        List<Voucher> vouchers = voucherRepository.findAllVoucherByTourId(tourId);
+        if (vouchers == null || vouchers.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return vouchers;
+    }
+
+    @Transactional(readOnly = true)
     public List<VoucherResponse> getVouchersByCompanyId(Integer companyId) {
         if (companyId == null) {
             return new ArrayList<>();
