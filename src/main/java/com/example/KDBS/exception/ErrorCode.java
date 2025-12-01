@@ -171,6 +171,9 @@ public enum ErrorCode {
         THIS_STAFF_ACCOUNT_IS_NOT_AUTHORIZED_FOR_THIS_ACTION(1083,"This staff account is not authorized for this action", HttpStatus.FORBIDDEN),
         THIS_ACCOUNT_IS_NOT_STAFF(1084,"This account is not staff", HttpStatus.BAD_REQUEST),
 
+        //Complaint
+        COMPLAINT_NOT_FOUND(1085, "Complaint not found", HttpStatus.NOT_FOUND),
+
         //Empty Text
         TEXT_IS_EMPTY(1100, "Text is empty", HttpStatus.BAD_REQUEST),
         ARTICLE_FIELDS_EMPTY(1101, "Article fields (title, description, content) cannot be empty", HttpStatus.BAD_REQUEST),
