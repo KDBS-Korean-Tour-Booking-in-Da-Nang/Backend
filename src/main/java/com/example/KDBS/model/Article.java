@@ -19,17 +19,35 @@ public class Article {
     @Column(name = "article_id")
     private Long articleId;
 
-    @Column(name = "article_title", nullable = false)
-    private String articleTitle;
-
     @Column(name = "article_thumbnail", length = 500)
     private String articleThumbnail;
 
-    @Column(name = "article_description")
+    @Column(name = "article_title", nullable = false)
+    private String articleTitle;
+
+    @Column(name = "article_description", length = 1000)
     private String articleDescription;
 
     @Column(name = "article_content", columnDefinition = "LONGTEXT")
     private String articleContent;
+
+    @Column(name = "article_title_en")
+    private String articleTitleEN;
+
+    @Column(name = "article_description_en", length = 1000)
+    private String articleDescriptionEN;
+
+    @Column(name = "article_content_en", columnDefinition = "LONGTEXT")
+    private String articleContentEN;
+
+    @Column(name = "article_title_kr")
+    private String articleTitleKR;
+
+    @Column(name = "article_description_kr", length = 1000)
+    private String articleDescriptionKR;
+
+    @Column(name = "article_content_kr", columnDefinition = "LONGTEXT")
+    private String articleContentKR;
 
     @Column(name = "article_link", unique = true, length = 500)
     private String articleLink;

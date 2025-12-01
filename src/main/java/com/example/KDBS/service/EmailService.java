@@ -1123,7 +1123,7 @@ public class EmailService {
                 </div>
             </body>
             </html>
-                """,
+            """,
                 statusMessageVi,
                 tour.getTourName(),
                 booking.getBookingId(),

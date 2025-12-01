@@ -167,7 +167,7 @@ public class BookingService {
     @Transactional(readOnly = true)
     public List<BookingResponse> getBookingsByTourId(Long tourId) {
         List<Booking> bookings = bookingRepository.findByTour_TourIdOrderByCreatedAtDesc(tourId);
-        Tour tour = tourRepository.findById(tourId).orElse(null);
+        Tour tour = tourRepository.findById(tourId).orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         return bookings.stream()
                 .map(booking -> mapToBookingResponse(booking, tour))
@@ -202,6 +202,9 @@ public class BookingService {
     @Transactional(readOnly = true)
     public List<BookingGuestResponse> getAllGuestsByBookingId(Long bookingId) {
         List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(bookingId);
+        if (guests.isEmpty()) {
+            throw new AppException(ErrorCode.BOOKING_NOT_FOUND);
+        }
         return bookingMapper.toBookingGuestResponses(guests);
     }
 
