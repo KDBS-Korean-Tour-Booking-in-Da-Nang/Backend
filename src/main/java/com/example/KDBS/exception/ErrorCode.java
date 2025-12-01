@@ -172,7 +172,9 @@ public enum ErrorCode {
         THIS_ACCOUNT_IS_NOT_STAFF(1084,"This account is not staff", HttpStatus.BAD_REQUEST),
 
         //Empty Text
-        TEXT_IS_EMPTY(1100, "Text is empty", HttpStatus.BAD_REQUEST);
+        TEXT_IS_EMPTY(1100, "Text is empty", HttpStatus.BAD_REQUEST),
+        ARTICLE_FIELDS_EMPTY(1101, "Article fields (title, description, content) cannot be empty", HttpStatus.BAD_REQUEST),
+        AI_TRANSLATION_FAILED(1102, "AI translation failed", HttpStatus.INTERNAL_SERVER_ERROR);
 
         private final int code;
         private final String message;
