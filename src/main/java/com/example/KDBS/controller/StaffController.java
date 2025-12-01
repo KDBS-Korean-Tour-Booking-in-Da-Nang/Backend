@@ -55,4 +55,14 @@ public class StaffController {
                 .result(staffService.updateUserRole(userId, newRole))
                 .build();
     }
+
+    @DeleteMapping("/{staffId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<UserResponse> deleteStaff(@PathVariable int staffId) {
+        UserResponse deletedStaff = staffService.deleteStaff(staffId);
+        return ApiResponse.<UserResponse>builder()
+                .result(deletedStaff)
+                .build();
+    }
+
 }
