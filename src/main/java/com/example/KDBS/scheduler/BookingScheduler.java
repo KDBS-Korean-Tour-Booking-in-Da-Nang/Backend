@@ -14,9 +14,14 @@ public class BookingScheduler {
     private final BookingService bookingService;
 
     @Async
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Ho_Chi_Minh")
     public void checkTourCompletions() {
-        log.info("Running scheduled task: checkTourCompletions");
+        log.info("Running scheduled task: check for tour completions");
         bookingService.checkTourCompletionStatus();
+        log.info("Completed task: check for tour completions");
+
+        log.info("Running scheduled task: Check for booking failed");
+        bookingService.checkBookingFailed();
+        log.info("Completed task: Check for booking failed");
     }
 }

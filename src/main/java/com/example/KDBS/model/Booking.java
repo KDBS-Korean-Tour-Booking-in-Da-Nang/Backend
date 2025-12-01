@@ -103,6 +103,9 @@ public class Booking {
     @Column(name = "auto_confirmed_date")
     private LocalDate autoConfirmedDate;
 
+    @Column(name = "auto_failed_date")
+    private LocalDate autoFailedDate;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

@@ -18,7 +18,7 @@ public class UserCleanupJobScheduler {
     private final UserRepository userRepository;
 
     // chạy mỗi ngày lúc 2h sáng
-    @Scheduled(cron = "0 0 2 * * ?")
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Ho_Chi_Minh")
     public void cleanupUnverifiedUsers() {
         LocalDateTime expiry = LocalDateTime.now().minusDays(3);
         List<User> expired = userRepository.findByStatusAndCreatedAtBefore(Status.UNVERIFIED, expiry);

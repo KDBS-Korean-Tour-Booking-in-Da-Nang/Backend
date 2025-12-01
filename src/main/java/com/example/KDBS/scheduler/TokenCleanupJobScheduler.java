@@ -14,7 +14,7 @@ import java.util.Date;
 public class TokenCleanupJobScheduler {
     private final InvalidateTokenRepository invalidateTokenRepository;
 
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Ho_Chi_Minh")
     public void cleanupExpiredTokens() {
         invalidateTokenRepository.deleteByExpiryTimeBefore(new Date());
     }

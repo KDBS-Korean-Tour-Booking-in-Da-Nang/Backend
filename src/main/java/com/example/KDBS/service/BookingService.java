@@ -58,6 +58,7 @@ public class BookingService {
                 + (request.getBabiesCount() != null ? request.getBabiesCount() : 0);
         booking.setTotalGuests(totalGuests);
         booking.setTourEndDate(request.getDepartureDate().plusDays(tour.getTourIntDuration()));
+        booking.setAutoFailedDate(LocalDate.now().plusDays(tour.getTourDeadline()));
         Booking savedBooking = bookingRepository.save(booking);
 
         List<BookingGuest> savedGuests = saveBookingGuests(request.getBookingGuestRequests(), savedBooking);
@@ -357,7 +358,6 @@ public class BookingService {
         }
     }
 
-    //Used later in schedule don't delete!
     @Transactional
     public void checkTourCompletionStatus() {
         List<Booking> bookings = bookingRepository.findByBookingStatusIn(List.of(
@@ -376,6 +376,21 @@ public class BookingService {
                 if (LocalDate.now().isAfter(booking.getTourEndDate())){
                     booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED);
                 }
+            }
+        }
+    }
+
+    @Transactional
+    public void checkBookingFailed() {
+        List<Booking> bookings = bookingRepository.findByBookingStatusIn(List.of(
+                BookingStatus.PENDING_PAYMENT,
+                BookingStatus.WAITING_FOR_APPROVED,
+                BookingStatus.WAITING_FOR_UPDATE
+        ));
+
+        for (Booking booking : bookings){
+            if (LocalDate.now().isAfter(booking.getAutoFailedDate())){
+                booking.setBookingStatus(BookingStatus.BOOKING_FAILED);
             }
         }
     }
