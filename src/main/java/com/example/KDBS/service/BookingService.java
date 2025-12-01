@@ -20,8 +20,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -347,14 +347,18 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
         if (booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED)) {
-            if (isCompany) booking.setCompanyConfirmedCompletion(true);
-            else booking.setUserConfirmedCompletion(true);
+            if (isCompany)
+                booking.setCompanyConfirmedCompletion(true);
+            else
+                booking.setUserConfirmedCompletion(true);
         }
 
-        else throw new AppException(ErrorCode.BOOKING_CANNOT_CONFIRM_COMPLETION);
+        else
+            throw new AppException(ErrorCode.BOOKING_CANNOT_CONFIRM_COMPLETION);
 
-        if(booking.getUserConfirmedCompletion() && booking.getCompanyConfirmedCompletion()){
+        if (booking.getUserConfirmedCompletion() && booking.getCompanyConfirmedCompletion()) {
             booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS);
+            distributeBookingRevenue(booking);
         }
     }
 
@@ -362,18 +366,16 @@ public class BookingService {
     public void checkTourCompletionStatus() {
         List<Booking> bookings = bookingRepository.findByBookingStatusIn(List.of(
                 BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED,
-                BookingStatus.BOOKING_SUCCESS_PENDING
-        ));
-        for (Booking booking : bookings){
-            if(booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED)){
-                if (LocalDate.now().isAfter(booking.getAutoConfirmedDate())){
+                BookingStatus.BOOKING_SUCCESS_PENDING));
+        for (Booking booking : bookings) {
+            if (booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED)) {
+                if (LocalDate.now().isAfter(booking.getAutoConfirmedDate())) {
                     booking.setCompanyConfirmedCompletion(true);
                     booking.setUserConfirmedCompletion(true);
                     booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS);
                 }
-            }
-           else if(booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS_PENDING)){
-                if (LocalDate.now().isAfter(booking.getTourEndDate())){
+            } else if (booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS_PENDING)) {
+                if (LocalDate.now().isAfter(booking.getTourEndDate())) {
                     booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED);
                 }
             }
@@ -385,11 +387,10 @@ public class BookingService {
         List<Booking> bookings = bookingRepository.findByBookingStatusIn(List.of(
                 BookingStatus.PENDING_PAYMENT,
                 BookingStatus.WAITING_FOR_APPROVED,
-                BookingStatus.WAITING_FOR_UPDATE
-        ));
+                BookingStatus.WAITING_FOR_UPDATE));
 
-        for (Booking booking : bookings){
-            if (LocalDate.now().isAfter(booking.getAutoFailedDate())){
+        for (Booking booking : bookings) {
+            if (LocalDate.now().isAfter(booking.getAutoFailedDate())) {
                 booking.setBookingStatus(BookingStatus.BOOKING_FAILED);
             }
         }
@@ -410,8 +411,7 @@ public class BookingService {
                 title,
                 message,
                 booking.getBookingId(),
-                "BOOKING"
-        );
+                "BOOKING");
     }
 
     private void sendBookingUpdatedByUserNotification(Booking booking) {
@@ -434,8 +434,7 @@ public class BookingService {
                 title,
                 message,
                 booking.getBookingId(),
-                "BOOKING"
-        );
+                "BOOKING");
     }
 
     private void sendBookingStatusNotification(Booking booking, ChangeBookingStatusRequest request) {
@@ -479,8 +478,7 @@ public class BookingService {
                 userTitle,
                 message,
                 booking.getBookingId(),
-                "BOOKING"
-        );
+                "BOOKING");
 
         // Gửi notification cho company về thay đổi trạng thái booking
         String companyTitle;
@@ -515,8 +513,7 @@ public class BookingService {
                 companyTitle,
                 companyMessage,
                 booking.getBookingId(),
-                "BOOKING"
-        );
+                "BOOKING");
     }
 
     private NotificationType mapStatusToNotificationType(BookingStatus status) {
@@ -540,19 +537,17 @@ public class BookingService {
             return;
         }
 
-        userRepository.findByEmail(booking.getUserEmail()).ifPresent(user ->
-                userActionLogService.logAction(
-                        user,
-                        UserActionType.CREATE_BOOKING,
-                        UserActionTarget.BOOKING,
-                        booking.getBookingId(),
-                        Map.of(
-                                "tourId", booking.getTour().getTourId(),
-                                "tourName", booking.getTour().getTourName(),
-                                "departureDate", booking.getDepartureDate() != null ? booking.getDepartureDate().toString() : "",
-                                "totalGuests", booking.getTotalGuests()
-                        )
-                ));
+        userRepository.findByEmail(booking.getUserEmail()).ifPresent(user -> userActionLogService.logAction(
+                user,
+                UserActionType.CREATE_BOOKING,
+                UserActionTarget.BOOKING,
+                booking.getBookingId(),
+                Map.of(
+                        "tourId", booking.getTour().getTourId(),
+                        "tourName", booking.getTour().getTourName(),
+                        "departureDate",
+                        booking.getDepartureDate() != null ? booking.getDepartureDate().toString() : "",
+                        "totalGuests", booking.getTotalGuests())));
     }
 
     private void sendBookingStatusChangeEmails(Booking booking, BookingStatus oldStatus, String message) {
@@ -585,8 +580,7 @@ public class BookingService {
                         oldStatus,
                         booking.getBookingStatus(),
                         false,
-                        message
-                );
+                        message);
             }
 
             if (companyEmail != null && !companyEmail.isBlank()) {
@@ -597,8 +591,7 @@ public class BookingService {
                         oldStatus,
                         booking.getBookingStatus(),
                         true,
-                        message
-                );
+                        message);
             }
         } catch (Exception e) {
             log.error("Failed to send booking status change emails for booking {}", booking.getBookingId(), e);
@@ -612,5 +605,42 @@ public class BookingService {
         return userRepository.findByEmail(email)
                 .map(User::getUserId)
                 .orElse(null);
+    }
+
+    private void distributeBookingRevenue(Booking booking) {
+        Tour tour = booking.getTour();
+        if (tour == null && booking.getTour() != null) {
+            tour = tourRepository.findById(booking.getTour().getTourId())
+                    .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
+        }
+
+        BigDecimal grossTotal = calculateBookingTotal(booking.getBookingId());
+        BigDecimal discount = booking.getVoucherDiscountApplied() != null
+                ? booking.getVoucherDiscountApplied()
+                : BigDecimal.ZERO;
+
+        BigDecimal payable = grossTotal.subtract(discount);
+        if (payable.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+
+        BigDecimal adminShare = payable.divide(BigDecimal.TEN, 2, RoundingMode.HALF_UP);
+        BigDecimal companyShare = payable.subtract(adminShare);
+
+        User companyUser = userRepository.findById(tour.getCompanyId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        User adminUser = userRepository.findFirstByRole(Role.ADMIN)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        companyUser.setBalance(defaultZero(companyUser.getBalance()).add(companyShare));
+        adminUser.setBalance(defaultZero(adminUser.getBalance()).add(adminShare));
+
+        userRepository.save(companyUser);
+        userRepository.save(adminUser);
+    }
+
+    private BigDecimal defaultZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 }
