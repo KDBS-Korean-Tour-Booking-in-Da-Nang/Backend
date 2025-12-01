@@ -7,20 +7,11 @@ import com.example.KDBS.dto.response.BookingGuestResponse;
 import com.example.KDBS.dto.response.BookingResponse;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
 import com.example.KDBS.dto.response.BookingWithCountResponse;
-import com.example.KDBS.enums.BookingGuestType;
-import com.example.KDBS.enums.BookingStatus;
-import com.example.KDBS.enums.InsuranceStatus;
-import com.example.KDBS.enums.NotificationType;
-import com.example.KDBS.enums.UserActionTarget;
-import com.example.KDBS.enums.UserActionType;
+import com.example.KDBS.enums.*;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.BookingMapper;
-import com.example.KDBS.model.Booking;
-import com.example.KDBS.model.BookingGuest;
-import com.example.KDBS.model.Tour;
-import com.example.KDBS.model.Transaction;
-import com.example.KDBS.model.User;
+import com.example.KDBS.model.*;
 import com.example.KDBS.repository.BookingGuestRepository;
 import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TourRepository;
@@ -366,17 +357,27 @@ public class BookingService {
         }
     }
 
-
     //Used later in schedule don't delete!
     @Transactional
-    public boolean getTourCompletionStatus(Long bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        if (LocalDate.now().isAfter(booking.getAutoConfirmedDate())){
-            booking.setCompanyConfirmedCompletion(true);
-            booking.setUserConfirmedCompletion(true);
+    public void checkTourCompletionStatus() {
+        List<Booking> bookings = bookingRepository.findByBookingStatusIn(List.of(
+                BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED,
+                BookingStatus.BOOKING_SUCCESS_PENDING
+        ));
+        for (Booking booking : bookings){
+            if(booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED)){
+                if (LocalDate.now().isAfter(booking.getAutoConfirmedDate())){
+                    booking.setCompanyConfirmedCompletion(true);
+                    booking.setUserConfirmedCompletion(true);
+                    booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS);
+                }
+            }
+           else if(booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS_PENDING)){
+                if (LocalDate.now().isAfter(booking.getTourEndDate())){
+                    booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED);
+                }
+            }
         }
-        return booking.getCompanyConfirmedCompletion() && booking.getUserConfirmedCompletion();
     }
 
     private void sendNewBookingNotification(Booking booking) {
