@@ -354,13 +354,20 @@ public class BookingService {
     public void confirmedCompletion(Long bookingId, boolean isCompany) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        if (booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS)) {
+        if (booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED)) {
             if (isCompany) booking.setCompanyConfirmedCompletion(true);
             else booking.setUserConfirmedCompletion(true);
         }
+
         else throw new AppException(ErrorCode.BOOKING_CANNOT_CONFIRM_COMPLETION);
+
+        if(booking.getUserConfirmedCompletion() && booking.getCompanyConfirmedCompletion()){
+            booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS);
+        }
     }
 
+
+    //Used later in schedule don't delete!
     @Transactional
     public boolean getTourCompletionStatus(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
@@ -501,7 +508,7 @@ public class BookingService {
             return null;
         }
 
-        if (status == BookingStatus.BOOKING_SUCCESS) {
+        if (status == BookingStatus.BOOKING_SUCCESS_PENDING) {
             return NotificationType.BOOKING_CONFIRMED;
         } else if (status == BookingStatus.BOOKING_REJECTED) {
             return NotificationType.BOOKING_REJECTED;

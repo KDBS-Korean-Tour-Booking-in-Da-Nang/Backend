@@ -67,16 +67,21 @@ public class GeminiService {
                              "articleContentEN": "",
                              "articleTitleKR": "",
                              "articleDescriptionKR": "",
-                             "articleContentKR": ""
+                             "articleContentKR": "",
+                             "articleSummary": ""
                            }
                 
                            Rules:
-                           • Translate text only.
-                           • Preserve all HTML tags exactly as they are.
-                           • Preserve all formatting (line breaks, paragraphs).
-                           • Do NOT translate HTML tags or special characters.
-                           • Insert translated English content in *EN fields*.
-                           • Insert translated Korean content in *KR fields*.
+                           Translate text only.
+                           Preserve all HTML tags exactly as they are.
+                           Preserve all formatting (line breaks, paragraphs).
+                           Do NOT translate HTML tags or special characters.
+                           Insert translated English content in *EN fields*.
+                           Insert translated Korean content in *KR fields*.
+                
+                           Summarize the article in English in 2-3 sentences,
+                           include the location that the article talk about and key information that would help analyze user interests
+                           and improve personalized tour recommendations, without adding full descriptions. Place the result in the "articleSummary" field.
                 
                            Original Article:
                            Title: %s

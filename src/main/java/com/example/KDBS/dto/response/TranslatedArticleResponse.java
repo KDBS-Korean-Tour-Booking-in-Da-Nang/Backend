@@ -14,4 +14,5 @@ public class TranslatedArticleResponse {
     private String articleTitleKR;
     private String articleDescriptionKR;
     private String articleContentKR;
+    private String articleSummary;
 }

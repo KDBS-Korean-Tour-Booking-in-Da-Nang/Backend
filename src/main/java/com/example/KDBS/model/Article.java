@@ -52,6 +52,9 @@ public class Article {
     @Column(name = "article_link", unique = true, length = 500)
     private String articleLink;
 
+    @Column(name = "article_summary", length = 2000)
+    private String articleSummary;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "article_status", length = 20)
     private ArticleStatus articleStatus;

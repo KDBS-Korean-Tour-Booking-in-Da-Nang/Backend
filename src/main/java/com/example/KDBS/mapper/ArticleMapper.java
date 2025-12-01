@@ -17,5 +17,6 @@ public interface ArticleMapper {
     @Mapping(target = "articleTitleKR", source = "articleTitleKR")
     @Mapping(target = "articleDescriptionKR", source = "articleDescriptionKR")
     @Mapping(target = "articleContentKR", source = "articleContentKR")
+    @Mapping(target = "articleSummary", source = "articleSummary")
     void mapTranslatedContentToArticle(TranslatedArticleResponse translatedArticleResponse, @MappingTarget Article article);
 }

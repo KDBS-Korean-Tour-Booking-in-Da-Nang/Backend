@@ -103,12 +103,6 @@ public class BookingController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{bookingId}/tour-completion-status")
-    public ResponseEntity<Boolean> getTourCompletionStatus(@PathVariable long bookingId) {
-        Boolean isCompleted = bookingService.getTourCompletionStatus(bookingId);
-        return ResponseEntity.ok(isCompleted);
-    }
-
     @GetMapping("/email/{email}")
     public ResponseEntity<List<BookingResponse>> getBookingsByEmail(@PathVariable String email) {
         List<BookingResponse> responses = bookingService.getBookingsByEmail(email);
