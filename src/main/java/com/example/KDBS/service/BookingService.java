@@ -13,6 +13,7 @@ import com.example.KDBS.dto.response.BookingWithCountResponse;
 import com.example.KDBS.enums.*;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
+import com.example.KDBS.mapper.BookingComplaintMapper;
 import com.example.KDBS.mapper.BookingMapper;
 import com.example.KDBS.model.*;
 import com.example.KDBS.repository.BookingComplaintRepository;
@@ -43,6 +44,7 @@ public class BookingService {
     private final NotificationService notificationService;
     private final UserActionLogService userActionLogService;
     private final BookingComplaintRepository bookingComplaintRepository;
+    private final BookingComplaintMapper bookingComplaintMapper;
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
@@ -408,7 +410,8 @@ public class BookingService {
                 distributeBookingRevenue(booking);
                 break;
             case COMPANY_FAULT:
-                booking.setBookingStatus(BookingStatus.BOOKING_UNDER_COMPLAINT);
+//                booking.setBookingStatus(BookingStatus.BOOKING_UNDER_COMPLAINT); No need since status remain unchanged,
+//                implemented for clarity or future changes
                 break;
             default:
                 break;
@@ -422,15 +425,7 @@ public class BookingService {
 
         List<BookingComplaint> complaints = bookingComplaintRepository.findByBooking_BookingId(bookingId);
 
-        return complaints.stream().map(c -> {
-            BookingComplaintResponse dto = new BookingComplaintResponse();
-            dto.setComplaintId(c.getComplaintId());
-            dto.setMessage(c.getMessage());
-            dto.setCreatedAt(c.getCreatedAt());
-            dto.setResolvedAt(c.getResolvedAt());
-            dto.setResolutionType(c.getResolutionType());
-            return dto;
-        }).toList();
+        return complaints.stream().map(bookingComplaintMapper::toBookingComplaintResponse).toList();
     }
 
     @Transactional
