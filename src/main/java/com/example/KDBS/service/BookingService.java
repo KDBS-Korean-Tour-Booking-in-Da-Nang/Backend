@@ -373,6 +373,7 @@ public class BookingService {
                     booking.setCompanyConfirmedCompletion(true);
                     booking.setUserConfirmedCompletion(true);
                     booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS);
+                    distributeBookingRevenue(booking);
                 }
             } else if (booking.getBookingStatus().equals(BookingStatus.BOOKING_SUCCESS_PENDING)) {
                 if (LocalDate.now().isAfter(booking.getTourEndDate())) {
@@ -417,9 +418,6 @@ public class BookingService {
     private void sendBookingUpdatedByUserNotification(Booking booking) {
         Integer actorId = resolveUserIdByEmail(booking.getUserEmail());
         Integer companyRecipientId = booking.getTour().getCompanyId();
-        if (companyRecipientId == null) {
-            return;
-        }
 
         String title = "Khách hàng đã cập nhật booking";
         String message = String.format("Khách %s đã cập nhật thông tin booking #%d cho tour %s.",
@@ -443,8 +441,7 @@ public class BookingService {
             return;
         }
         Integer userRecipientId = resolveUserIdByEmail(booking.getUserEmail());
-        Integer companyRecipientId = booking.getTour().getCompanyId();
-        Integer actorId = companyRecipientId; // Company is the actor when changing status
+        Integer companyRecipientId = booking.getTour().getCompanyId(); // Company is the actor when changing status
 
         String defaultMessage;
         if (notificationType == NotificationType.BOOKING_CONFIRMED) {
@@ -473,7 +470,7 @@ public class BookingService {
         // Gửi notification cho user
         notificationService.pushNotification(
                 userRecipientId,
-                actorId,
+                companyRecipientId,
                 notificationType,
                 userTitle,
                 message,
@@ -508,7 +505,7 @@ public class BookingService {
 
         notificationService.pushNotification(
                 companyRecipientId,
-                actorId,
+                companyRecipientId,
                 notificationType,
                 companyTitle,
                 companyMessage,
@@ -556,10 +553,8 @@ public class BookingService {
                 return;
             }
 
-            Tour tour = booking.getTour();
-            if (tour == null && booking.getTour() != null) {
-                tour = tourRepository.findById(booking.getTour().getTourId()).orElse(null);
-            }
+            Tour tour = tourRepository.findById(booking.getTour().getTourId())
+                    .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
             if (tour == null) {
                 return;
             }
@@ -607,12 +602,10 @@ public class BookingService {
                 .orElse(null);
     }
 
-    private void distributeBookingRevenue(Booking booking) {
-        Tour tour = booking.getTour();
-        if (tour == null && booking.getTour() != null) {
-            tour = tourRepository.findById(booking.getTour().getTourId())
-                    .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
-        }
+    @Transactional
+    protected void distributeBookingRevenue(Booking booking) {
+        Tour tour = tourRepository.findById(booking.getTour().getTourId())
+                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         BigDecimal grossTotal = calculateBookingTotal(booking.getBookingId());
         BigDecimal discount = booking.getVoucherDiscountApplied() != null
@@ -635,9 +628,6 @@ public class BookingService {
 
         companyUser.setBalance(defaultZero(companyUser.getBalance()).add(companyShare));
         adminUser.setBalance(defaultZero(adminUser.getBalance()).add(adminShare));
-
-        userRepository.save(companyUser);
-        userRepository.save(adminUser);
     }
 
     private BigDecimal defaultZero(BigDecimal value) {
