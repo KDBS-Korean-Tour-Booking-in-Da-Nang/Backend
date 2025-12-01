@@ -4,6 +4,7 @@ import com.example.KDBS.dto.request.ApplyVoucherRequest;
 import com.example.KDBS.dto.request.VoucherCreateRequest;
 import com.example.KDBS.dto.response.ApplyVoucherResponse;
 import com.example.KDBS.dto.response.VoucherResponse;
+import com.example.KDBS.model.Voucher;
 import com.example.KDBS.service.VoucherService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,11 @@ public class VoucherController {
     @GetMapping
     public ResponseEntity<List<VoucherResponse>> getAllVouchers() {
         return ResponseEntity.ok(voucherService.getAllVouchers());
+    }
+
+    @GetMapping("/{tourId}")
+    public ResponseEntity<List<Voucher>> getVouchersByTourId(@PathVariable Long tourId) {
+        return ResponseEntity.ok(voucherService.getAllVoucherByTourId(tourId));
     }
 
     @GetMapping("/company/{companyId}")
