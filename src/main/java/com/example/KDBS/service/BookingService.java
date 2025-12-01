@@ -11,6 +11,7 @@ import com.example.KDBS.enums.BookingGuestType;
 import com.example.KDBS.enums.BookingStatus;
 import com.example.KDBS.enums.InsuranceStatus;
 import com.example.KDBS.enums.NotificationType;
+import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.UserActionTarget;
 import com.example.KDBS.enums.UserActionType;
 import com.example.KDBS.exception.AppException;
@@ -29,8 +30,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -363,6 +364,7 @@ public class BookingService {
 
         if(booking.getUserConfirmedCompletion() && booking.getCompanyConfirmedCompletion()){
             booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS);
+            distributeBookingRevenue(booking);
         }
     }
 
@@ -596,5 +598,42 @@ public class BookingService {
         return userRepository.findByEmail(email)
                 .map(User::getUserId)
                 .orElse(null);
+    }
+
+    private void distributeBookingRevenue(Booking booking) {
+        Tour tour = booking.getTour();
+        if (tour == null && booking.getTour() != null) {
+            tour = tourRepository.findById(booking.getTour().getTourId())
+                    .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
+        }
+
+        BigDecimal grossTotal = calculateBookingTotal(booking.getBookingId());
+        BigDecimal discount = booking.getVoucherDiscountApplied() != null
+                ? booking.getVoucherDiscountApplied()
+                : BigDecimal.ZERO;
+
+        BigDecimal payable = grossTotal.subtract(discount);
+        if (payable.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+
+        BigDecimal adminShare = payable.divide(BigDecimal.TEN, 2, RoundingMode.HALF_UP);
+        BigDecimal companyShare = payable.subtract(adminShare);
+
+        User companyUser = userRepository.findById(tour.getCompanyId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        User adminUser = userRepository.findFirstByRole(Role.ADMIN)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        companyUser.setBalance(defaultZero(companyUser.getBalance()).add(companyShare));
+        adminUser.setBalance(defaultZero(adminUser.getBalance()).add(adminShare));
+
+        userRepository.save(companyUser);
+        userRepository.save(adminUser);
+    }
+
+    private BigDecimal defaultZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 }
