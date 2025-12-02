@@ -167,7 +167,10 @@ public class UserService {
             }
 
             userMapper.updateUserFromDto(request, user);
-            user.setAvatar(fileStorageService.uploadFile(avatarImg, "/users/avatar"));
+            if (avatarImg != null && !avatarImg.isEmpty()) {
+                String newAvatar = fileStorageService.uploadFile(avatarImg, "/users/avatar");
+                user.setAvatar(newAvatar);
+            }
             userRepository.save(user);
             return userMapper.toUserResponse(user);
         }
