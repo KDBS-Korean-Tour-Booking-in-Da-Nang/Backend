@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -24,6 +25,7 @@ public class TossController {
     private final TossPaymentService tossPaymentService;
 
     @PostMapping("/orders")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TossCreateOrderResponse> createOrder(
             @Valid @RequestBody TossCreateOrderRequest req) {
         return ResponseEntity.ok(tossPaymentService.createOrder(req));

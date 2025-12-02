@@ -45,6 +45,7 @@ public class BookingService {
     private final UserActionLogService userActionLogService;
     private final BookingComplaintRepository bookingComplaintRepository;
     private final BookingComplaintMapper bookingComplaintMapper;
+    private final StaffService staffService;
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
@@ -389,6 +390,8 @@ public class BookingService {
 
     @Transactional
     public void resolveBookingComplaint(Long complaintId, ResolveComplaintRequest request) {
+        staffService.getAuthorizedStaff(StaffTask.FORUM_REPORT_AND_BOOKING_COMPLAINT);
+
         BookingComplaint complaint = bookingComplaintRepository.findById(complaintId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
@@ -674,7 +677,6 @@ public class BookingService {
                 .orElse(null);
     }
 
-    @Transactional
     protected void distributeBookingRevenue(Booking booking) {
         Tour tour = tourRepository.findById(booking.getTour().getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));

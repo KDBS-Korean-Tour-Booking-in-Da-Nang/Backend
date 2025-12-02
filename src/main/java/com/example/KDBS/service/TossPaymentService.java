@@ -14,6 +14,7 @@ import com.example.KDBS.model.User;
 import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TransactionRepository;
 import com.example.KDBS.repository.UserRepository;
+import com.example.KDBS.utils.SecurityUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,9 +61,10 @@ public class TossPaymentService {
     private final ObjectMapper mapper = new ObjectMapper();
 
     public TossCreateOrderResponse createOrder(TossCreateOrderRequest req) {
-
         // 1) Lấy user
-        User user = userRepository.findByEmail(req.getUserEmail())
+        String tokenEmail = SecurityUtils.getCurrentUserEmail();
+
+        User user = userRepository.findByEmail(tokenEmail)
                 .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
 
         // 2) Lấy amount từ FE
@@ -73,7 +75,7 @@ public class TossPaymentService {
 
         // 3) customerKey = safe, theo email
         String customerKey = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(("cust:" + user.getEmail()).getBytes(StandardCharsets.UTF_8));
+                .encodeToString(("cust:" + req.getUserEmail()).getBytes(StandardCharsets.UTF_8));
 
         // 4) Tạo orderId duy nhất (dùng cho mọi loại payment)
         String orderId = "ORDER_" + System.currentTimeMillis() + "_" + UUID.randomUUID();

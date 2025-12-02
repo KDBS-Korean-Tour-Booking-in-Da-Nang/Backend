@@ -85,7 +85,7 @@ public class ArticleService {
 
     @Transactional
     public Article updateArticleStatus(Long articleId, ArticleStatus newStatus) {
-        staffService.getAuthorizedStaff(StaffTask.COMPANY_REQUEST_AND_APPROVE_ARTICLE);
+        staffService.getAuthorizedStaff(StaffTask.APPROVE_TOUR_BOOKING_AND_APPROVE_ARTICLE);
 
         return articleRepository.findById(articleId)
                 .map(article -> {

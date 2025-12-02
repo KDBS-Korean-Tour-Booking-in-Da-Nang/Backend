@@ -18,4 +18,29 @@ public class SecurityUtils {
             return null;
         }
     }
+
+    public static String getCurrentUserEmail() {
+        try {
+            ServletRequestAttributes attributes =
+                    (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+            if (attributes == null) {
+                return null;
+            }
+
+            String header = attributes.getRequest().getHeader("Authorization");
+            if (header == null || !header.startsWith("Bearer ")) {
+                return null;
+            }
+
+            String token = header.substring(7);
+            SignedJWT jwt = SignedJWT.parse(token);
+
+            // Thường email lưu ở claim "sub"
+            Object emailClaim = jwt.getJWTClaimsSet().getClaim("sub");
+            return emailClaim != null ? emailClaim.toString() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }
