@@ -81,7 +81,7 @@ public class StaffService {
 
     @Transactional
     public UserResponse updateUserRole(int userId, Role newRole) {
-        getAuthorizedStaff(StaffTask.COMPANY_REQUEST_AND_APPROVE_ARTICLE);
+        getAuthorizedStaff(StaffTask.COMPANY_REQUEST_AND_RESOLVE_TICKET);
 
         // Check user target
         User target = userRepository.findById(userId)

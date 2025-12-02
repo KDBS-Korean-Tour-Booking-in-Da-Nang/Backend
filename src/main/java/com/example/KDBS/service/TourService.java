@@ -181,7 +181,7 @@ public class TourService {
 
     @Transactional
     public TourResponse changeTourStatus(Long tourId, TourStatus tourStatus) {
-        staffService.getAuthorizedStaff(StaffTask.APPROVE_TOUR_BOOKING);
+        staffService.getAuthorizedStaff(StaffTask.APPROVE_TOUR_BOOKING_AND_APPROVE_ARTICLE);
 
         Tour tour = tourRepository.findById(tourId)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
