@@ -422,13 +422,19 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public List<BookingComplaintResponse> getComplaintsByBookingId(Long bookingId) {
-        bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+    public List<BookingComplaintResponse> getAllBookingComplaints() {
+        List<BookingComplaint> complaints = bookingComplaintRepository.findAll();
 
-        List<BookingComplaint> complaints = bookingComplaintRepository.findByBooking_BookingId(bookingId);
+        return complaints.stream()
+                .map(bookingComplaintMapper::toBookingComplaintResponse)
+                .toList();
+    }
 
-        return complaints.stream().map(bookingComplaintMapper::toBookingComplaintResponse).toList();
+    @Transactional(readOnly = true)
+    public BookingComplaintResponse getComplaintsByComplaintId(Long complaintId) {
+        BookingComplaint complaints = bookingComplaintRepository.findById(complaintId)
+                .orElseThrow(() -> new AppException(ErrorCode.COMPLAINT_NOT_FOUND));
+        return bookingComplaintMapper.toBookingComplaintResponse(complaints);
     }
 
     @Transactional

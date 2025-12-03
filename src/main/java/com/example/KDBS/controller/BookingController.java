@@ -126,9 +126,15 @@ public class BookingController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/id/{bookingId}/complaints")
-    public ResponseEntity<List<BookingComplaintResponse>> getComplaintsByBookingId(@PathVariable Long bookingId) {
-        List<BookingComplaintResponse> complaints = bookingService.getComplaintsByBookingId(bookingId);
+    @GetMapping("/complaints/all")
+    public ResponseEntity<List<BookingComplaintResponse>> getAllComplaints() {
+        List<BookingComplaintResponse> complaints = bookingService.getAllBookingComplaints();
+        return ResponseEntity.ok(complaints);
+    }
+
+    @GetMapping("/id/{complaintId}/complaints")
+    public ResponseEntity<BookingComplaintResponse> getComplaintsByComplaintId(@PathVariable Long complaintId) {
+        BookingComplaintResponse complaints = bookingService.getComplaintsByComplaintId(complaintId);
         return ResponseEntity.ok(complaints);
     }
 
