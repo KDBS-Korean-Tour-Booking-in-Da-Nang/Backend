@@ -154,16 +154,10 @@ public class UserService {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-            if (request.getUsername() != null) {
+            if (!request.getUsername().isBlank()) {
                 userRepository.findByUsername(request.getUsername())
                         .filter(u -> u.getUserId() != user.getUserId())
                         .ifPresent(u -> { throw new AppException(ErrorCode.USERNAME_EXISTED); });
-            }
-
-            if (request.getPhone() != null) {
-                userRepository.findByPhone(request.getPhone())
-                        .filter(u -> u.getUserId() != user.getUserId())
-                        .ifPresent(u -> { throw new AppException(ErrorCode.PHONE_EXISTED); });
             }
 
             userMapper.updateUserFromDto(request, user);
