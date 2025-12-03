@@ -66,11 +66,11 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @Column(name = "staffTask", length = 255)
+    @Column(name = "staff_task", length = 255)
     @Enumerated(EnumType.STRING)
     private StaffTask staffTask;
 
-    @Column(name = "banReason", length = 255)
+    @Column(name = "ban_reason", length = 255)
     private String banReason;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
