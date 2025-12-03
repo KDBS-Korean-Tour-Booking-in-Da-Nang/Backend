@@ -147,6 +147,7 @@ public class TourService {
 
         // Save new contents + images
         saveContents(request, existing);
+        existing.setTourStatus(TourStatus.NOT_APPROVED);
 
         // Save the tour
         Tour saved = tourRepository.save(existing);
