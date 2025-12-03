@@ -19,20 +19,31 @@ jobs:
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       SPRING_JPA_HIBERNATE_DDL_AUTO: ${{ secrets.SPRING_JPA_HIBERNATE_DDL_AUTO }}
-      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-      GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
       NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
       NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
       NAVER_REDIRECT_URI: ${{ secrets.NAVER_REDIRECT_URI }}
-      UPLOAD_DIR: ${{ secrets.UPLOAD_DIR }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
       JWT_SIGNER_KEY: ${{ secrets.JWT_SIGNER_KEY }}
+      TOSS_CLIENT_KEY: ${{ secrets.TOSS_CLIENT_KEY }}
+      TOSS_SECRET_KEY: ${{ secrets.TOSS_SECRET_KEY }}
+      TOSS_SUCCESS_URL: ${{ secrets.TOSS_SUCCESS_URL }}
+      TOSS_FAIL_URL: ${{ secrets.TOSS_FAIL_URL }}
+      SPRING_PROFILES_ACTIVE: ${{ secrets.SPRING_PROFILES_ACTIVE }}
+      AZURE_BLOB_CONNECTION_STRING: ${{ secrets.AZURE_BLOB_CONNECTION_STRING }}
+      AZURE_BLOB_CONTAINER_NAME: ${{ secrets.AZURE_BLOB_CONTAINER_NAME }}
+      FPT_AI_KEY: ${{ secrets.FPT_AI_KEY }}
+      FPT_AI_URL: ${{ secrets.FPT_AI_URL }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
-      VNPAY_TMN_CODE: ${{ secrets.VNPAY_TMN_CODE }}
-      VNPAY_SECRET_KEY: ${{ secrets.VNPAY_SECRET_KEY }}
-      VNPAY_RETURN_URL: ${{ secrets.VNPAY_RETURN_URL }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
-      
+      COZE_API_BASE_URL: ${{ secrets.COZE_API_BASE_URL }}
+      COZE_API_TOKEN: ${{ secrets.COZE_API_TOKEN }}
+      COZE_API_BOT_ID: ${{ secrets.COZE_API_BOT_ID }}
+
+
     steps:
       - uses: actions/checkout@v4
 

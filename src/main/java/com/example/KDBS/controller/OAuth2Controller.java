@@ -4,10 +4,11 @@ import com.example.KDBS.dto.response.ApiResponse;
 import com.example.KDBS.dto.response.AuthenticationResponse;
 import com.example.KDBS.service.GoogleOAuth2Service;
 import com.example.KDBS.service.NaverOAuth2Service;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +21,9 @@ public class OAuth2Controller {
 
     private final GoogleOAuth2Service googleOAuth2Service;
     private final NaverOAuth2Service naverOAuth2Service;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     // Google OAuth2 endpoints
     @GetMapping("/google/login")
@@ -72,14 +76,14 @@ public class OAuth2Controller {
             String frontendUrl = buildFrontendUrl(provider, authResponse);
             response.sendRedirect(frontendUrl);
         } catch (Exception e) {
-            String errorUrl = "http://localhost:3000/" + provider + "/callback?error="
+            String errorUrl = frontendUrl + "/" + provider + "/callback?error="
                     + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
             response.sendRedirect(errorUrl);
         }
     }
 
     private String buildFrontendUrl(String provider, AuthenticationResponse authResponse) {
-        return "http://localhost:3000/" + provider + "/callback?" +
+        return  frontendUrl + "/" + provider + "/callback?" +
                 "token=" + URLEncoder.encode(authResponse.getToken(), StandardCharsets.UTF_8) +
                 "&userId=" + authResponse.getUser().getUserId() +
                 "&email=" + URLEncoder.encode(authResponse.getUser().getEmail(), StandardCharsets.UTF_8) +
