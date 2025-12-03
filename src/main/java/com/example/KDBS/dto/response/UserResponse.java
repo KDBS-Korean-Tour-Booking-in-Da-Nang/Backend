@@ -29,6 +29,6 @@ public class UserResponse {
     private String status;
     private String role;
     private StaffTask staffTask;
-    private Status banReason;
+    private String banReason;
 
 }
