@@ -17,8 +17,8 @@ import lombok.NoArgsConstructor;
 public class TicketReason {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ticket_id")
-    private Long ticketId;
+    @Column(name = "ticket_reason_id")
+    private Long ticketReasonId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "ticket_reason", nullable = false)
