@@ -177,7 +177,10 @@ public enum ErrorCode {
         //Empty Text
         TEXT_IS_EMPTY(1100, "Text is empty", HttpStatus.BAD_REQUEST),
         ARTICLE_FIELDS_EMPTY(1101, "Article fields (title, description, content) cannot be empty", HttpStatus.BAD_REQUEST),
-        AI_TRANSLATION_FAILED(1102, "AI translation failed", HttpStatus.INTERNAL_SERVER_ERROR);
+        AI_TRANSLATION_FAILED(1102, "AI translation failed", HttpStatus.INTERNAL_SERVER_ERROR),
+
+        //Ticket
+        TICKET_NOT_FOUND(1103, "Ticket not found", HttpStatus.NOT_FOUND);
 
         private final int code;
         private final String message;
