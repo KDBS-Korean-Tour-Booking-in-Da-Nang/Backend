@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class ChatMessageResponse {
     private Long messageId;
-    private String senderId;
-    private String receiverId;
+    private int senderId;
+    private int receiverId;
     private String content;
     private LocalDateTime timestamp;
 }
