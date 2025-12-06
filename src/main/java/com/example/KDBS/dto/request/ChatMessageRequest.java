@@ -12,10 +12,8 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChatMessageRequest {
-    @NotBlank(message = "Sender name is required")
-    String senderName;
-    @NotBlank(message = "Receiver name is required")
-    String receiverName;
+    int senderId;
+    int receiverId;
     @NotBlank(message = "Content is required")
     String content;
 }

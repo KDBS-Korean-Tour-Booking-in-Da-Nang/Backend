@@ -23,14 +23,14 @@ public class ChatMessageController {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     @GetMapping("/conversation/{user1}/{user2}")
-    public ResponseEntity<List<ChatMessageResponse>> getConversation(@PathVariable String user1, @PathVariable String user2) {
+    public ResponseEntity<List<ChatMessageResponse>> getConversation(@PathVariable int user1, @PathVariable int user2) {
         List<ChatMessageResponse> conversation = chatMessageService.GetConversation(user1, user2);
         return ResponseEntity.ok(conversation);
     }
 
-    @GetMapping("/all/{username}")
-    public ResponseEntity<List<ChatMessageResponse>> getAllMessagesFromUser(@PathVariable String username) {
-        List<ChatMessageResponse> messages = chatMessageService.getAllMessageFromUser(username);
+    @GetMapping("/all/{userId}")
+    public ResponseEntity<List<ChatMessageResponse>> getAllMessagesFromUser(@PathVariable int userId) {
+        List<ChatMessageResponse> messages = chatMessageService.getAllMessageFromUser(userId);
         return ResponseEntity.ok(messages);
     }
 
@@ -47,13 +47,13 @@ public class ChatMessageController {
 
         //Notify for receiver
         simpMessagingTemplate.convertAndSendToUser(
-                chatMessageRequest.getReceiverName(),
+                String.valueOf(chatMessageRequest.getReceiverId()),
                 "/queue/messages",
                 chatMessageRequest
         );
         //Notify for sender
         simpMessagingTemplate.convertAndSendToUser(
-                chatMessageRequest.getSenderName(),
+                String.valueOf(chatMessageRequest.getSenderId()),
                 "/queue/messages",
                 chatMessageRequest
         );
