@@ -19,6 +19,7 @@ public interface TicketMapper {
     @Mapping(target = "userId", source = "user.userId")
     @Mapping(target = "message", source = "message")
     @Mapping(target = "reasons", source = "reasons")
+    @Mapping(target = "createdAt", source = "createdAt")
     TicketResponse toTicketResponse(Ticket ticket);
 
     //Helper method for mapping list of TicketReason to list of TicketReasonType

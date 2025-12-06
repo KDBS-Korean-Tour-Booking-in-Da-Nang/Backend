@@ -4,6 +4,7 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.BlobHttpHeaders;
 import com.azure.storage.blob.sas.BlobSasPermission;
 import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +54,17 @@ public class AzureBlobStorageService implements FileStorageService {
         }
 
         BlobClient blobClient = containerClient.getBlobClient(blobPath);
+
+        // Detect PDF
+        boolean isPdf = "application/pdf".equalsIgnoreCase(file.getContentType())
+                || sanitizedFilename.toLowerCase().endsWith(".pdf");
+
+        // Set content type
+        BlobHttpHeaders headers = new BlobHttpHeaders()
+                .setContentType(isPdf ? "application/pdf" : file.getContentType());
+
         blobClient.upload(file.getInputStream(), file.getSize(), true);
+        blobClient.setHttpHeaders(headers);
 
         // Generate SAS URL with long expiry for avatars
         return generateSasUrl(blobClient);
