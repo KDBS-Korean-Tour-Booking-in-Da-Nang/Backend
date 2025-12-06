@@ -67,10 +67,10 @@ public class ReportService {
     }
 
     @Transactional
-    public ReportResponse updateReportStatus(Long reportId, UpdateReportRequest request, String adminEmail) {
+    public ReportResponse updateReportStatus(Long reportId, UpdateReportRequest request) {
         staffService.getAuthorizedStaff(StaffTask.FORUM_REPORT_AND_BOOKING_COMPLAINT);
 
-        User admin = userRepository.findByEmail(adminEmail)
+        User admin = userRepository.findByUsername(request.getHandledBy())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         Report report = reportRepository.findById(reportId)

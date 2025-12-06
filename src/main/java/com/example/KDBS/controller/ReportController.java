@@ -39,9 +39,8 @@ public class ReportController {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ReportResponse> updateReportStatus(@Valid
             @PathVariable Long reportId,
-            @RequestBody UpdateReportRequest request,
-            @RequestParam String adminEmail) {
-        ReportResponse response = reportService.updateReportStatus(reportId, request, adminEmail);
+            @RequestBody UpdateReportRequest request) {
+        ReportResponse response = reportService.updateReportStatus(reportId, request);
         return ResponseEntity.ok(response);
     }
 
