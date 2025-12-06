@@ -1,10 +1,13 @@
 package com.example.KDBS.model;
 
 import com.example.KDBS.enums.ArticleStatus;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "articles")
@@ -61,6 +64,12 @@ public class Article {
 
     @Column(name = "article_created_date")
     private LocalDateTime articleCreatedDate;
+
+    @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    @Builder.Default
+    private List<ArticleComment> comments = new ArrayList<>();
+
 
     @PrePersist
     protected void onCreate() {
