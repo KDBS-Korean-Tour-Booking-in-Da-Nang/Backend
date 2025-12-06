@@ -239,19 +239,12 @@ public class UserService {
 
         if (hasAny) {
             response.setUploaded(true);
-            response.setBusinessLicenseFileName(extractFileName(licensePath));
-            response.setIdCardFrontFileName(extractFileName(frontPath));
-            response.setIdCardBackFileName(extractFileName(backPath));
+            response.setBusinessLicenseFileName(licensePath);
+            response.setIdCardFrontFileName(frontPath);
+            response.setIdCardBackFileName(backPath);
         }
 
         return response;
-    }
-
-    private String extractFileName(String path) {
-        if (path == null)
-            return null;
-        int idx = path.lastIndexOf('/') >= 0 ? path.lastIndexOf('/') : path.lastIndexOf('\\');
-        return idx >= 0 ? path.substring(idx + 1) : path;
     }
 
     private IdCardApiRequest callFptApi(MultipartFile file) throws Exception {
