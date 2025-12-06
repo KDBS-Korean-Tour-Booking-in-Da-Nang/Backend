@@ -148,26 +148,29 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-        @Transactional
-        public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg) throws IOException {
-            // Tìm user theo email
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    @Transactional
+    public UserResponse updateUser(String email, UserUpdateRequest request, MultipartFile avatarImg)
+            throws IOException {
+        // Tìm user theo email
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-            if (!request.getUsername().isBlank()) {
-                userRepository.findByUsername(request.getUsername())
-                        .filter(u -> u.getUserId() != user.getUserId())
-                        .ifPresent(u -> { throw new AppException(ErrorCode.USERNAME_EXISTED); });
-            }
-
-            userMapper.updateUserFromDto(request, user);
-            if (avatarImg != null && !avatarImg.isEmpty()) {
-                String newAvatar = fileStorageService.uploadFile(avatarImg, "/users/avatar");
-                user.setAvatar(newAvatar);
-            }
-            userRepository.save(user);
-            return userMapper.toUserResponse(user);
+        if (!request.getUsername().isBlank()) {
+            userRepository.findByUsername(request.getUsername())
+                    .filter(u -> u.getUserId() != user.getUserId())
+                    .ifPresent(u -> {
+                        throw new AppException(ErrorCode.USERNAME_EXISTED);
+                    });
         }
+
+        userMapper.updateUserFromDto(request, user);
+        if (avatarImg != null && !avatarImg.isEmpty()) {
+            String newAvatar = fileStorageService.uploadFile(avatarImg, "/users/avatar");
+            user.setAvatar(newAvatar);
+        }
+        userRepository.save(user);
+        return userMapper.toUserResponse(user);
+    }
 
     @GetMapping
     public List<UserResponse> getAllUsers() {
@@ -190,8 +193,7 @@ public class UserService {
 
         String businessFilePath = fileStorageService.uploadFile(
                 request.getFileData(),
-                "/business/registrationFile"
-        );
+                "/business/registrationFile");
 
         BusinessLicense license = BusinessLicense.builder()
                 .user(user)
@@ -204,12 +206,10 @@ public class UserService {
         // ===== ID CARD =====
         String frontPath = fileStorageService.uploadFile(
                 request.getFrontImageData(),
-                "/idcard/front"
-        );
+                "/idcard/front");
         String backPath = fileStorageService.uploadFile(
                 request.getBackImageData(),
-                "/idcard/back"
-        );
+                "/idcard/back");
 
         IdCardApiRequest frontData = callFptApi(request.getFrontImageData());
 
@@ -222,7 +222,6 @@ public class UserService {
         userIdCardRepository.save(idCard);
         userRepository.save(user);
     }
-
 
     public BusinessUploadStatusResponse getBusinessUploadStatusByEmail(String email) {
         var response = BusinessUploadStatusResponse.builder()
@@ -240,19 +239,12 @@ public class UserService {
 
         if (hasAny) {
             response.setUploaded(true);
-            response.setBusinessLicenseFileName(extractFileName(licensePath));
-            response.setIdCardFrontFileName(extractFileName(frontPath));
-            response.setIdCardBackFileName(extractFileName(backPath));
+            response.setBusinessLicenseFileName(licensePath);
+            response.setIdCardFrontFileName(frontPath);
+            response.setIdCardBackFileName(backPath);
         }
 
         return response;
-    }
-
-    private String extractFileName(String path) {
-        if (path == null)
-            return null;
-        int idx = path.lastIndexOf('/') >= 0 ? path.lastIndexOf('/') : path.lastIndexOf('\\');
-        return idx >= 0 ? path.substring(idx + 1) : path;
     }
 
     private IdCardApiRequest callFptApi(MultipartFile file) throws Exception {
@@ -286,6 +278,5 @@ public class UserService {
 
         return mapper.treeToValue(data, IdCardApiRequest.class);
     }
-
 
 }

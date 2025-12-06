@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 public interface ChatMessageMapper {
 
     // Map entity -> DTO
-    @Mapping(source = "sender.username", target = "senderName")
-    @Mapping(source = "receiver.username", target = "receiverName")
+    @Mapping(source = "sender.userId", target = "senderId")
+    @Mapping(source = "receiver.userId", target = "receiverId")
     ChatMessageResponse toResponse(ChatMessage chatMessage);
 }

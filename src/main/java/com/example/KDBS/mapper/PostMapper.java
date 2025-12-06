@@ -49,19 +49,26 @@ public interface PostMapper {
     default List<ForumPostImgResponse> mapImages(ForumPost entity) {
         if (entity.getImages() == null)
             return Collections.emptyList();
+
         return entity.getImages().stream()
                 .map(img -> {
                     String path = img.getImgPath();
                     if (path == null)
                         return new ForumPostImgResponse(img.getPostImgId(), null);
-                    // normalize backslashes and ensure leading slash
+
+                    // Normalize backslashes
                     String normalized = path.replace('\\', '/');
-                    if (!normalized.startsWith("/")) {
+
+                    // Detect if a URL
+                    boolean isUrl = normalized.startsWith("http://") || normalized.startsWith("https://");
+
+                    // Only add leading slash for LOCAL paths
+                    if (!isUrl && !normalized.startsWith("/")) {
                         normalized = "/" + normalized;
                     }
+
                     return new ForumPostImgResponse(img.getPostImgId(), normalized);
                 })
                 .collect(Collectors.toList());
     }
-
 }

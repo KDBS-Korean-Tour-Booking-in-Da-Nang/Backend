@@ -15,6 +15,6 @@ public class UpdateReportRequest {
 
     @NotNull(message = "Status is required")
     private ReportStatus status;
-
     private String adminNote;
+    private String handledBy;
 }

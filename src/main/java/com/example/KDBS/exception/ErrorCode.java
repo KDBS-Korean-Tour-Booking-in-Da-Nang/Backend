@@ -180,6 +180,9 @@ public enum ErrorCode {
         AI_TRANSLATION_FAILED(1102, "AI translation failed", HttpStatus.INTERNAL_SERVER_ERROR),
         ARTICLE_NOT_FOUND(1103, "Article not found", HttpStatus.NOT_FOUND);
 
+        //Ticket
+        TICKET_NOT_FOUND(1103, "Ticket not found", HttpStatus.NOT_FOUND);
+
         private final int code;
         private final String message;
         private final HttpStatusCode statusCode;
