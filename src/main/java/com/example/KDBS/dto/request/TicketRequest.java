@@ -13,6 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 public class TicketRequest {
+    private int userId;
     private String message;
     private List<TicketReasonType> reasons;
 }
