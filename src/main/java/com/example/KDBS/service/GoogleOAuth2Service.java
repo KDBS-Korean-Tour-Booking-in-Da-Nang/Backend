@@ -97,8 +97,8 @@ public class GoogleOAuth2Service {
                     tokenUrl,
                     HttpMethod.POST,
                     request,
-                    new ParameterizedTypeReference<>() {}
-            );
+                    new ParameterizedTypeReference<>() {
+                    });
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 return (String) response.getBody().get("access_token");
             }

@@ -2,9 +2,10 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.ChatMessageRequest;
 import com.example.KDBS.dto.response.ChatMessageResponse;
+import com.example.KDBS.exception.AppException;
+import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.ChatMessageMapper;
 import com.example.KDBS.model.ChatMessage;
-import com.example.KDBS.model.User;
 import com.example.KDBS.repository.ChatMessageRepository;
 import com.example.KDBS.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +24,9 @@ public class ChatMessageService {
     private final ChatMessageMapper chatMessageMapper;
 
     @Transactional(readOnly = true)
-    public List<ChatMessageResponse> GetConversation(String senderName, String receiverName) {
-        var sender = getUserByUsername(senderName);
-        var receiver = getUserByUsername(receiverName);
+    public List<ChatMessageResponse> GetConversation(int senderId, int receiverId) {
+        var sender = userRepository.findById(senderId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        var receiver = userRepository.findById(receiverId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         return chatMessageRepository.findConversationBetween(sender, receiver)
                 .stream()
@@ -34,8 +35,8 @@ public class ChatMessageService {
     }
 
     @Transactional(readOnly = true)
-    public List<ChatMessageResponse> getAllMessageFromUser(String Username) {
-        var user = getUserByUsername(Username);
+    public List<ChatMessageResponse> getAllMessageFromUser(int userId) {
+        var user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         return chatMessageRepository.findBySenderOrReceiverOrderByTimestampDesc(user, user)
                 .stream()
                 .map(chatMessageMapper::toResponse)
@@ -44,24 +45,15 @@ public class ChatMessageService {
 
     @Transactional
     public List<ChatMessageResponse> sendMessage(ChatMessageRequest chatMessageRequest) {
-        var sender = getUserByUsername(chatMessageRequest.getSenderName());
-        var receiver = getUserByUsername(chatMessageRequest.getReceiverName());
+        var sender = userRepository.findById(chatMessageRequest.getSenderId()).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        var receiver = userRepository.findById(chatMessageRequest.getReceiverId()).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         ChatMessage newMessage = ChatMessage.builder()
                 .sender(sender)
                 .receiver(receiver)
                 .content(chatMessageRequest.getContent())
                 .build();
         chatMessageRepository.save(newMessage);
-        log.info("Message sent from {} to {}", chatMessageRequest.getSenderName(),
-                chatMessageRequest.getReceiverName());
-        return GetConversation(chatMessageRequest.getSenderName(), chatMessageRequest.getReceiverName());
-    }
-
-    private User getUserByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> {
-                    log.warn("User not found: {}", username);
-                    return new RuntimeException("User not found: " + username);
-                });
+        log.info("Message sent from {} to {}", sender.getUsername(), receiver.getUsername());
+        return GetConversation(chatMessageRequest.getSenderId(), chatMessageRequest.getReceiverId());
     }
 }
