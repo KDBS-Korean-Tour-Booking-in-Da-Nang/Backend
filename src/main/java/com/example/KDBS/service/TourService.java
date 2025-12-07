@@ -112,6 +112,13 @@ public class TourService {
         return tourPreviewResponse;
     }
 
+    public List<TourResponse> getAllToursByCompanyId(int companyId) {
+        return tourRepository.findAllByCompanyId(companyId)
+                .stream()
+                .map(tourMapper::toTourResponse)
+                .toList();
+    }
+
     /** Search tours */
     public Page<TourResponse> searchToursWithFilters(String keyword,
                                                      BigDecimal minPrice,

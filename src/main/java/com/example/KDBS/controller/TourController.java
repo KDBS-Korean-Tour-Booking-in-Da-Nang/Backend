@@ -48,6 +48,11 @@ public class TourController {
         return ResponseEntity.ok(tourService.getAllTours());
     }
 
+    @GetMapping("/company/{companyId}")
+    public ResponseEntity<List<TourResponse>> getToursByCompanyId(@PathVariable int companyId) {
+        return ResponseEntity.ok(tourService.getAllToursByCompanyId(companyId));
+    }
+
     @GetMapping("/public")
     public ResponseEntity<List<TourResponse>> getAllPublicTours() {
         return ResponseEntity.ok(tourService.getAllPublicTours());
@@ -77,8 +82,6 @@ public class TourController {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(tourService.searchToursWithFilters(keyword, minPrice, maxPrice, minRating, pageable));
     }
-
-
 
     @PutMapping(value = "/{tourId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('COMPANY')")

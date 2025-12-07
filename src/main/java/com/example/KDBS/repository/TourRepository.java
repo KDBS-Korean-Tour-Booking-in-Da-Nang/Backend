@@ -29,6 +29,8 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
 """)
     List<Tour> findAllPublicTours(@Param("status") TourStatus status);
 
+    List<Tour> findAllByCompanyId(int companyId);
+
 
     // Tìm theo tourName hoặc tourDescription hoặc tourSchedule chứa keyword
     @Query("""
