@@ -27,8 +27,8 @@ public class OAuth2Controller {
 
     // Google OAuth2 endpoints
     @GetMapping("/google/login")
-    public ApiResponse<String> googleLogin() {
-        String authUrl = googleOAuth2Service.getAuthorizationUrl();
+    public ApiResponse<String> googleLogin(@RequestParam(value = "platform", required = false) String platform) {
+        String authUrl = googleOAuth2Service.getAuthorizationUrl(platform);
         return ApiResponse.<String>builder()
                 .code(1000)
                 .result(authUrl)
@@ -37,10 +37,12 @@ public class OAuth2Controller {
 
     @GetMapping("/google/callback")
     public void googleCallback(@RequestParam("code") String code,
+                               @RequestParam(value = "platform", required = false) String platform,
                                HttpServletResponse response) throws IOException {
         handleOAuthCallback(
                 () -> googleOAuth2Service.handleGoogleCallback(code),
                 "google",
+                platform,
                 response
         );
     }
@@ -58,10 +60,12 @@ public class OAuth2Controller {
     @GetMapping("/naver/callback")
     public void naverCallback(@RequestParam("code") String code,
                               @RequestParam("state") String state,
+                              @RequestParam(value = "platform", required = false) String platform,
                               HttpServletResponse response) throws IOException {
         handleOAuthCallback(
                 () -> naverOAuth2Service.handleNaverCallback(code, state),
                 "naver",
+                platform,
                 response
         );
     }
@@ -69,11 +73,12 @@ public class OAuth2Controller {
     // Common callback handler
     private void handleOAuthCallback(OAuthCallbackHandler handler,
                                      String provider,
+                                     String platform,
                                      HttpServletResponse response) throws IOException {
         try {
             AuthenticationResponse authResponse = handler.execute();
 
-            String frontendUrl = buildFrontendUrl(provider, authResponse);
+            String frontendUrl = buildFrontendUrl(provider, authResponse, platform);
             response.sendRedirect(frontendUrl);
         } catch (Exception e) {
             String errorUrl = frontendUrl + "/" + provider + "/callback?error="
@@ -82,7 +87,15 @@ public class OAuth2Controller {
         }
     }
 
-    private String buildFrontendUrl(String provider, AuthenticationResponse authResponse) {
+    private String buildFrontendUrl(String provider, AuthenticationResponse authResponse, String platform) {
+        String frontendUrl;
+        if ("mobile".equalsIgnoreCase(platform)) {
+            frontendUrl = "mobilefe:/";
+        }
+        else {
+            frontendUrl = this.frontendUrl;
+        }
+
         return  frontendUrl + "/" + provider + "/callback?" +
                 "token=" + URLEncoder.encode(authResponse.getToken(), StandardCharsets.UTF_8) +
                 "&userId=" + authResponse.getUser().getUserId() +

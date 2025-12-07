@@ -43,13 +43,14 @@ public class GoogleOAuth2Service {
     @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
     private String redirectUri;
 
-    public String getAuthorizationUrl() {
+    public String getAuthorizationUrl(String platform) {
         return "https://accounts.google.com/o/oauth2/v2/auth?" +
                 "client_id=" + clientId +
                 "&redirect_uri=" + redirectUri +
                 "&scope=openid%20profile%20email" +
                 "&response_type=code" +
-                "&access_type=offline";
+                "&access_type=offline" +
+                "&platform=" + platform;
     }
 
     public AuthenticationResponse handleGoogleCallback(String code) {
