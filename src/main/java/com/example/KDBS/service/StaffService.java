@@ -88,6 +88,7 @@ public class StaffService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         target.setRole(newRole);
+        target.setStatus(Status.UNBANNED);
         userRepository.save(target);
 
         return userMapper.toUserResponse(target);

@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy JAR app to Azure Web App - kdbs
+name: Build and deploy JAR app to Azure Web App - kdbs-mw
 
 on:
   push:
@@ -69,13 +69,12 @@ jobs:
         with:
           name: java-app
           path: '${{ github.workspace }}/target/*.jar'
-
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write
-      contents: read
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
   
     steps:
       - name: Download artifact from build job
@@ -86,22 +85,16 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_7BE6ACE28A7E439BA20CEEC5C1BC6ED0 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0B046099D38D4D9B8A9929C0FE3FEE85 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2F122EB2F6E94F8BBBBA6D503FF4B0EC }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_0FB9CE412E5F41F19B5EFE22A9F3CAA1 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_027E14B468684D978AB78EAD5BE7B518 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4D8FEADEFB4D429BB56AA7ED9D1C9D37 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'kdbs'
+          app-name: 'kdbs-mw'
           slot-name: 'Production'
           package: '*.jar'
+
           
-
-
-
-
-
-
-
