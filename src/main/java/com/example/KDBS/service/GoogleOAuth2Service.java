@@ -44,13 +44,20 @@ public class GoogleOAuth2Service {
     private String redirectUri;
 
     public String getAuthorizationUrl(String platform) {
-        return "https://accounts.google.com/o/oauth2/v2/auth?" +
+        String state = (platform != null) ? "platform=" + platform : null;
+
+        String url = "https://accounts.google.com/o/oauth2/v2/auth?" +
                 "client_id=" + clientId +
                 "&redirect_uri=" + redirectUri +
                 "&scope=openid%20profile%20email" +
                 "&response_type=code" +
-                "&access_type=offline" +
-                "&platform=" + platform;
+                "&access_type=offline";
+
+        if (state != null) {
+            url += "&state=" + java.net.URLEncoder.encode(state, java.nio.charset.StandardCharsets.UTF_8);
+        }
+
+        return url;
     }
 
     public AuthenticationResponse handleGoogleCallback(String code) {

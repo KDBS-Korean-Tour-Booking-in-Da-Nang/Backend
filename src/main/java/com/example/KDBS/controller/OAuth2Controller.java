@@ -37,8 +37,13 @@ public class OAuth2Controller {
 
     @GetMapping("/google/callback")
     public void googleCallback(@RequestParam("code") String code,
-                               @RequestParam(value = "platform", required = false) String platform,
+                               @RequestParam(value = "state", required = false) String state,
                                HttpServletResponse response) throws IOException {
+        String platform = "";
+        if (state != null && state.startsWith("platform=")) {
+            platform = state.substring("platform=".length());
+        }
+
         handleOAuthCallback(
                 () -> googleOAuth2Service.handleGoogleCallback(code),
                 "google",
