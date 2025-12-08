@@ -1,5 +1,6 @@
 package com.example.KDBS.controller;
 
+import com.example.KDBS.dto.request.ChatGeminiRequest;
 import com.example.KDBS.dto.request.TranslateRequest;
 import com.example.KDBS.service.GeminiService;
 import lombok.RequiredArgsConstructor;
@@ -21,4 +22,13 @@ public class GeminiController {
     public String translateText(@RequestBody TranslateRequest request) {
         return geminiService.translateText(request.getText());
     }
+
+    @PostMapping("/chat")
+    public String chat(@RequestBody ChatGeminiRequest request) {
+        return geminiService.chatSession(
+                request.getHistory(),
+                request.getMessage()
+        );
+    }
+
 }

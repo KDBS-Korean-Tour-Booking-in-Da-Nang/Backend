@@ -10,11 +10,24 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class GeminiService {
     private final Client client;
+
+    private static final String TRAVEL_ASSISTANT_SYSTEM_PROMPT =
+            "You are KDBS AI Travel Assistant — a friendly and knowledgeable virtual tour guide. " +
+                    "You have 10+ years of expertise in Vietnamese tourism, especially Da Nang, Hoi An, Hue, and nearby attractions. " +
+                    "Your job is to help users plan tours, choose the best travel dates, understand ticket prices, suggest itineraries, " +
+                    "advise what to pack, and provide helpful tips about weather, transportation, and local culture. " +
+                    "Always reply concisely, naturally, and supportively, like a real tour guide. " +
+                    "If the user is unsure, ask clarifying questions. " +
+                    "Never mention that you are an AI model—act like an expert tour guide. " +
+                    "Do NOT provide medical, legal, or financial advice. " +
+                    "Now start assisting the user based on their message.\n\n";
 
     public String askGemini(String prompt) {
         GenerateContentResponse response =
@@ -100,6 +113,26 @@ public class GeminiService {
             throw new AppException(ErrorCode.AI_TRANSLATION_FAILED);
         }
     }
+
+    public String chatSession(List<String> history, String newMessage) {
+
+        StringBuilder prompt = new StringBuilder(TRAVEL_ASSISTANT_SYSTEM_PROMPT);
+
+        // Ghép lịch sử của session (do frontend gửi xuống)
+        if (history != null) {
+            for (String msg : history) {
+                prompt.append("User: ").append(msg).append("\n");
+            }
+        }
+
+        // Thêm câu mới
+        prompt.append("User: ").append(newMessage).append("\n");
+        prompt.append("Guide:");
+
+        // Gửi vào askGemini
+        return askGemini(prompt.toString());
+    }
+
 
     private String cleanJson(String raw) {
         if (raw == null) return null;
