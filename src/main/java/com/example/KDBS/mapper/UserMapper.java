@@ -24,7 +24,7 @@ public interface UserMapper {
 
     UserResponse toUserResponse(User user);
 
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL, ignoreByDefault = true)
     @Mapping(target = "phone", source = "phone")
     @Mapping(target = "username", source = "username")
     @Mapping(target = "dob", source = "dob")

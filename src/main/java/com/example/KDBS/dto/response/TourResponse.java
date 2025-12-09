@@ -18,11 +18,15 @@ public class TourResponse {
     private int tourIntDuration;
     private String tourDeparturePoint;
     private LocalDate tourExpirationDate;
-    private int tourDeadline;
+    private int tourCheckDays;
     private String tourVehicle;
     private String tourType;
     private String tourSchedule;
     private int amount;
+    private int balancePaymentDays;
+    private int minAdvancedDays;
+    private int depositPercentage;
+    private int refundFloor;
     private BigDecimal adultPrice;
     private BigDecimal childrenPrice;
     private BigDecimal babyPrice;

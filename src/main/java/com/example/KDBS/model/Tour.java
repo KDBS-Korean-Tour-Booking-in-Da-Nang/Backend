@@ -48,11 +48,23 @@ public class Tour {
     @Column(name = "tour_expiration_date")
     private LocalDate tourExpirationDate;
 
-    @Column(name = "tour_deadline")
-    private int tourDeadline;
+    @Column(name = "tour_check_days")
+    private int tourCheckDays;
 
     @Column(name = "tour_departure_point")
     private String tourDeparturePoint;
+
+    @Column(name = "balance_payment_days")
+    private int balancePaymentDays;
+
+    @Column(name = "min_advanced_days")
+    private int minAdvancedDays;
+
+    @Column(name = "deposit_percentage")
+    private int depositPercentage;
+
+    @Column(name = "refund_floor")
+    private int refundFloor;
 
     @Column(name = "tour_vehicle")
     private String tourVehicle;

@@ -63,7 +63,7 @@ public class TourService {
 
 
         //Tour expiration date must be after tour deadline + 1 day(so if is 7 days, must be at least 8 days later)
-        if (LocalDate.now().plusDays(request.getTourDeadline() + 1).isAfter(request.getTourExpirationDate())){
+        if (LocalDate.now().plusDays(request.getTourCheckDays() + 1).isAfter(request.getTourExpirationDate())){
             throw new AppException(ErrorCode.TOUR_DEADLINE_EXCEEDS_EXPIRATION_DATE);
         }
 

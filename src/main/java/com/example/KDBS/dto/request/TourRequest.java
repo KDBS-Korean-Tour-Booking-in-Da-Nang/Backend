@@ -32,7 +32,7 @@ public class TourRequest {
     @NotNull(message = "Tour expiration date is required")
     private LocalDate tourExpirationDate;
     @NotNull(message = "Tour deadline is required")
-    private int tourDeadline;
+    private int tourCheckDays;
     @NotBlank(message = "Tour vehicle is required")
     private String tourVehicle;
     @NotBlank(message = "Tour type is required")
@@ -41,6 +41,10 @@ public class TourRequest {
     private String tourSchedule;
     @NotNull(message = "Tour amount is required")
     private int amount;
+    private int balancePaymentDays;
+    private int minAdvancedDays;
+    private int depositPercentage;
+    private int refundFloor;
 
     @NotNull(message = "Adult price is required")
     private BigDecimal adultPrice;

@@ -54,7 +54,7 @@ public class BookingService {
 
         validateGuestCounts(request);
 
-        if (request.getDepartureDate().isBefore(LocalDate.now().plusDays(tour.getTourDeadline() + 1))
+        if (request.getDepartureDate().isBefore(LocalDate.now().plusDays(tour.getTourCheckDays() + 1))
                 || request.getDepartureDate().isAfter(tour.getTourExpirationDate())) {
             throw new AppException(ErrorCode.DEPARTURE_DATE_INVALID);
         }
@@ -66,7 +66,7 @@ public class BookingService {
                 + (request.getBabiesCount() != null ? request.getBabiesCount() : 0);
         booking.setTotalGuests(totalGuests);
         booking.setTourEndDate(request.getDepartureDate().plusDays(tour.getTourIntDuration()));
-        booking.setAutoFailedDate(LocalDate.now().plusDays(tour.getTourDeadline()));
+        booking.setAutoFailedDate(LocalDate.now().plusDays(tour.getTourCheckDays()));
         Booking savedBooking = bookingRepository.save(booking);
 
         List<BookingGuest> savedGuests = saveBookingGuests(request.getBookingGuestRequests(), savedBooking);

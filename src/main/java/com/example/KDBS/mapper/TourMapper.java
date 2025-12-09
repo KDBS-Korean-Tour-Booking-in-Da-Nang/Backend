@@ -46,6 +46,7 @@ public interface TourMapper {
     @Mapping(target = "companyId", ignore = true)
     @Mapping(target = "tourImgPath", ignore = true)
     @Mapping(target = "tourStatus", ignore = true)
+    @Mapping(target = "refundFloor", source = "refundFloor", defaultValue = "0")
     Tour toTour(TourRequest request);
 
     // Map nested request -> entity
