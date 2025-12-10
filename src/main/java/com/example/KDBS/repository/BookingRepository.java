@@ -24,4 +24,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByIdWithGuests(@Param("bookingId") Long bookingId);
 
     Boolean existsByTour_TourId(Long tourTourId);
+
+
+
+
 }
