@@ -9,6 +9,7 @@ import com.example.KDBS.enums.TourStatus;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.TourMapper;
+import com.example.KDBS.mapper.TourUpdateMapper;
 import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.TourContent;
 import com.example.KDBS.model.TourContentImg;
@@ -43,6 +44,7 @@ public class TourService {
     private final TourMapper tourMapper;
     private final StaffService staffService;
     private final FileStorageService fileStorageService;
+    private final TourUpdateMapper tourUpdateMapper;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
@@ -130,40 +132,6 @@ public class TourService {
                 .map(tourMapper::toTourResponse);
     }
 
-    /** Update tour */
-    @Transactional
-    public TourResponse updateTour(Long tourId, TourRequest request, MultipartFile tourImg) throws IOException {
-        // Load existing tour
-        Tour existing = tourRepository.findById(tourId)
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
-
-        // Update basic fields
-        tourMapper.updateTourFromRequest(request, existing);
-
-        // Optional new main image
-        if (tourImg != null && !tourImg.isEmpty()) {
-            // Ensure leading slash so returned path is "/uploads/tours/thumbnails/..."
-            String newPath = fileStorageService.uploadFile(tourImg, "/tours/thumbnails");
-            existing.setTourImgPath(newPath);
-        }
-
-        // Clear the tour's contents list to ensure no old contents remain
-        if (existing.getContents() != null) {
-            existing.getContents().clear();
-        }
-
-        // Save new contents + images
-        saveContents(request, existing);
-        existing.setTourStatus(TourStatus.NOT_APPROVED);
-
-        // Save the tour
-        Tour saved = tourRepository.save(existing);
-        // Fetch the tour with contents to ensure they are included in the response
-        Tour fetchedTour = tourRepository.findByIdWithContents(saved.getTourId())
-                .orElseThrow(() -> new AppException(ErrorCode.FAILED_TO_RETRIVE_UPDATED_TOUR));
-        return tourMapper.toTourResponse(fetchedTour);
-    }
-
     /** Delete tour and cascade its contents & images */
     @Transactional
     public void deleteTour(Long tourId, String userEmail) {
@@ -186,6 +154,33 @@ public class TourService {
         }
         else tourRepository.deleteById(tourId);
     }
+
+    @Transactional
+    public TourResponse applyApprovedUpdate(Tour original,
+                                            TourRequest updated,
+                                            String newImagePath) throws IOException {
+
+        // 1. Update fields (basic)
+        tourUpdateMapper.applyUpdateToTour(updated, original);
+
+        // 2. Update main image
+        if (newImagePath != null) {
+            original.setTourImgPath(newImagePath);
+        }
+
+        // 3. Clear content
+        if (original.getContents() != null) {
+            original.getContents().clear();
+        }
+
+        // 4. Save new content
+        saveContents(updated, original);
+
+        // 5. Save and return
+        Tour saved = tourRepository.save(original);
+        return tourMapper.toTourResponse(saved);
+    }
+
 
     @Transactional
     public TourResponse changeTourStatus(Long tourId, TourStatus tourStatus) {
@@ -221,6 +216,7 @@ public class TourService {
             }
         }
     }
+
 
     /** Extract <img src="..."> paths from HTML */
     private List<String> extractImagePaths(String html) {

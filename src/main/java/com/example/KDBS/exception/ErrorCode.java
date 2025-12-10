@@ -181,7 +181,13 @@ public enum ErrorCode {
         ARTICLE_NOT_FOUND(1103, "Article not found", HttpStatus.NOT_FOUND),
 
         //Ticket
-        TICKET_NOT_FOUND(1103, "Ticket not found", HttpStatus.NOT_FOUND);
+        TICKET_NOT_FOUND(1103, "Ticket not found", HttpStatus.NOT_FOUND),
+
+        //Update, Delete Tour Request
+        UPDATE_REQUEST_NOT_FOUND(1104, "Update request not found", HttpStatus.NOT_FOUND),
+        INVALID_UPDATE_STATE(1105, "Invalid update request state", HttpStatus.BAD_REQUEST),
+        DELETE_REQUEST_NOT_FOUND(1106, "Delete request not found", HttpStatus.NOT_FOUND)
+        ;
 
         private final int code;
         private final String message;
