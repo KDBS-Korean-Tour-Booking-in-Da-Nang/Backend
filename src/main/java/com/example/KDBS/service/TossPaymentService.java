@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -93,12 +94,18 @@ public class TossPaymentService {
         tx.setUpdatedTime(LocalDateTime.now());
         transactionRepository.save(tx);
 
+        BigDecimal rateVndToKrw = BigDecimal.ONE
+                .divide(BigDecimal.valueOf(18), 6, RoundingMode.HALF_UP);
+
+        BigDecimal amountInKrw = amount.multiply(rateVndToKrw)
+                .setScale(0, RoundingMode.HALF_UP);
+
         // 6) Trả về dữ liệu cho FE gọi Toss widget
         return TossCreateOrderResponse.builder()
                 .success(true)
                 .clientKey(clientKey)
                 .customerKey(customerKey)
-                .amount(amount)
+                .amount(amountInKrw)
                 .orderId(orderId)
                 .successUrl(successUrl)
                 .failUrl(failUrl)
@@ -107,6 +114,7 @@ public class TossPaymentService {
 
     public TossConfirmResponse confirmPayment(TossConfirmRequest req, boolean isSuccess) {
         try {
+
             Optional<Transaction> txOpt = transactionRepository.findByOrderId(req.getOrderId());
             Transaction tx = txOpt.orElse(null);
 
