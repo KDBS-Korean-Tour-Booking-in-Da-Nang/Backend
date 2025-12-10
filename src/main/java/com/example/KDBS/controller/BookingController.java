@@ -52,6 +52,13 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/cancel/preview/{bookingId}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<BookingResponse> previewCancelBooking(@PathVariable long bookingId) {
+        BookingResponse response = bookingService.previewCancelBooking(bookingId);
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/change-status/{bookingId}")
     @PreAuthorize("hasRole('COMPANY')")
     public ResponseEntity<BookingResponse> changeBookingStatus(@PathVariable long bookingId,

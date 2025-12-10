@@ -124,6 +124,54 @@ public class BookingService {
     public BookingResponse cancelBooking(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
+        RefundResult result = calculateRefund(booking);
+
+        List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(bookingId);
+        booking.setGuests(guests);
+
+        booking.setRefundPercentage(result.getRefundPercentage());
+        booking.setRefundAmount(result.getRefundAmount());
+        booking.setBookingStatus(BookingStatus.BOOKING_CANCELLED);
+        booking.setCancelDate(LocalDateTime.now());
+
+        // Distribute money to company
+        if(result.getRefundPercentage() < 100) {
+            User company = userRepository.findById(booking.getTour().getCompanyId())
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+            BigDecimal companyShare = booking.getPayedAmount().subtract(result.getRefundAmount());
+            company.setBalance(company.getBalance().add(companyShare));
+        }
+
+        BookingResponse response = bookingMapper.toBookingResponse(booking);
+        response.setTourName(booking.getTour().getTourName());
+        response.setGuests(bookingMapper.toBookingGuestResponses(guests));
+
+        return response;
+    }
+
+    public BookingResponse previewCancelBooking(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
+        RefundResult result = calculateRefund(booking);
+
+        List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(bookingId);
+        booking.setGuests(guests);
+
+        BookingResponse response = bookingMapper.toBookingResponse(booking);
+        response.setTourName(booking.getTour().getTourName());
+        response.setGuests(bookingMapper.toBookingGuestResponses(guests));
+        response.setRefundAmount(result.getRefundAmount());
+        response.setRefundPercentage(result.getRefundPercentage());
+
+        return response; // ⬅️ NOTHING is saved to DB
+    }
+
+
+    private RefundResult calculateRefund(Booking booking) {
+
         if(booking.getMinAdvanceDays() == null) {
             throw new AppException(ErrorCode.USER_NOT_YET_PAYED);
         }
@@ -131,68 +179,45 @@ public class BookingService {
         int refundPercentage;
         BigDecimal refundAmount;
 
-        if(booking.getBookingStatus().equals(BookingStatus.WAITING_FOR_APPROVED)) {
-            //Refund 100%
+        if(booking.getBookingStatus().equals(BookingStatus.WAITING_FOR_APPROVED)
+                || booking.getBookingStatus().equals(BookingStatus.WAITING_FOR_UPDATE)) {
             refundPercentage = 100;
             refundAmount = booking.getPayedAmount();
         }
-        else if(LocalDate.now().isBefore(booking.getMinAdvanceDays()) && (booking.getBookingStatus().equals(BookingStatus.PENDING_BALANCE_PAYMENT)
-                || booking.getBookingStatus().equals(BookingStatus.PENDING_PAYMENT))) {
-            //Refund 80%
+        else if(LocalDate.now().isBefore(booking.getMinAdvanceDays()) &&
+                (booking.getBookingStatus().equals(BookingStatus.PENDING_BALANCE_PAYMENT)
+                        || booking.getBookingStatus().equals(BookingStatus.PENDING_PAYMENT))) {
+
             refundPercentage = 80;
-            refundAmount = booking.getPayedAmount().multiply(BigDecimal.valueOf(refundPercentage))
+            refundAmount = booking.getPayedAmount()
+                    .multiply(BigDecimal.valueOf(refundPercentage))
                     .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-        }
-        else if(LocalDate.now().isAfter(booking.getMinAdvanceDays())) {
+
+        } else if(LocalDate.now().isAfter(booking.getMinAdvanceDays())) {
+
             int remainDate = (int) ChronoUnit.DAYS.between(LocalDate.now(), booking.getDepartureDate());
             refundPercentage = (remainDate * 100) / booking.getTour().getMinAdvancedDays();
 
-            // Round down to nearest multiple of 5
-            refundPercentage = (refundPercentage / 5) * 5;
+            refundPercentage = (refundPercentage / 5) * 5; // floor to nearest 5%
 
-            // Ensure refund percentage is at least the tour's refund floor
             if(booking.getTour().getRefundFloor() > 0) {
                 refundPercentage = Math.max(refundPercentage, booking.getTour().getRefundFloor());
             }
 
-            if(refundPercentage < 0) {
-                refundPercentage = 0;
-            }
+            if(refundPercentage < 0) refundPercentage = 0;
+            if(refundPercentage > 80) refundPercentage = 80;
 
-            if(refundPercentage > 80) {
-                refundPercentage = 80;
-            }
-
-            refundAmount = booking.getPayedAmount().multiply(BigDecimal.valueOf(refundPercentage))
+            refundAmount = booking.getPayedAmount()
+                    .multiply(BigDecimal.valueOf(refundPercentage))
                     .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-        }
-        else {
+
+        } else {
             throw new AppException(ErrorCode.BOOKING_CANNOT_CANCEL);
         }
 
-        // Load guests
-        List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(bookingId);
-        booking.setGuests(guests);
-        booking.setRefundAmount(refundAmount);
-        booking.setRefundPercentage(refundPercentage);
-
-        BookingResponse response = bookingMapper.toBookingResponse(booking);
-        response.setTourName(booking.getTour().getTourName());
-        response.setGuests(bookingMapper.toBookingGuestResponses(guests));
-
-        booking.setBookingStatus(BookingStatus.BOOKING_CANCELLED);
-        booking.setCancelDate(LocalDateTime.now());
-
-        //distribute money to company
-        if(refundPercentage < 100) {
-            User company = userRepository.findById(booking.getTour().getCompanyId())
-                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-            BigDecimal companyShare = booking.getPayedAmount().subtract(refundAmount);
-            company.setBalance(company.getBalance().add(companyShare));
-        }
-
-        return response;
+        return new RefundResult(refundPercentage, refundAmount);
     }
+
 
     private List<BookingGuest> saveBookingGuests(List<BookingGuestRequest> guestRequests, Booking booking) {
         List<BookingGuest> guests = guestRequests.stream()
