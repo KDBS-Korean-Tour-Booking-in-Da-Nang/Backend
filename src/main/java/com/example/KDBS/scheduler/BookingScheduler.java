@@ -23,5 +23,9 @@ public class BookingScheduler {
         log.info("Running scheduled task: Check for booking failed");
         bookingService.checkBookingFailed();
         log.info("Completed task: Check for booking failed");
+
+        log.info("Running scheduled task: Check for booking process");
+        bookingService.checkBookingProcess();
+        log.info("Completed task: Check for booking process");
     }
 }

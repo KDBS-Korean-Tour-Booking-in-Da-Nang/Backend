@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -86,7 +87,7 @@ public class Booking {
     private String voucherCode;
 
     @Column(name = "voucher_discount_applied", precision = 15, scale = 2)
-    private java.math.BigDecimal voucherDiscountApplied;
+    private BigDecimal voucherDiscountApplied;
 
     @Column(name = "voucher_locked")
     private Boolean voucherLocked;
@@ -106,10 +107,30 @@ public class Booking {
     @Column(name = "auto_failed_date")
     private LocalDate autoFailedDate;
 
+    @Column(name = "min_advance_days")
+    private LocalDate minAdvanceDays;
+
+    @Column(name = "cancel_date")
+    private LocalDateTime cancelDate;
+
+    @Column(name = "payed_amount")
+    private BigDecimal payedAmount;
+
+    @Column(name = "deposit_amount")
+    private BigDecimal depositAmount;
+
+    @Column(name = "total_amount")
+    private BigDecimal totalAmount;
+
+    @Column(name = "refund_amount")
+    private BigDecimal refundAmount;
+
+    @Column(name = "refund_percentage")
+    private int refundPercentage;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        this.bookingStatus = BookingStatus.PENDING_PAYMENT;
         this.companyConfirmedCompletion = false;
         this.userConfirmedCompletion = false;
         this.autoConfirmedDate = tourEndDate != null? tourEndDate.plusDays(3) : null;

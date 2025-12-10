@@ -45,6 +45,13 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/cancel/{bookingId}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<BookingResponse> cancelBooking(@PathVariable long bookingId) {
+        BookingResponse response = bookingService.cancelBooking(bookingId);
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/change-status/{bookingId}")
     @PreAuthorize("hasRole('COMPANY')")
     public ResponseEntity<BookingResponse> changeBookingStatus(@PathVariable long bookingId,
@@ -66,17 +73,28 @@ public class BookingController {
     public ResponseEntity<TossCreateOrderResponse> createBookingPayment(@RequestBody BookingPaymentRequest request) {
         // booking details
         BookingResponse booking = bookingService.getBookingById(request.getBookingId());
-        BigDecimal totalAmount = bookingService.calculateBookingTotal(request.getBookingId());
-
-        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
-            var preview = voucherService.previewApplyVoucher(
-                    com.example.KDBS.dto.request.ApplyVoucherRequest.builder()
-                            .bookingId(request.getBookingId())
-                            .voucherCode(request.getVoucherCode())
-                            .build());
-            voucherService.attachVoucherToBookingPending(request.getBookingId(), preview);
-            totalAmount = preview.getFinalTotal();
+        BigDecimal totalAmount;
+        if (booking.getDepositAmount().equals(booking.getTotalAmount())) {
+            totalAmount = booking.getTotalAmount();
         }
+        else {
+            if (request.isDeposit()){
+                totalAmount = booking.getDepositAmount();
+            }
+            else {
+                totalAmount = booking.getTotalAmount().subtract(booking.getDepositAmount());
+            }
+        }
+//
+//        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
+//            var preview = voucherService.previewApplyVoucher(
+//                    com.example.KDBS.dto.request.ApplyVoucherRequest.builder()
+//                            .bookingId(request.getBookingId())
+//                            .voucherCode(request.getVoucherCode())
+//                            .build());
+//            voucherService.attachVoucherToBookingPending(request.getBookingId(), preview);
+//            totalAmount = preview.getFinalTotal();
+//        }
 
         //  order info
         String orderInfo = String.format(

@@ -59,6 +59,8 @@ public class BookingRequest {
     @Min(value = 0, message = "Babies count must be non-negative")
     private Integer babiesCount;
 
+    private String voucherCode;
+
     @Valid
     @NotEmpty(message = "At least one guest is required")
     private List<BookingGuestRequest> bookingGuestRequests;

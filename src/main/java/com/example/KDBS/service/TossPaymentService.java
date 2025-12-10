@@ -25,6 +25,7 @@ import org.springframework.web.client.RestTemplate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Optional;
@@ -124,7 +125,6 @@ public class TossPaymentService {
                 if (tx != null) {
                     updateTxAndBooking(tx,
                             TransactionStatus.SUCCESS,
-                            BookingStatus.WAITING_FOR_APPROVED,
                             "Toss success");
 
                     return builder
@@ -140,7 +140,6 @@ public class TossPaymentService {
             if (tx != null) {
                 updateTxAndBooking(tx,
                         TransactionStatus.FAILED,
-                        BookingStatus.PENDING_PAYMENT,
                         "Toss failed");
                 return builder
                         .success(false)
@@ -157,7 +156,6 @@ public class TossPaymentService {
             transactionRepository.findByOrderId(req.getOrderId()).ifPresent(tx ->
                     updateTxAndBooking(tx,
                             TransactionStatus.FAILED,
-                            BookingStatus.PENDING_PAYMENT,
                             "Toss runtime error")
             );
 
@@ -176,7 +174,7 @@ public class TossPaymentService {
                 .payType("TOSS");
     }
 
-    private void updateTxAndBooking(Transaction tx,TransactionStatus txStatus,BookingStatus bookingStatus,String message) {
+    private void updateTxAndBooking(Transaction tx,TransactionStatus txStatus,String message) {
         tx.setStatus(txStatus);
         tx.setMessage(message);
         tx.setPayType("TOSS");
@@ -186,11 +184,43 @@ public class TossPaymentService {
         Long bookingId = extractBookingIdFromOrderInfo(tx.getOrderInfo());
         if (bookingId != null) {
             bookingRepository.findById(bookingId).ifPresent(b -> {
-                b.setBookingStatus(bookingStatus);
                 if (txStatus == TransactionStatus.SUCCESS) {
                     voucherService.lockVoucherOnPaymentSuccess(bookingId);
+                    if (b.getTotalAmount().equals(b.getDepositAmount())) {
+                        b.setBookingStatus(BookingStatus.WAITING_FOR_APPROVED);
+                        b.setPayedAmount(b.getTotalAmount());
+                        b.setAutoFailedDate(LocalDate.now().plusDays(b.getTour().getTourCheckDays()));
+                        b.setMinAdvanceDays(LocalDate.now().plusDays(b.getTour().getMinAdvancedDays()));
+                    }
+                    else {
+                        //If deposit is paid, pay amount will always bigger than 0
+                        if (b.getPayedAmount().compareTo(b.getTotalAmount()) != 0) {
+                            b.setBookingStatus(BookingStatus.BOOKING_BALANCE_SUCCESS);
+                            b.setPayedAmount(b.getTotalAmount());
+                        }
+                        //else if pay amount is equal 0 then user is not yet pay deposit
+                        else {
+                            b.setBookingStatus(BookingStatus.WAITING_FOR_APPROVED);
+                            b.setPayedAmount(b.getDepositAmount());
+                            b.setAutoFailedDate(LocalDate.now().plusDays(b.getTour().getTourCheckDays()));
+                            b.setMinAdvanceDays(LocalDate.now().plusDays(b.getTour().getMinAdvancedDays()));
+                        }
+                    }
                 }
                 else {
+                    if (b.getTotalAmount().equals(b.getDepositAmount())) {
+                        b.setBookingStatus(BookingStatus.PENDING_PAYMENT);
+                    }
+                    else {
+                        //If deposit is paid, pay amount will always bigger than 0
+                        if (b.getPayedAmount().compareTo(BigDecimal.ZERO) > 0) {
+                            b.setBookingStatus(BookingStatus.PENDING_BALANCE_PAYMENT);
+                        }
+                        //else if pay amount is equal 0 then user is not yet pay deposit
+                        else {
+                            b.setBookingStatus(BookingStatus.PENDING_DEPOSIT_PAYMENT);
+                        }
+                    }
                     voucherService.unlockVoucherOnBookingCancelled(bookingId);
                 }
                 bookingRepository.save(b);

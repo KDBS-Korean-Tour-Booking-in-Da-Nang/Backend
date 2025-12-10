@@ -23,6 +23,5 @@ public class BookingPaymentRequest {
     @Email(message = "Invalid email format")
     private String userEmail;
 
-    // Optional voucher code
-    private String voucherCode;
+    private boolean isDeposit;
 }

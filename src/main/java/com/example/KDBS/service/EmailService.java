@@ -692,9 +692,13 @@ public class EmailService {
         if (!isCompanyRecipient) {
             // Email cho user - tiếng Hàn
             String statusMessageKo;
-            if (newStatus == BookingStatus.BOOKING_SUCCESS_PENDING) {
-                statusMessageKo = "고객님의 여행 예약이 확정되었습니다.";
-            } else if (newStatus == BookingStatus.BOOKING_REJECTED) {
+            if (newStatus == BookingStatus.BOOKING_BALANCE_SUCCESS) {
+                statusMessageKo = "고객의 예약이 확인되었고 결제가 모두 완료되었습니다.";
+            }
+            else if (newStatus == BookingStatus.PENDING_BALANCE_PAYMENT) {
+                statusMessageKo = "고객의 예약이 확인되었으며 남은 금액 결제를 기다리고 있습니다.";
+            }
+            else if (newStatus == BookingStatus.BOOKING_REJECTED) {
                 statusMessageKo = "죄송하지만 예약이 취소되었습니다.";
             } else if (newStatus == BookingStatus.WAITING_FOR_UPDATE) {
                 statusMessageKo = "예약 진행을 위해 고객님의 추가 정보가 필요합니다.";
@@ -912,9 +916,13 @@ public class EmailService {
 
         // Email cho company - tiếng Việt
         String statusMessageVi;
-        if (newStatus == BookingStatus.BOOKING_SUCCESS_PENDING) {
-            statusMessageVi = "Booking của khách đã được xác nhận.";
-        } else if (newStatus == BookingStatus.BOOKING_REJECTED) {
+        if (newStatus == BookingStatus.BOOKING_BALANCE_SUCCESS) {
+            statusMessageVi = "Booking của khách đã được xác nhận và thanh toán đầy đủ.";
+        }
+        else if (newStatus == BookingStatus.PENDING_BALANCE_PAYMENT) {
+            statusMessageVi = "Booking của khách đã được xác nhận và đang chờ thanh toán số tiền còn lại.";
+        }
+        else if (newStatus == BookingStatus.BOOKING_REJECTED) {
             statusMessageVi = "Booking của khách đã bị từ chối.";
         } else if (newStatus == BookingStatus.WAITING_FOR_UPDATE) {
             statusMessageVi = "Bạn đã yêu cầu khách cập nhật thêm thông tin cho booking này.";

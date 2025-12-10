@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,11 +34,18 @@ public class BookingResponse {
     private Integer babiesCount;
     private Integer totalGuests;
     private LocalDateTime createdAt;
+    private LocalDateTime cancelDate;
     private List<BookingGuestResponse> guests;
     private Boolean companyConfirmedCompletion;
     private Boolean userConfirmedCompletion;
     private LocalDate tourEndDate;
     private LocalDate autoConfirmedDate;
+    private LocalDate minAdvanceDays;
     private int bookingCount;
     private String bookingMessage;
+    private BigDecimal refundAmount;
+    private BigDecimal payedAmount;
+    private BigDecimal depositAmount;
+    private BigDecimal totalAmount;
+    private int refundPercentage;
 }

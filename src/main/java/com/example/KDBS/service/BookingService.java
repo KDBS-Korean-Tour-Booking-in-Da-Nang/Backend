@@ -1,33 +1,24 @@
 package com.example.KDBS.service;
 
-import com.example.KDBS.dto.request.BookingGuestRequest;
-import com.example.KDBS.dto.request.BookingRequest;
-import com.example.KDBS.dto.request.ChangeBookingStatusRequest;
-import com.example.KDBS.dto.request.CreateComplaintRequest;
-import com.example.KDBS.dto.request.ResolveComplaintRequest;
-import com.example.KDBS.dto.response.BookingComplaintResponse;
-import com.example.KDBS.dto.response.BookingGuestResponse;
-import com.example.KDBS.dto.response.BookingResponse;
-import com.example.KDBS.dto.response.BookingSummaryResponse;
-import com.example.KDBS.dto.response.BookingWithCountResponse;
+import com.example.KDBS.dto.request.*;
+import com.example.KDBS.dto.response.*;
 import com.example.KDBS.enums.*;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.BookingComplaintMapper;
 import com.example.KDBS.mapper.BookingMapper;
 import com.example.KDBS.model.*;
-import com.example.KDBS.repository.BookingComplaintRepository;
-import com.example.KDBS.repository.BookingGuestRepository;
-import com.example.KDBS.repository.BookingRepository;
-import com.example.KDBS.repository.TourRepository;
-import com.example.KDBS.repository.UserRepository;
+import com.example.KDBS.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -66,8 +57,23 @@ public class BookingService {
                 + (request.getBabiesCount() != null ? request.getBabiesCount() : 0);
         booking.setTotalGuests(totalGuests);
         booking.setTourEndDate(request.getDepartureDate().plusDays(tour.getTourIntDuration()));
-        booking.setAutoFailedDate(LocalDate.now().plusDays(tour.getTourCheckDays()));
         Booking savedBooking = bookingRepository.save(booking);
+
+        BigDecimal totalAmount = calculateBookingTotal(savedBooking.getBookingId());
+        savedBooking.setTotalAmount(totalAmount);
+
+        if(tour.getDepositPercentage() == 100 || tour.getDepositPercentage() == 0) {
+            savedBooking.setDepositAmount(totalAmount);
+            savedBooking.setBookingStatus(BookingStatus.PENDING_PAYMENT);
+        }
+        else {
+            savedBooking.setDepositAmount(totalAmount.multiply(BigDecimal.valueOf(tour.getDepositPercentage()))
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP));
+            savedBooking.setBookingStatus(BookingStatus.PENDING_DEPOSIT_PAYMENT);
+        }
+
+        savedBooking.setPayedAmount(BigDecimal.ZERO);
+
 
         List<BookingGuest> savedGuests = saveBookingGuests(request.getBookingGuestRequests(), savedBooking);
         savedBooking.setGuests(savedGuests);
@@ -114,6 +120,80 @@ public class BookingService {
         return buildBookingResponse(existingBooking, savedGuests);
     }
 
+    @Transactional
+    public BookingResponse cancelBooking(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        if(booking.getMinAdvanceDays() == null) {
+            throw new AppException(ErrorCode.USER_NOT_YET_PAYED);
+        }
+
+        int refundPercentage;
+        BigDecimal refundAmount;
+
+        if(booking.getBookingStatus().equals(BookingStatus.WAITING_FOR_APPROVED)) {
+            //Refund 100%
+            refundPercentage = 100;
+            refundAmount = booking.getPayedAmount();
+        }
+        else if(LocalDate.now().isBefore(booking.getMinAdvanceDays()) && (booking.getBookingStatus().equals(BookingStatus.PENDING_BALANCE_PAYMENT)
+                || booking.getBookingStatus().equals(BookingStatus.PENDING_PAYMENT))) {
+            //Refund 80%
+            refundPercentage = 80;
+            refundAmount = booking.getPayedAmount().multiply(BigDecimal.valueOf(refundPercentage))
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        }
+        else if(LocalDate.now().isAfter(booking.getMinAdvanceDays())) {
+            int remainDate = (int) ChronoUnit.DAYS.between(LocalDate.now(), booking.getDepartureDate());
+            refundPercentage = (remainDate * 100) / booking.getTour().getMinAdvancedDays();
+
+            // Round down to nearest multiple of 5
+            refundPercentage = (refundPercentage / 5) * 5;
+
+            // Ensure refund percentage is at least the tour's refund floor
+            if(booking.getTour().getRefundFloor() > 0) {
+                refundPercentage = Math.max(refundPercentage, booking.getTour().getRefundFloor());
+            }
+
+            if(refundPercentage < 0) {
+                refundPercentage = 0;
+            }
+
+            if(refundPercentage > 80) {
+                refundPercentage = 80;
+            }
+
+            refundAmount = booking.getPayedAmount().multiply(BigDecimal.valueOf(refundPercentage))
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        }
+        else {
+            throw new AppException(ErrorCode.BOOKING_CANNOT_CANCEL);
+        }
+
+        // Load guests
+        List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(bookingId);
+        booking.setGuests(guests);
+        booking.setRefundAmount(refundAmount);
+        booking.setRefundPercentage(refundPercentage);
+
+        BookingResponse response = bookingMapper.toBookingResponse(booking);
+        response.setTourName(booking.getTour().getTourName());
+        response.setGuests(bookingMapper.toBookingGuestResponses(guests));
+
+        booking.setBookingStatus(BookingStatus.BOOKING_CANCELLED);
+        booking.setCancelDate(LocalDateTime.now());
+
+        //distribute money to company
+        if(refundPercentage < 100) {
+            User company = userRepository.findById(booking.getTour().getCompanyId())
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+            BigDecimal companyShare = booking.getPayedAmount().subtract(refundAmount);
+            company.setBalance(company.getBalance().add(companyShare));
+        }
+
+        return response;
+    }
+
     private List<BookingGuest> saveBookingGuests(List<BookingGuestRequest> guestRequests, Booking booking) {
         List<BookingGuest> guests = guestRequests.stream()
                 .map(guestReq -> {
@@ -138,15 +218,12 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
-        Tour tour = tourRepository.findById(booking.getTour().getTourId())
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
-
         // Load guests
         List<BookingGuest> guests = bookingGuestRepository.findByBooking_BookingId(bookingId);
         booking.setGuests(guests);
 
         BookingResponse response = bookingMapper.toBookingResponse(booking);
-        response.setTourName(tour.getTourName());
+        response.setTourName(booking.getTour().getTourName());
         response.setGuests(bookingMapper.toBookingGuestResponses(guests));
 
         return response;
@@ -335,6 +412,11 @@ public class BookingService {
             booking.setBookingMessage(request.getMessage());
         }
 
+        if (request.getStatus().equals(BookingStatus.BOOKING_REJECTED)) {
+            booking.setRefundPercentage(100);
+            booking.setRefundAmount(booking.getPayedAmount());
+        }
+
         bookingRepository.save(booking);
         sendBookingStatusNotification(booking, request);
         sendBookingStatusChangeEmails(booking, oldStatus, request.getMessage());
@@ -459,15 +541,54 @@ public class BookingService {
     }
 
     @Transactional
+    public void checkBookingProcess() {
+        List<Booking> bookings = bookingRepository.findByBookingStatusIn(List.of(
+                BookingStatus.BOOKING_BALANCE_SUCCESS));
+
+        for (Booking booking : bookings) {
+            if (LocalDate.now().isAfter(booking.getDepartureDate())
+                    || LocalDate.now().isEqual(booking.getDepartureDate())) {
+                booking.setBookingStatus(BookingStatus.BOOKING_SUCCESS_PENDING);
+            }
+        }
+
+    }
+
+    @Transactional
     public void checkBookingFailed() {
         List<Booking> bookings = bookingRepository.findByBookingStatusIn(List.of(
+                BookingStatus.PENDING_DEPOSIT_PAYMENT,
+                BookingStatus.PENDING_BALANCE_PAYMENT,
                 BookingStatus.PENDING_PAYMENT,
                 BookingStatus.WAITING_FOR_APPROVED,
                 BookingStatus.WAITING_FOR_UPDATE));
 
         for (Booking booking : bookings) {
-            if (LocalDate.now().isAfter(booking.getAutoFailedDate())) {
-                booking.setBookingStatus(BookingStatus.BOOKING_FAILED);
+            if (booking.getBookingStatus().equals(BookingStatus.PENDING_DEPOSIT_PAYMENT) ||
+            booking.getBookingStatus().equals(BookingStatus.PENDING_PAYMENT)) {
+                LocalDate maxDepositDate = booking.getDepartureDate().minusDays(booking.getTour().getMinAdvancedDays());
+                if(LocalDate.now().isAfter(maxDepositDate)) {
+                    booking.setBookingStatus(BookingStatus.BOOKING_FAILED);
+                }
+            }
+            else if (booking.getBookingStatus().equals(BookingStatus.PENDING_BALANCE_PAYMENT)){
+                if (LocalDate.now().isAfter(booking.getMinAdvanceDays())) {
+                    booking.setBookingStatus(BookingStatus.BOOKING_FAILED);
+                    //refund deposit
+                    User company = userRepository.findById(booking.getTour().getCompanyId())
+                            .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                    company.setBalance(company.getBalance().add(booking.getDepositAmount()));
+                    booking.setRefundPercentage(0);
+                    booking.setRefundAmount(BigDecimal.ZERO);
+                }
+            }
+            else {
+                if (LocalDate.now().isAfter(booking.getAutoFailedDate())) {
+                    booking.setBookingStatus(BookingStatus.BOOKING_FAILED);
+                    //refund 100%
+                    booking.setRefundPercentage(100);
+                    booking.setRefundAmount(booking.getPayedAmount());
+                }
             }
         }
     }

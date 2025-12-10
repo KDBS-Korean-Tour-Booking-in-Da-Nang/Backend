@@ -14,10 +14,17 @@ public interface TourUpdateMapper {
     @Mapping(target = "originalTourId", source = "originalTour.tourId")
     @Mapping(target = "originalTour", source = "originalTour")
     @Mapping(target = "updatedTour", ignore = true)
+    @Mapping(target = "bookingCount", ignore = true)
+    @Mapping(target = "bookings", ignore = true)
     TourUpdateRequestResponse toResponse(TourUpdateRequest request);
 
 
     // Staff approve → apply updated fields vào Tour thật
-    @BeanMapping(ignoreByDefault = false)
+    @Mapping(target = "tourId", ignore = true)
+    @Mapping(target = "companyId", ignore = true)
+    @Mapping(target = "tourImgPath", ignore = true)
+    @Mapping(target = "tourStatus", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "ratings", ignore = true)
     void applyUpdateToTour(TourRequest updated, @MappingTarget Tour original);
 }
