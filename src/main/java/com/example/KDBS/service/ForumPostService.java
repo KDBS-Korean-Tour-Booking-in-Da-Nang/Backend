@@ -58,6 +58,7 @@ public class ForumPostService {
                 forumPost.getForumPostId(),
                 Map.of(
                         "title", forumPost.getTitle() != null ? forumPost.getTitle() : "",
+                        "content", forumPost.getContent() != null ? forumPost.getContent() : "",
                         "hasImages", forumPostRequest.getImages() != null && !forumPostRequest.getImages().isEmpty()));
 
         handleImages(forumPostRequest.getImages(), forumPost);

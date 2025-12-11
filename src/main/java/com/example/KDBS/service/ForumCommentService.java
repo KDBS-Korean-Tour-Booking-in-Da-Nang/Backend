@@ -68,6 +68,7 @@ public class ForumCommentService {
                                 comment.getForumCommentId(),
                                 Map.of(
                                                 "postId", forumPost.getForumPostId(),
+                                                "content", forumCommentRequest.getContent(),
                                                 "isReply", forumCommentRequest.getParentCommentId() != null));
 
                 return commentMapper.toCommentResponse(comment);
