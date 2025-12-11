@@ -33,7 +33,7 @@ public class SuggestTourViaBehaviorService {
 
         // 2. Nếu user tồn tại và đã suggest hôm nay → trả về suggestion cũ
         if (user != null && user.getSuggestion() == SuggestionStatus.SUGGESTED) {
-            log.info("User {} đã nhận suggestion hôm nay → trả về suggestion cũ", userId);
+            log.info("User {} already received a suggestion today → return the previous suggestion", userId);
 
             List<SuggestedTour> saved = suggestedTourRepository.findByUser(user);
 
