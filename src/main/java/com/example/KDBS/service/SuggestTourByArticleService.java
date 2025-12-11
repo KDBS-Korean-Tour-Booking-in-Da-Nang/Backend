@@ -4,14 +4,8 @@ import com.example.KDBS.dto.response.SuggestTourResultResponse;
 import com.example.KDBS.enums.TourStatus;
 import com.example.KDBS.enums.UserActionTarget;
 import com.example.KDBS.enums.UserActionType;
-import com.example.KDBS.model.Article;
-import com.example.KDBS.model.Tour;
-import com.example.KDBS.model.User;
-import com.example.KDBS.model.UserActionLog;
-import com.example.KDBS.repository.ArticleRepository;
-import com.example.KDBS.repository.TourRepository;
-import com.example.KDBS.repository.UserActionLogRepository;
-import com.example.KDBS.repository.UserRepository;
+import com.example.KDBS.model.*;
+import com.example.KDBS.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,18 +26,15 @@ public class SuggestTourByArticleService {
     private final TourRepository tourRepository;
     private final GeminiService geminiService;
     private final ObjectMapper objectMapper;
+    private final SuggestedTourRepository suggestedTourRepository;
 
     /**
      * Suggest tour based on user article reading behavior.
      * If email invalid → fallback to 10 latest logs of READ_ARTICLE.
      */
-    public List<Tour> suggestToursForUser(String email) {
+    public List<Tour> suggestToursForUser(int userId) {
 
-        User user = null;
-
-        if (email != null && !email.isBlank()) {
-            user = userRepository.findByEmail(email).orElse(null);
-        }
+        User user = userRepository.findById(userId).orElse(null);
 
         List<UserActionLog> logs;
 
@@ -95,12 +86,24 @@ public class SuggestTourByArticleService {
             return List.of();
         }
 
-        // Convert recommended IDs → List<Tour>
-        return result.getRecommendedTourIds().stream()
+        // Convert IDs → List<Tour>
+        List<Tour> recommendedTours = result.getRecommendedTourIds().stream()
                 .map(tourRepository::findById)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .toList();
+
+        if (user != null) {
+            for (Tour t : recommendedTours) {
+                SuggestedTour st = SuggestedTour.builder()
+                        .user(user)
+                        .tour(t)
+                        .build();
+                suggestedTourRepository.save(st);
+            }
+        }
+
+        return recommendedTours;
     }
 
 

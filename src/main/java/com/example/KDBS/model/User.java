@@ -3,6 +3,7 @@ package com.example.KDBS.model;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.StaffTask;
 import com.example.KDBS.enums.Status;
+import com.example.KDBS.enums.SuggestionStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -76,6 +77,10 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference
     private BusinessLicense businessLicense;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "suggestion", length = 20)
+    private SuggestionStatus suggestion = SuggestionStatus.NOT_SUGGESTED;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference

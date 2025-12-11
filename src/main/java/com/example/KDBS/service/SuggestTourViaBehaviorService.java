@@ -1,9 +1,6 @@
 package com.example.KDBS.service;
 import com.example.KDBS.dto.response.SuggestTourResultResponse;
-import com.example.KDBS.enums.ReactionType;
-import com.example.KDBS.enums.TourStatus;
-import com.example.KDBS.enums.UserActionType;
-import com.example.KDBS.enums.UserActionTarget;
+import com.example.KDBS.enums.*;
 import com.example.KDBS.model.*;
 import com.example.KDBS.repository.*;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -22,15 +20,34 @@ public class SuggestTourViaBehaviorService {
     private final UserActionLogRepository logRepository;
     private final ForumPostRepository postRepository;
     private final ForumCommentRepository commentRepository;
-    private final ArticleRepository articleRepository;
+    private final SuggestedTourRepository suggestedTourRepository;
     private final TourRepository tourRepository;
     private final GeminiService geminiService;
     private final ObjectMapper objectMapper;
 
-    public List<Tour> suggestTours(String email) {
+    @Transactional
+    public List<Tour> suggestTours(int userId) {
 
-        User user = userRepository.findByEmail(email).orElse(null);
+        // 1. Dù userId hợp lệ hay không, vẫn cho phép suggest
+        User user = userRepository.findById(userId).orElse(null);
 
+        // 2. Nếu user tồn tại và đã suggest hôm nay → trả về suggestion cũ
+        if (user != null && user.getSuggestion() == SuggestionStatus.SUGGESTED) {
+            log.info("User {} đã nhận suggestion hôm nay → trả về suggestion cũ", userId);
+
+            List<SuggestedTour> saved = suggestedTourRepository.findByUser(user);
+
+            return saved.stream()
+                    .map(SuggestedTour::getTour)
+                    .toList();
+        }
+
+        // 3. Nếu user hợp lệ → xóa suggestion cũ để ghi lại mới
+        if (user != null) {
+            suggestedTourRepository.deleteByUser(user);
+        }
+
+        // 4. Lấy logs để suggest
         List<UserActionLog> logs;
 
         if (user != null) {
@@ -43,15 +60,13 @@ public class SuggestTourViaBehaviorService {
 
         // Extract all user interest texts
         List<String> texts = extractUserInterestTexts(logs);
-
         if (texts.isEmpty()) return List.of();
 
         List<Tour> tours = tourRepository.findAllPublicTours(TourStatus.PUBLIC);
         if (tours.isEmpty()) return List.of();
 
-        // Build prompt
+        // 5. Build & send prompt
         String prompt = buildPrompt(texts, tours);
-
         String aiResponse = geminiService.askGemini(prompt);
         String cleaned = cleanJson(aiResponse);
 
@@ -63,11 +78,28 @@ public class SuggestTourViaBehaviorService {
             return List.of();
         }
 
-        return result.getRecommendedTourIds().stream()
+        // 6. Convert IDs → Tour list
+        List<Tour> recommendedTours = result.getRecommendedTourIds().stream()
                 .map(tourRepository::findById)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .toList();
+
+        // 7. Nếu user tồn tại → lưu suggestion + đánh dấu đã suggest hôm nay
+        if (user != null) {
+            for (Tour t : recommendedTours) {
+                SuggestedTour st = SuggestedTour.builder()
+                        .user(user)
+                        .tour(t)
+                        .build();
+                suggestedTourRepository.save(st);
+            }
+
+            user.setSuggestion(SuggestionStatus.SUGGESTED);
+            userRepository.save(user);
+        }
+
+        return recommendedTours;
     }
 
 

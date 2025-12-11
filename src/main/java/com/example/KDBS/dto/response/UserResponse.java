@@ -30,5 +30,6 @@ public class UserResponse {
     private String role;
     private StaffTask staffTask;
     private String banReason;
+    private boolean suggestion;
 
 }
