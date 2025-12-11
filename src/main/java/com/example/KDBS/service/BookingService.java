@@ -36,6 +36,7 @@ public class BookingService {
     private final UserActionLogService userActionLogService;
     private final BookingComplaintRepository bookingComplaintRepository;
     private final BookingComplaintMapper bookingComplaintMapper;
+    private final VoucherService voucherService;
     private final StaffService staffService;
 
     @Transactional
@@ -57,23 +58,36 @@ public class BookingService {
                 + (request.getBabiesCount() != null ? request.getBabiesCount() : 0);
         booking.setTotalGuests(totalGuests);
         booking.setTourEndDate(request.getDepartureDate().plusDays(tour.getTourIntDuration()));
+
+        if(tour.getDepositPercentage() == 100 || tour.getDepositPercentage() == 0) {
+            booking.setBookingStatus(BookingStatus.PENDING_PAYMENT);
+        } else {
+            booking.setBookingStatus(BookingStatus.PENDING_DEPOSIT_PAYMENT);
+        }
+
         Booking savedBooking = bookingRepository.save(booking);
+
+        // Apply voucher if provided
+        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
+            var preview = voucherService.previewApplyVoucher(
+                    ApplyVoucherRequest.builder()
+                            .bookingId(savedBooking.getBookingId())
+                            .voucherCode(request.getVoucherCode())
+                            .build());
+            voucherService.attachVoucherToBookingPending(savedBooking.getBookingId(), preview);
+        }
 
         BigDecimal totalAmount = calculateBookingTotal(savedBooking.getBookingId());
         savedBooking.setTotalAmount(totalAmount);
 
         if(tour.getDepositPercentage() == 100 || tour.getDepositPercentage() == 0) {
             savedBooking.setDepositAmount(totalAmount);
-            savedBooking.setBookingStatus(BookingStatus.PENDING_PAYMENT);
-        }
-        else {
+        } else {
             savedBooking.setDepositAmount(totalAmount.multiply(BigDecimal.valueOf(tour.getDepositPercentage()))
                     .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP));
-            savedBooking.setBookingStatus(BookingStatus.PENDING_DEPOSIT_PAYMENT);
         }
 
         savedBooking.setPayedAmount(BigDecimal.ZERO);
-
 
         List<BookingGuest> savedGuests = saveBookingGuests(request.getBookingGuestRequests(), savedBooking);
         savedBooking.setGuests(savedGuests);
@@ -148,6 +162,11 @@ public class BookingService {
         response.setTourName(booking.getTour().getTourName());
         response.setGuests(bookingMapper.toBookingGuestResponses(guests));
 
+        // unlock and return voucher if any
+        if(booking.getVoucherCode() == null || booking.getVoucherCode().isBlank()) {
+            voucherService.unlockVoucherOnBookingCancelled(bookingId);
+        }
+
         return response;
     }
 
@@ -166,7 +185,7 @@ public class BookingService {
         response.setRefundAmount(result.getRefundAmount());
         response.setRefundPercentage(result.getRefundPercentage());
 
-        return response; // ⬅️ NOTHING is saved to DB
+        return response; //NOTHING is saved to DB
     }
 
 
@@ -330,8 +349,7 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
-        Tour tour = tourRepository.findById(booking.getTour().getTourId())
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
+        Tour tour = booking.getTour();
 
         BigDecimal adultTotal = tour.getAdultPrice().multiply(BigDecimal.valueOf(booking.getAdultsCount()));
         BigDecimal childrenTotal = tour.getChildrenPrice().multiply(BigDecimal.valueOf(booking.getChildrenCount()));
@@ -613,6 +631,13 @@ public class BookingService {
                     //refund 100%
                     booking.setRefundPercentage(100);
                     booking.setRefundAmount(booking.getPayedAmount());
+                }
+            }
+
+            //If booking is failed, unlock and return voucher if any
+            if(booking.getBookingStatus().equals(BookingStatus.BOOKING_FAILED)) {
+                if(booking.getVoucherCode() == null || booking.getVoucherCode().isBlank()) {
+                    voucherService.unlockVoucherOnBookingCancelled(booking.getBookingId());
                 }
             }
         }

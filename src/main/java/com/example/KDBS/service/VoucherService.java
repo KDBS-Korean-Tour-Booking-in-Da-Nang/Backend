@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,30 +72,24 @@ public class VoucherService {
 
     @Transactional(readOnly = true)
     public ApplyVoucherResponse previewApplyVoucher(ApplyVoucherRequest request) {
+
         Booking booking = bookingRepository.findById(request.getBookingId())
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
-        Voucher voucher = voucherRepository.findByCompanyIdAndCode(booking.getTour().getCompanyId(), request.getVoucherCode())
+        Voucher voucher = voucherRepository.findByCompanyIdAndCode(
+                        booking.getTour().getCompanyId(),
+                        request.getVoucherCode())
                 .orElseThrow(() -> new AppException(ErrorCode.VOUCHER_NOT_FOUND));
 
-        Tour tour = tourRepository.findById(booking.getTour().getTourId())
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
+        BigDecimal original = booking.getTotalAmount();
 
-        BigDecimal original = calculateBookingOriginalTotal(tour, booking);
-
-        if (!isVoucherUsableForBooking(voucher, tour.getTourId(), booking, original)) {
+        if (isVoucherUsableForBooking(voucher, booking.getTour().getTourId(), original)) {
             throw new AppException(ErrorCode.VOUCHER_INVALID);
         }
 
-        BigDecimal discount = calculateDiscountAmount(voucher, original);
-        BigDecimal finalTotal = original.subtract(discount).max(BigDecimal.ZERO);
-
-        ApplyVoucherResponse response = voucherMapper.toApplyVoucherResponse(voucher);
-        response.setOriginalTotal(original);
-        response.setDiscountAmount(discount);
-        response.setFinalTotal(finalTotal);
-        return response;
+        return buildVoucherPreview(voucher, booking, original);
     }
+
 
     @Transactional
     public void attachVoucherToBookingPending(Long bookingId, ApplyVoucherResponse preview) {
@@ -103,7 +98,7 @@ public class VoucherService {
         booking.setVoucherId(preview.getVoucherId());
         booking.setVoucherCode(preview.getVoucherCode());
         booking.setVoucherDiscountApplied(preview.getDiscountAmount());
-        booking.setVoucherLocked(Boolean.FALSE);
+        lockVoucherOnPaymentSuccess(bookingId);
         bookingRepository.save(booking);
     }
 
@@ -160,26 +155,27 @@ public class VoucherService {
         bookingRepository.save(booking);
     }
 
-    private BigDecimal calculateBookingOriginalTotal(Tour tour, Booking booking) {
-        BigDecimal adultTotal = tour.getAdultPrice().multiply(BigDecimal.valueOf(booking.getAdultsCount()));
-        BigDecimal childrenTotal = tour.getChildrenPrice().multiply(BigDecimal.valueOf(booking.getChildrenCount()));
-        BigDecimal babyTotal = tour.getBabyPrice().multiply(BigDecimal.valueOf(booking.getBabiesCount()));
-        return adultTotal.add(childrenTotal).add(babyTotal);
+    private BigDecimal calculateDiscountAmount(Voucher voucher, BigDecimal original) {
+        BigDecimal value = voucher.getDiscountValue();
+        if (value == null) return BigDecimal.ZERO;
+
+        if (voucher.getDiscountType() == VoucherDiscountType.PERCENT) {
+            // percent is whole number like 10, 20, 50
+            return original
+                    .multiply(value)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP) // SAFE DIV
+                    .min(original); // discount cannot exceed original
+        }
+
+        // FIXED VALUE DISCOUNT
+        return value.min(original); // cannot exceed price
     }
 
-    private BigDecimal calculateDiscountAmount(Voucher voucher, BigDecimal original) {
-        if (voucher.getDiscountType() == VoucherDiscountType.PERCENT) {
-            BigDecimal percent = voucher.getDiscountValue();
-            if (percent == null) return BigDecimal.ZERO;
-            return original.multiply(percent).divide(BigDecimal.valueOf(100));
-        }
-        return voucher.getDiscountValue() != null ? voucher.getDiscountValue() : BigDecimal.ZERO;
-    }
 
     @Transactional(readOnly = true)
     public List<VoucherResponse> getAllVouchers() {
         List<Voucher> vouchers = voucherRepository.findAll();
-        if (vouchers == null || vouchers.isEmpty()) {
+        if (vouchers.isEmpty()) {
             return new ArrayList<>();
         }
         return vouchers.stream()
@@ -212,8 +208,10 @@ public class VoucherService {
 
     @Transactional(readOnly = true)
     public List<ApplyVoucherResponse> previewAllAvailableVouchers(Long bookingId) {
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
         Tour tour = tourRepository.findById(booking.getTour().getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
@@ -222,53 +220,105 @@ public class VoucherService {
             return new ArrayList<>();
         }
 
-        BigDecimal original = calculateBookingOriginalTotal(tour, booking);
-        List<ApplyVoucherResponse> availableVouchers = new ArrayList<>();
+        BigDecimal original = booking.getTotalAmount();
+        List<ApplyVoucherResponse> available = new ArrayList<>();
 
         for (Voucher voucher : vouchers) {
-            // Check if voucher is usable (without throwing exception)
-            if (!isVoucherUsableForBooking(voucher, tour.getTourId(), booking, original)) {
-                continue; // Skip this voucher if not usable
+
+            if (isVoucherUsableForBooking(voucher, tour.getTourId(), original)) {
+                continue;
             }
 
-            // Calculate discount and final total
-            BigDecimal discount = calculateDiscountAmount(voucher, original);
-            BigDecimal finalTotal = original.subtract(discount).max(BigDecimal.ZERO);
+            ApplyVoucherResponse resp = buildVoucherPreview(voucher, booking, original);
 
-            ApplyVoucherResponse response = voucherMapper.toApplyVoucherResponse(voucher);
-            response.setOriginalTotal(original);
-            response.setDiscountAmount(discount);
-            response.setFinalTotal(finalTotal);
-
-            availableVouchers.add(response);
+            available.add(resp);
         }
 
-        return availableVouchers;
+        return available;
     }
+
+    private ApplyVoucherResponse buildVoucherPreview(Voucher voucher, Booking booking, BigDecimal original) {
+        BigDecimal discount = calculateDiscountAmount(voucher, original);
+        BigDecimal finalTotal = original.subtract(discount).max(BigDecimal.ZERO);
+
+        ApplyVoucherResponse resp = voucherMapper.toApplyVoucherResponse(voucher);
+        resp.setOriginalTotal(original);
+        resp.setDiscountAmount(discount);
+        resp.setFinalTotal(finalTotal);
+
+        // add deposit split
+        applyDepositSplit(resp, booking);
+
+        return resp;
+    }
+
+
+
+    private void applyDepositSplit(ApplyVoucherResponse response, Booking booking) {
+        BigDecimal dpPercent = BigDecimal.valueOf(booking.getTour().getDepositPercentage()); // e.g. 50
+        BigDecimal dp = dpPercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+
+        response.setDepositPercentage(dp);
+        boolean oneTime = dp.compareTo(BigDecimal.ONE) == 0;
+        response.setOneTimePayment(oneTime);
+
+        BigDecimal finalTotal = response.getFinalTotal();
+
+        if (oneTime) {
+            response.setFinalDepositAmount(finalTotal);
+            response.setFinalRemainingAmount(BigDecimal.ZERO);
+
+            response.setDepositDiscountAmount(response.getDiscountAmount()); // all discount belongs to one payment
+            response.setRemainingDiscountAmount(BigDecimal.ZERO);
+            return;
+        }
+
+        // Split normally
+        BigDecimal finalDeposit = finalTotal.multiply(dp);
+        BigDecimal finalRemaining = finalTotal.subtract(finalDeposit);
+
+        response.setFinalDepositAmount(finalDeposit);
+        response.setFinalRemainingAmount(finalRemaining);
+
+        // For percentage voucher: proportional discount
+        if (response.getDiscountType() == VoucherDiscountType.PERCENT) {
+            BigDecimal discount = response.getDiscountAmount();
+            BigDecimal depositDiscount = discount.multiply(dp);
+            BigDecimal remainingDiscount = discount.subtract(depositDiscount);
+
+            response.setDepositDiscountAmount(depositDiscount);
+            response.setRemainingDiscountAmount(remainingDiscount);
+        } else {
+            // Fixed voucher → DO NOT split discount
+            response.setDepositDiscountAmount(null);
+            response.setRemainingDiscountAmount(null);
+        }
+    }
+
 
     /**
      * Check if voucher is usable for booking without throwing exception
      * Returns true if voucher can be applied, false otherwise
      */
-    private boolean isVoucherUsableForBooking(Voucher voucher, Long tourId, Booking booking, BigDecimal originalTotal) {
+    private boolean isVoucherUsableForBooking(Voucher voucher, Long tourId, BigDecimal originalTotal) {
         LocalDateTime now = LocalDateTime.now();
         
         // Check status
         if (voucher.getStatus() == VoucherStatus.INACTIVE) {
-            return false;
+            return true;
         }
         
         // Check date range
         if (voucher.getStartDate() != null && now.isBefore(voucher.getStartDate())) {
-            return false;
+            return true;
         }
         if (voucher.getEndDate() != null && now.isAfter(voucher.getEndDate())) {
-            return false;
+            return true;
         }
         
         // Check remaining quantity
         if (voucher.getRemainingQuantity() == null || voucher.getRemainingQuantity() <= 0) {
-            return false;
+            return true;
         }
         
         // Check tour mapping - if voucher has specific tour mappings, tour must be in the list
@@ -276,16 +326,12 @@ public class VoucherService {
         if (mappings != null && !mappings.isEmpty()) {
             boolean allowed = mappings.stream().anyMatch(m -> m.getTour().getTourId().equals(tourId));
             if (!allowed) {
-                return false;
+                return true;
             }
         }
         
         // Check min order value
-        if (voucher.getMinOrderValue() != null && originalTotal.compareTo(voucher.getMinOrderValue()) < 0) {
-            return false;
-        }
-        
-        return true;
+        return voucher.getMinOrderValue() != null && originalTotal.compareTo(voucher.getMinOrderValue()) < 0;
     }
 
     private VoucherResponse mapToVoucherResponseWithTourIds(Voucher voucher) {

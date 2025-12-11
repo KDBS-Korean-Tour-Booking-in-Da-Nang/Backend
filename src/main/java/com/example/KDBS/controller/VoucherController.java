@@ -30,10 +30,9 @@ public class VoucherController {
         return ResponseEntity.ok(voucherService.previewAllAvailableVouchers(bookingId));
     }
 
-    @PostMapping("/apply")
+    @PostMapping("/preview-apply")
     public ResponseEntity<ApplyVoucherResponse> apply(@Valid @RequestBody ApplyVoucherRequest request) {
         var preview = voucherService.previewApplyVoucher(request);
-        voucherService.attachVoucherToBookingPending(request.getBookingId(), preview);
         return ResponseEntity.ok(preview);
     }
 

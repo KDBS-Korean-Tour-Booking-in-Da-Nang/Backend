@@ -185,7 +185,6 @@ public class TossPaymentService {
         if (bookingId != null) {
             bookingRepository.findById(bookingId).ifPresent(b -> {
                 if (txStatus == TransactionStatus.SUCCESS) {
-                    voucherService.lockVoucherOnPaymentSuccess(bookingId);
                     if (b.getTotalAmount().equals(b.getDepositAmount())) {
                         b.setBookingStatus(BookingStatus.WAITING_FOR_APPROVED);
                         b.setPayedAmount(b.getTotalAmount());
@@ -222,7 +221,6 @@ public class TossPaymentService {
                             b.setBookingStatus(BookingStatus.PENDING_DEPOSIT_PAYMENT);
                         }
                     }
-                    voucherService.unlockVoucherOnBookingCancelled(bookingId);
                 }
                 bookingRepository.save(b);
             });
