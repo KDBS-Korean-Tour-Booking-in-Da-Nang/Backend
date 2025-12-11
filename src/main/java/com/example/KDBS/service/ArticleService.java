@@ -68,10 +68,15 @@ public class ArticleService {
                                 article.getArticleId(),
                                 Map.of(
                                         "articleStatus",
-                                        article.getArticleStatus() != null ? article.getArticleStatus().name()
-                                                : "UNKNOWN",
+                                        article.getArticleStatus() != null ? article.getArticleStatus().name() : "UNKNOWN",
+
                                         "articleTitle",
-                                        article.getArticleTitle() != null ? article.getArticleTitle() : ""));
+                                        article.getArticleTitle() != null ? article.getArticleTitle() : "",
+
+                                        "articleSummary",
+                                        article.getArticleSummary() != null ? article.getArticleSummary() : ""
+                                )
+                        );
                         log.info("Successfully logged article read: articleId={}, userId={}", article.getArticleId(),
                                 user.getUserId());
                     },
