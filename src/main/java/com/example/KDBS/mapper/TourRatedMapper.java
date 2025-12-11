@@ -22,7 +22,7 @@ public interface TourRatedMapper {
     @Mapping(target = "userId", source = "user.userId")
     @Mapping(target = "tourId", source = "tour.tourId")
     @Mapping(target = "username", source = "user.username")
-    @Mapping(target = "avatar", source = "user.avatar")
+    @Mapping(target = "userAvatar", source = "user.avatar")
     TourRatedResponse toTourRatedResponse(TourRated entity);
 
     // Update
@@ -31,6 +31,5 @@ public interface TourRatedMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "user", ignore = true)
     void updateTourRatedFromRequest(TourRatedRequest request, @MappingTarget TourRated entity);
-
 
 }

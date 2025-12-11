@@ -130,7 +130,6 @@ public class Booking {
 
     @PrePersist
     protected void onCreate() {
-        this.bookingStatus = BookingStatus.PENDING_PAYMENT;
         this.createdAt = LocalDateTime.now();
         this.companyConfirmedCompletion = false;
         this.userConfirmedCompletion = false;

@@ -1,5 +1,6 @@
 package com.example.KDBS.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,5 +24,5 @@ public class BookingPaymentRequest {
     @Email(message = "Invalid email format")
     private String userEmail;
 
-    private boolean isDeposit;
+    private boolean deposit;
 }

@@ -9,7 +9,7 @@ public class TourRatedResponse {
     private Long tourRatedId;
     private Long userId;
     private String username;
-    private String avatar;
+    private String userAvatar;
 
     private Long tourId;
     private Integer star;
