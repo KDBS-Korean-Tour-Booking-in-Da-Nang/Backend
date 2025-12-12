@@ -87,11 +87,7 @@ public class BookingService {
 
         // Apply voucher if provided
         if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
-            var preview = voucherService.previewApplyVoucher(
-                    ApplyVoucherRequest.builder()
-                            .bookingId(savedBooking.getBookingId())
-                            .voucherCode(request.getVoucherCode())
-                            .build());
+            var preview = voucherService.previewApplyVoucher(savedBooking.getBookingId());
             voucherService.attachVoucherToBookingPending(savedBooking.getBookingId(), preview);
         }
 

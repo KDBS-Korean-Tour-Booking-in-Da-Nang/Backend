@@ -1,7 +1,6 @@
 package com.example.KDBS.controller;
 
 import com.example.KDBS.dto.request.AllVoucherRequest;
-import com.example.KDBS.dto.request.ApplyVoucherRequest;
 import com.example.KDBS.dto.request.VoucherCreateRequest;
 import com.example.KDBS.dto.response.ApplyVoucherResponse;
 import com.example.KDBS.dto.response.VoucherResponse;
@@ -32,12 +31,8 @@ public class VoucherController {
     }
 
     @GetMapping("/preview-apply/{bookingId}")
-    public ResponseEntity<ApplyVoucherResponse> preview(@PathVariable Long bookingId, @RequestParam String voucherCode) {
-        ApplyVoucherRequest request = ApplyVoucherRequest.builder()
-                .bookingId(bookingId)
-                .voucherCode(voucherCode)
-                .build();
-        var preview = voucherService.previewApplyVoucher(request);
+    public ResponseEntity<ApplyVoucherResponse> preview(@PathVariable Long bookingId) {
+        var preview = voucherService.previewApplyVoucher(bookingId);
         return ResponseEntity.ok(preview);
     }
 

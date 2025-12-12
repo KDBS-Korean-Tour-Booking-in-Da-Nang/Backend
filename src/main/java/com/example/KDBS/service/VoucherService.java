@@ -1,7 +1,6 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.AllVoucherRequest;
-import com.example.KDBS.dto.request.ApplyVoucherRequest;
 import com.example.KDBS.dto.request.VoucherCreateRequest;
 import com.example.KDBS.dto.response.ApplyVoucherResponse;
 import com.example.KDBS.dto.response.VoucherResponse;
@@ -72,14 +71,14 @@ public class VoucherService {
     }
 
     @Transactional(readOnly = true)
-    public ApplyVoucherResponse previewApplyVoucher(ApplyVoucherRequest request) {
+    public ApplyVoucherResponse previewApplyVoucher(Long bookingId) {
 
-        Booking booking = bookingRepository.findById(request.getBookingId())
+        Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
         Voucher voucher = voucherRepository.findByCompanyIdAndCode(
                         booking.getTour().getCompanyId(),
-                        request.getVoucherCode())
+                        booking.getVoucherCode())
                 .orElseThrow(() -> new AppException(ErrorCode.VOUCHER_NOT_FOUND));
 
         BigDecimal original = booking.getTotalAmount();
