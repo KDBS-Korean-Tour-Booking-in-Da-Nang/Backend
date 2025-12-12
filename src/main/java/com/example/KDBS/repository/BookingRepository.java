@@ -58,13 +58,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     );
 
     // COMPANY MONTHLY BOOKING COUNT (ALL STATUS)
-    @Query("""
-    SELECT MONTH(b.createdAt), COUNT(b)
-    FROM Booking b
-    WHERE b.tour.companyId = :companyId
-      AND YEAR(b.createdAt) = :year
-    GROUP BY MONTH(b.createdAt)
-""")
+    @Query(value = """
+    SELECT MONTH(b.created_at) as month, COUNT(b.booking_id) as count
+    FROM bookings b
+    INNER JOIN tours t ON b.tour_id = t.tour_id
+    WHERE t.company_id = :companyId
+      AND YEAR(b.created_at) = :year
+    GROUP BY MONTH(b.created_at)
+""", nativeQuery = true)
     List<Object[]> getMonthlyBookingCount(
             @Param("companyId") int companyId,
             @Param("year") int year

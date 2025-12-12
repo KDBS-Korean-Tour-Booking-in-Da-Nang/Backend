@@ -989,6 +989,7 @@ public class BookingService {
         return monthlyRevenue;
     }
 
+    @Transactional(readOnly = true)
     public Map<Integer, Long> getMonthlyBookingCount(int companyId, int year) {
 
         List<Object[]> results =
@@ -1002,10 +1003,26 @@ public class BookingService {
         }
 
         // Fill DB data
+        // Native query returns Object[], need to handle different types from DB
         for (Object[] row : results) {
-            Integer month = (Integer) row[0];
-            Long count = (Long) row[1];
-            monthlyBookingCount.put(month, count);
+            // Handle different return types from native query (could be Integer, Long, BigInteger, etc.)
+            Object monthObj = row[0];
+            Object countObj = row[1];
+            
+            Integer month = null;
+            Long count = 0L;
+            
+            if (monthObj instanceof Number) {
+                month = ((Number) monthObj).intValue();
+            }
+            
+            if (countObj instanceof Number) {
+                count = ((Number) countObj).longValue();
+            }
+            
+            if (month != null && month >= 1 && month <= 12) {
+                monthlyBookingCount.put(month, count);
+            }
         }
 
         return monthlyBookingCount;
