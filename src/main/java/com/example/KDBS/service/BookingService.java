@@ -204,7 +204,7 @@ public class BookingService {
             refundAmount = booking.getPayedAmount();
         } else if (LocalDate.now().isBefore(booking.getMinAdvanceDays()) &&
                 (booking.getBookingStatus().equals(BookingStatus.PENDING_BALANCE_PAYMENT)
-                        || booking.getBookingStatus().equals(BookingStatus.PENDING_PAYMENT))) {
+                        || booking.getBookingStatus().equals(BookingStatus.BOOKING_BALANCE_SUCCESS))) {
 
             refundPercentage = 80;
             refundAmount = booking.getPayedAmount()
@@ -691,73 +691,113 @@ public class BookingService {
         Integer companyRecipientId = booking.getTour().getCompanyId(); // Company is the actor when changing status
 
         String defaultMessage;
+        String userTitle;
+        String companyTitle;
+        String companyMessage;
+        boolean sendToUser = true;
+        boolean sendToCompany = true;
+
         if (notificationType == NotificationType.BOOKING_CONFIRMED) {
             defaultMessage = "Booking của bạn đã được xác nhận.";
+            userTitle = "Booking đã được xác nhận";
+            companyTitle = "Booking đã được xác nhận";
+            companyMessage = String.format("Booking #%d cho tour %s đã được xác nhận.",
+                    booking.getBookingId(), booking.getTour().getTourName());
         } else if (notificationType == NotificationType.BOOKING_REJECTED) {
             defaultMessage = "Booking của bạn đã bị từ chối. Vui lòng liên hệ công ty để biết thêm chi tiết.";
+            userTitle = "Booking bị từ chối";
+            companyTitle = "Booking đã bị từ chối";
+            companyMessage = String.format("Booking #%d cho tour %s đã bị từ chối.",
+                    booking.getBookingId(), booking.getTour().getTourName());
         } else if (notificationType == NotificationType.BOOKING_UPDATE_REQUEST) {
             defaultMessage = "Công ty yêu cầu bạn cập nhật thông tin booking.";
+            userTitle = "Cần cập nhật booking";
+            companyTitle = "Yêu cầu cập nhật booking";
+            companyMessage = String.format("Yêu cầu khách hàng cập nhật thông tin booking #%d.",
+                    booking.getBookingId());
+        } else if (notificationType == NotificationType.BOOKING_PENDING_DEPOSIT) {
+            defaultMessage = "Vui lòng thanh toán tiền cọc để hoàn tất booking.";
+            userTitle = "Cần thanh toán tiền cọc";
+            companyTitle = "Khách hàng cần thanh toán tiền cọc";
+            companyMessage = String.format("Booking #%d cho tour %s đang chờ khách hàng thanh toán tiền cọc.",
+                    booking.getBookingId(), booking.getTour().getTourName());
+        } else if (notificationType == NotificationType.BOOKING_PENDING_BALANCE) {
+            defaultMessage = "Vui lòng thanh toán số tiền còn lại để hoàn tất booking.";
+            userTitle = "Cần thanh toán số tiền còn lại";
+            companyTitle = "Khách hàng cần thanh toán số tiền còn lại";
+            companyMessage = String.format("Booking #%d cho tour %s đang chờ khách hàng thanh toán số tiền còn lại.",
+                    booking.getBookingId(), booking.getTour().getTourName());
+        } else if (notificationType == NotificationType.BOOKING_WAITING_APPROVAL) {
+            defaultMessage = "Booking của bạn đang chờ được công ty xác nhận.";
+            userTitle = "Booking đang chờ xác nhận";
+            companyTitle = "Booking mới cần được xác nhận";
+            companyMessage = String.format("Booking #%d cho tour %s đang chờ bạn xác nhận.",
+                    booking.getBookingId(), booking.getTour().getTourName());
+            sendToUser = false; // Chỉ gửi cho company
+        } else if (notificationType == NotificationType.BOOKING_FAILED) {
+            defaultMessage = "Booking của bạn đã bị hủy do quá thời hạn thanh toán hoặc không đáp ứng yêu cầu.";
+            userTitle = "Booking đã bị hủy";
+            companyTitle = "Booking đã bị hủy";
+            companyMessage = String.format("Booking #%d cho tour %s đã bị hủy.",
+                    booking.getBookingId(), booking.getTour().getTourName());
+        } else if (notificationType == NotificationType.BOOKING_SUCCESS_WAIT_CONFIRM) {
+            defaultMessage = "Tour đã kết thúc. Vui lòng xác nhận hoàn thành tour.";
+            userTitle = "Vui lòng xác nhận hoàn thành tour";
+            companyTitle = "Vui lòng xác nhận hoàn thành tour";
+            companyMessage = String.format("Tour cho booking #%d đã kết thúc. Vui lòng xác nhận hoàn thành.",
+                    booking.getBookingId());
+        } else if (notificationType == NotificationType.BOOKING_UNDER_COMPLAINT) {
+            defaultMessage = "Booking của bạn đang được xử lý khiếu nại.";
+            userTitle = "Booking đang được xử lý khiếu nại";
+            companyTitle = "Booking bị khiếu nại";
+            companyMessage = String.format("Booking #%d cho tour %s đã bị khách hàng khiếu nại.",
+                    booking.getBookingId(), booking.getTour().getTourName());
+            sendToUser = false; // Chỉ gửi cho company khi có complaint
+        } else if (notificationType == NotificationType.BOOKING_SUCCESS) {
+            defaultMessage = "Booking của bạn đã hoàn thành thành công.";
+            userTitle = "Booking đã hoàn thành";
+            companyTitle = "Booking đã hoàn thành";
+            companyMessage = String.format("Booking #%d cho tour %s đã hoàn thành thành công.",
+                    booking.getBookingId(), booking.getTour().getTourName());
+        } else if (notificationType == NotificationType.BOOKING_CANCELLED) {
+            defaultMessage = "Khách hàng đã hủy booking.";
+            userTitle = "Booking đã bị hủy";
+            companyTitle = "Khách hàng đã hủy booking";
+            companyMessage = String.format("Khách hàng đã hủy booking #%d cho tour %s.",
+                    booking.getBookingId(), booking.getTour().getTourName());
+            sendToUser = false; // Chỉ gửi cho company khi user cancel
         } else {
             defaultMessage = "";
-        }
-
-        String userTitle;
-        if (notificationType == NotificationType.BOOKING_CONFIRMED) {
-            userTitle = "Booking đã được xác nhận";
-        } else if (notificationType == NotificationType.BOOKING_REJECTED) {
-            userTitle = "Booking bị từ chối";
-        } else if (notificationType == NotificationType.BOOKING_UPDATE_REQUEST) {
-            userTitle = "Cần cập nhật booking";
-        } else {
             userTitle = "Thông báo booking";
+            companyTitle = "Thông báo booking";
+            companyMessage = "";
         }
 
         String message = request.getMessage() != null ? request.getMessage() : defaultMessage;
 
         // Gửi notification cho user
-        notificationService.pushNotification(
-                userRecipientId,
-                companyRecipientId,
-                notificationType,
-                userTitle,
-                message,
-                booking.getBookingId(),
-                "BOOKING");
+        if (sendToUser && userRecipientId != null) {
+            notificationService.pushNotification(
+                    userRecipientId,
+                    companyRecipientId,
+                    notificationType,
+                    userTitle,
+                    message,
+                    booking.getBookingId(),
+                    "BOOKING");
+        }
 
         // Gửi notification cho company về thay đổi trạng thái booking
-        String companyTitle;
-        if (notificationType == NotificationType.BOOKING_CONFIRMED) {
-            companyTitle = "Booking đã được xác nhận";
-        } else if (notificationType == NotificationType.BOOKING_REJECTED) {
-            companyTitle = "Booking đã bị từ chối";
-        } else if (notificationType == NotificationType.BOOKING_UPDATE_REQUEST) {
-            companyTitle = "Yêu cầu cập nhật booking";
-        } else {
-            companyTitle = "Thông báo booking";
+        if (sendToCompany && companyRecipientId != null) {
+            notificationService.pushNotification(
+                    companyRecipientId,
+                    companyRecipientId,
+                    notificationType,
+                    companyTitle,
+                    companyMessage,
+                    booking.getBookingId(),
+                    "BOOKING");
         }
-
-        String companyMessage;
-        if (notificationType == NotificationType.BOOKING_CONFIRMED) {
-            companyMessage = String.format("Booking #%d cho tour %s đã được xác nhận.",
-                    booking.getBookingId(), booking.getTour().getTourName());
-        } else if (notificationType == NotificationType.BOOKING_REJECTED) {
-            companyMessage = String.format("Booking #%d cho tour %s đã bị từ chối.",
-                    booking.getBookingId(), booking.getTour().getTourName());
-        } else if (notificationType == NotificationType.BOOKING_UPDATE_REQUEST) {
-            companyMessage = String.format("Yêu cầu khách hàng cập nhật thông tin booking #%d.",
-                    booking.getBookingId());
-        } else {
-            companyMessage = "";
-        }
-
-        notificationService.pushNotification(
-                companyRecipientId,
-                companyRecipientId,
-                notificationType,
-                companyTitle,
-                companyMessage,
-                booking.getBookingId(),
-                "BOOKING");
     }
 
     private NotificationType mapStatusToNotificationType(BookingStatus status) {
@@ -771,6 +811,22 @@ public class BookingService {
             return NotificationType.BOOKING_REJECTED;
         } else if (status == BookingStatus.WAITING_FOR_UPDATE) {
             return NotificationType.BOOKING_UPDATE_REQUEST;
+        } else if (status == BookingStatus.PENDING_DEPOSIT_PAYMENT) {
+            return NotificationType.BOOKING_PENDING_DEPOSIT;
+        } else if (status == BookingStatus.PENDING_BALANCE_PAYMENT) {
+            return NotificationType.BOOKING_PENDING_BALANCE;
+        } else if (status == BookingStatus.WAITING_FOR_APPROVED) {
+            return NotificationType.BOOKING_WAITING_APPROVAL;
+        } else if (status == BookingStatus.BOOKING_FAILED) {
+            return NotificationType.BOOKING_FAILED;
+        } else if (status == BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED) {
+            return NotificationType.BOOKING_SUCCESS_WAIT_CONFIRM;
+        } else if (status == BookingStatus.BOOKING_UNDER_COMPLAINT) {
+            return NotificationType.BOOKING_UNDER_COMPLAINT;
+        } else if (status == BookingStatus.BOOKING_SUCCESS) {
+            return NotificationType.BOOKING_SUCCESS;
+        } else if (status == BookingStatus.BOOKING_CANCELLED) {
+            return NotificationType.BOOKING_CANCELLED;
         } else {
             return null;
         }

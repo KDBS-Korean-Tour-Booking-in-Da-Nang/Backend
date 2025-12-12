@@ -134,15 +134,27 @@ public class EmailService {
      * Gửi email
      */
     private void sendEmail(String to, String subject, String content) throws MessagingException {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        try {
+            log.info("Creating MimeMessage for email to: {}", to);
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-        helper.setFrom(fromEmail);
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(content, true); // true = HTML content
+            log.info("Setting email from: {}, to: {}, subject: {}", fromEmail, to, subject);
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(content, true); // true = HTML content
 
-        mailSender.send(message);
+            log.info("Sending email via JavaMailSender to: {}", to);
+            mailSender.send(message);
+            log.info("Email sent successfully via JavaMailSender to: {}", to);
+        } catch (MessagingException e) {
+            log.error("MessagingException in sendEmail method. To: {}, Error: {}", to, e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected exception in sendEmail method. To: {}, Error: {}", to, e.getMessage(), e);
+            throw new MessagingException("Failed to send email", e);
+        }
     }
 
     /**
@@ -627,9 +639,27 @@ public class EmailService {
                                              BookingStatus newStatus,
                                              boolean isCompanyRecipient,
                                              String message) {
+        log.info("Starting to send booking status update email to: {}, booking: {}, newStatus: {}", 
+                to, booking != null ? booking.getBookingId() : "null", newStatus);
         try {
+            if (to == null || to.isBlank()) {
+                log.error("Cannot send email: recipient email is null or blank");
+                return;
+            }
+            
+            if (booking == null) {
+                log.error("Cannot send email: booking is null");
+                return;
+            }
+            
+            if (tour == null) {
+                log.error("Cannot send email: tour is null for booking {}", booking.getBookingId());
+                return;
+            }
+            
             // Nếu là reject booking, dùng email riêng với nhiều thông tin hơn
             if (newStatus == BookingStatus.BOOKING_REJECTED) {
+                log.info("Sending rejected email to: {}", to);
                 sendBookingRejectedEmail(to, booking, tour, isCompanyRecipient, message);
                 return;
             }
@@ -641,12 +671,19 @@ public class EmailService {
             } else {
                 subject = String.format("예약 상태 변경 안내 - %s", tour.getTourName());
             }
+            
+            log.info("Building email content for booking: {}", booking.getBookingId());
             String content = buildBookingStatusUpdateEmail(to, booking, tour, oldStatus, newStatus, isCompanyRecipient);
 
+            log.info("Attempting to send email to: {} with subject: {}", to, subject);
             sendEmail(to, subject, content);
-            log.info("Booking status update email sent to: {}", to);
+            log.info("Booking status update email sent successfully to: {}", to);
+        } catch (MessagingException e) {
+            log.error("MessagingException when sending booking status update email to: {}. Error: {}", to, e.getMessage(), e);
+            log.error("Exception details - Cause: {}, Stack trace: {}", e.getCause(), e.getStackTrace());
         } catch (Exception e) {
-            log.error("Failed to send booking status update email to: {}", to, e);
+            log.error("Unexpected exception when sending booking status update email to: {}. Error: {}", to, e.getMessage(), e);
+            log.error("Exception type: {}, Cause: {}", e.getClass().getName(), e.getCause());
         }
     }
 
@@ -692,16 +729,28 @@ public class EmailService {
         if (!isCompanyRecipient) {
             // Email cho user - tiếng Hàn
             String statusMessageKo;
-            if (newStatus == BookingStatus.BOOKING_BALANCE_SUCCESS) {
-                statusMessageKo = "고객의 예약이 확인되었고 결제가 모두 완료되었습니다.";
+            if (newStatus == BookingStatus.BOOKING_SUCCESS) {
+                statusMessageKo = "고객님의 여행 예약이 확정되었습니다.";
+            }             else if (newStatus == BookingStatus.PENDING_DEPOSIT_PAYMENT) {
+                statusMessageKo = "예약을 완료하려면 보증금을 지불해 주세요.";
             }
-            else if (newStatus == BookingStatus.PENDING_BALANCE_PAYMENT) {
-                statusMessageKo = "고객의 예약이 확인되었으며 남은 금액 결제를 기다리고 있습니다.";
+            else if (newStatus == BookingStatus.WAITING_FOR_APPROVED) {
+                statusMessageKo = "예약이 회사 승인을 기다리고 있습니다.";
             }
             else if (newStatus == BookingStatus.BOOKING_REJECTED) {
                 statusMessageKo = "죄송하지만 예약이 취소되었습니다.";
             } else if (newStatus == BookingStatus.WAITING_FOR_UPDATE) {
                 statusMessageKo = "예약 진행을 위해 고객님의 추가 정보가 필요합니다.";
+            } else if (newStatus == BookingStatus.BOOKING_FAILED) {
+                statusMessageKo = "예약이 결제 기한 초과 또는 요구사항 미충족으로 취소되었습니다.";
+            } else if (newStatus == BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED) {
+                statusMessageKo = "투어가 종료되었습니다. 투어 완료를 확인해 주세요.";
+            } else if (newStatus == BookingStatus.BOOKING_UNDER_COMPLAINT) {
+                statusMessageKo = "예약이 불만 처리 중입니다.";
+            } else if (newStatus == BookingStatus.BOOKING_SUCCESS) {
+                statusMessageKo = "예약이 성공적으로 완료되었습니다.";
+            } else if (newStatus == BookingStatus.BOOKING_CANCELLED) {
+                statusMessageKo = "예약이 취소되었습니다.";
             } else {
                 statusMessageKo = "예약 상태가 변경되었습니다.";
             }
@@ -916,16 +965,28 @@ public class EmailService {
 
         // Email cho company - tiếng Việt
         String statusMessageVi;
-        if (newStatus == BookingStatus.BOOKING_BALANCE_SUCCESS) {
-            statusMessageVi = "Booking của khách đã được xác nhận và thanh toán đầy đủ.";
+        if (newStatus == BookingStatus.BOOKING_SUCCESS) {
+            statusMessageVi = "Booking của khách đã được xác nhận.";
+        }         else if (newStatus == BookingStatus.PENDING_DEPOSIT_PAYMENT) {
+            statusMessageVi = "Booking của khách đang chờ thanh toán tiền cọc.";
         }
-        else if (newStatus == BookingStatus.PENDING_BALANCE_PAYMENT) {
-            statusMessageVi = "Booking của khách đã được xác nhận và đang chờ thanh toán số tiền còn lại.";
+        else if (newStatus == BookingStatus.WAITING_FOR_APPROVED) {
+            statusMessageVi = "Booking mới đang chờ bạn xác nhận.";
         }
         else if (newStatus == BookingStatus.BOOKING_REJECTED) {
             statusMessageVi = "Booking của khách đã bị từ chối.";
         } else if (newStatus == BookingStatus.WAITING_FOR_UPDATE) {
             statusMessageVi = "Bạn đã yêu cầu khách cập nhật thêm thông tin cho booking này.";
+        } else if (newStatus == BookingStatus.BOOKING_FAILED) {
+            statusMessageVi = "Booking đã bị hủy do quá thời hạn thanh toán hoặc không đáp ứng yêu cầu.";
+        } else if (newStatus == BookingStatus.BOOKING_SUCCESS_WAIT_FOR_CONFIRMED) {
+            statusMessageVi = "Tour đã kết thúc. Vui lòng xác nhận hoàn thành tour.";
+        } else if (newStatus == BookingStatus.BOOKING_UNDER_COMPLAINT) {
+            statusMessageVi = "Booking đã bị khách hàng khiếu nại.";
+        } else if (newStatus == BookingStatus.BOOKING_SUCCESS) {
+            statusMessageVi = "Booking đã hoàn thành thành công.";
+        } else if (newStatus == BookingStatus.BOOKING_CANCELLED) {
+            statusMessageVi = "Khách hàng đã hủy booking.";
         } else {
             statusMessageVi = "Trạng thái booking đã được cập nhật.";
         }
@@ -1131,7 +1192,7 @@ public class EmailService {
                 </div>
             </body>
             </html>
-            """,
+                """,
                 statusMessageVi,
                 tour.getTourName(),
                 booking.getBookingId(),
