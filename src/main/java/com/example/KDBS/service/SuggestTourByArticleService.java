@@ -64,7 +64,7 @@ public class SuggestTourByArticleService {
             return List.of();
         }
 
-        List<Tour> tours = tourRepository.findAllPublicTours(TourStatus.PUBLIC);
+        List<Tour> tours = tourRepository.findAllByTourStatusIn(List.of(TourStatus.PUBLIC));
 
         if (tours.isEmpty()) {
             return List.of();
@@ -110,7 +110,7 @@ public class SuggestTourByArticleService {
     private String buildPrompt(List<Article> articles, List<Tour> tours) {
 
         StringBuilder prompt = new StringBuilder("""
-                You are KDBS AI Recommendation Engine.
+               You are KDBS AI Recommendation Engine.
                                        
                Your task:
                    1. Analyze what the user is interested in based on the articles they read.

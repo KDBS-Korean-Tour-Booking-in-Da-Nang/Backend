@@ -25,6 +25,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     Boolean existsByTour_TourId(Long tourTourId);
 
+    //COMPANY STATISTICS
+
     @Query("""
         SELECT b.bookingStatus, COUNT(b)
         FROM Booking b
@@ -40,7 +42,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     """)
     long countTotalBookingsByCompanyId(@Param("companyId") int companyId);
 
-
+    // COMPANY MONTHLY REVENUE
     @Query("""
     SELECT MONTH(b.createdAt), SUM(b.totalAmount)
     FROM Booking b
@@ -51,6 +53,34 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 """)
     List<Object[]> getMonthlyRevenue(
             @Param("companyId") int companyId,
+            @Param("year") int year,
+            @Param("successStatuses") List<BookingStatus> successStatuses
+    );
+
+
+    // ADMIN DASHBOARD STATS
+    @Query("""
+    SELECT b.bookingStatus, COUNT(b)
+    FROM Booking b
+    GROUP BY b.bookingStatus
+""")
+    List<Object[]> countAllBookingsGroupByStatus();
+
+    @Query("""
+    SELECT COUNT(b)
+    FROM Booking b
+""")
+    long countAllBookings();
+
+    // ADMIN MONTHLY REVENUE (ALL COMPANIES)
+    @Query("""
+    SELECT MONTH(b.createdAt), SUM(b.totalAmount)
+    FROM Booking b
+    WHERE YEAR(b.createdAt) = :year
+      AND b.bookingStatus IN :successStatuses
+    GROUP BY MONTH(b.createdAt)
+""")
+    List<Object[]> getAdminMonthlyRevenue(
             @Param("year") int year,
             @Param("successStatuses") List<BookingStatus> successStatuses
     );

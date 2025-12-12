@@ -212,7 +212,7 @@ public class BookingController {
 
     //COMPANY STATISTIC
     @GetMapping("/company/{companyId}/statistics")
-    public ResponseEntity<CompanyBookingStatisticResponse> getCompanyBookingStatistics(@PathVariable int companyId) {
+    public ResponseEntity<BookingStatisticResponse> getCompanyBookingStatistics(@PathVariable int companyId) {
 
         return ResponseEntity.ok(
                 bookingService.getCompanyBookingStatistics(companyId)

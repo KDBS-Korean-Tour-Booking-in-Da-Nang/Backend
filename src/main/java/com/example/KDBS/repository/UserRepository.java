@@ -4,6 +4,8 @@ import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
 import com.example.KDBS.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -23,5 +25,30 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     Optional<User> findByEmailAndRole(String email, Role role);
 
     Optional<User> findFirstByRole(Role role);
+
+    // ADMIN DASHBOARD STATS - USER
+    @Query("""
+    SELECT u.status, COUNT(u)
+    FROM User u
+    GROUP BY u.status
+""")
+    List<Object[]> countAllUsersGroupByStatus();
+
+    @Query("""
+    SELECT COUNT(u)
+    FROM User u
+""")
+    long countAllUsers();
+
+    @Query("""
+    SELECT COUNT(u)
+    FROM User u
+    WHERE u.status = :status
+      AND u.role = :role
+""")
+    long countUsersByStatusAndRole(
+            @Param("status") Status status,
+            @Param("role") Role role
+    );
 
 }

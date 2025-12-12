@@ -168,7 +168,7 @@ public class TourController {
 
     //COMPANY TOUR STATISTIC
     @GetMapping("/company/{companyId}/statistics")
-    public ResponseEntity<CompanyTourStatisticResponse> getCompanyTourStatistics(@PathVariable int companyId) {
+    public ResponseEntity<TourStatisticResponse> getCompanyTourStatistics(@PathVariable int companyId) {
 
         return ResponseEntity.ok(
                 tourService.getCompanyTourStatistics(companyId)

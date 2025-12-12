@@ -62,7 +62,7 @@ public class SuggestTourViaBehaviorService {
         List<String> texts = extractUserInterestTexts(logs);
         if (texts.isEmpty()) return List.of();
 
-        List<Tour> tours = tourRepository.findAllPublicTours(TourStatus.PUBLIC);
+        List<Tour> tours = tourRepository.findAllByTourStatusIn(List.of(TourStatus.PUBLIC));
         if (tours.isEmpty()) return List.of();
 
         // 5. Build & send prompt
