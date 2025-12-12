@@ -67,16 +67,6 @@ public class BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        // Apply voucher if provided
-        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
-            var preview = voucherService.previewApplyVoucher(
-                    ApplyVoucherRequest.builder()
-                            .bookingId(savedBooking.getBookingId())
-                            .voucherCode(request.getVoucherCode())
-                            .build());
-            voucherService.attachVoucherToBookingPending(savedBooking.getBookingId(), preview);
-        }
-
         BigDecimal totalAmount = calculateBookingTotal(savedBooking.getBookingId());
         savedBooking.setTotalAmount(totalAmount);
 
@@ -94,6 +84,16 @@ public class BookingService {
 
         sendNewBookingNotification(savedBooking);
         logBookingCreated(savedBooking);
+
+        // Apply voucher if provided
+        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
+            var preview = voucherService.previewApplyVoucher(
+                    ApplyVoucherRequest.builder()
+                            .bookingId(savedBooking.getBookingId())
+                            .voucherCode(request.getVoucherCode())
+                            .build());
+            voucherService.attachVoucherToBookingPending(savedBooking.getBookingId(), preview);
+        }
 
         return buildBookingResponse(savedBooking, savedGuests);
     }
