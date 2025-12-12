@@ -48,4 +48,9 @@ public class BookingResponse {
     private BigDecimal depositAmount;
     private BigDecimal totalAmount;
     private int refundPercentage;
+    private Long voucherId;
+    private String voucherCode;
+    private BigDecimal voucherDiscountApplied;
+    private BigDecimal depositDiscountAmount;  // Final deposit amount after voucher discount
+    private BigDecimal totalDiscountAmount; 
 }

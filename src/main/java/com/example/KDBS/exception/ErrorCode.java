@@ -160,6 +160,7 @@ public enum ErrorCode {
         // Voucher
         VOUCHER_ALREADY_EXISTED(1076, "Voucher already existed", HttpStatus.CONFLICT),
         VOUCHER_INVALID(1077, "Voucher is invalid or cannot be applied", HttpStatus.BAD_REQUEST),
+        TOUR_PRICE_NOT_SET(1109, "Tour price is not set. Please contact support", HttpStatus.BAD_REQUEST),
 
         // Runtime / unknown
         RUN_TIME_EXCEPTION(1999, "Runtime exception occurred", HttpStatus.INTERNAL_SERVER_ERROR),
