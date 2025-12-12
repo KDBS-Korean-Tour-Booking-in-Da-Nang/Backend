@@ -122,6 +122,12 @@ public class Booking {
     @Column(name = "total_amount")
     private BigDecimal totalAmount;
 
+    @Column(name = "deposit_discount_amount")
+    private BigDecimal depositDiscountAmount;
+
+    @Column(name = "total_discount_amount")
+    private BigDecimal totalDiscountAmount;
+
     @Column(name = "refund_amount")
     private BigDecimal refundAmount;
 

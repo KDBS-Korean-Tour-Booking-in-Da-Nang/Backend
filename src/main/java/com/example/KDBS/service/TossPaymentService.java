@@ -184,41 +184,47 @@ public class TossPaymentService {
         Long bookingId = extractBookingIdFromOrderInfo(tx.getOrderInfo());
         if (bookingId != null) {
             bookingRepository.findById(bookingId).ifPresent(b -> {
+                boolean isFullPayment = b.getTotalAmount().equals(b.getDepositAmount());
+                boolean isDeposit = !isFullPayment && b.getPayedAmount().compareTo(BigDecimal.ZERO) == 0;
+                boolean hasVoucher = b.getVoucherCode() != null && !b.getVoucherCode().isBlank();
+                BigDecimal depositAmount = hasVoucher ? b.getDepositDiscountAmount() : b.getDepositAmount();
+                BigDecimal totalAmount = hasVoucher ? b.getTotalDiscountAmount() : b.getTotalAmount();
+
                 if (txStatus == TransactionStatus.SUCCESS) {
-                    if (b.getTotalAmount().equals(b.getDepositAmount())) {
+                    if (isFullPayment) {
                         b.setBookingStatus(BookingStatus.WAITING_FOR_APPROVED);
-                        b.setPayedAmount(b.getTotalAmount());
+                        b.setPayedAmount(totalAmount);
                         b.setAutoFailedDate(LocalDate.now().plusDays(b.getTour().getTourCheckDays()));
                         b.setMinAdvanceDays(LocalDate.now().plusDays(b.getTour().getMinAdvancedDays()));
                     }
                     else {
                         // Kiểm tra payedAmount với BigDecimal.ZERO để xác định đây là thanh toán cọc hay balance
-                        if (b.getPayedAmount().compareTo(BigDecimal.ZERO) == 0) {
+                        if (isDeposit) {
                             // Chưa thanh toán gì → đây là thanh toán cọc → WAITING_FOR_APPROVED
                             b.setBookingStatus(BookingStatus.WAITING_FOR_APPROVED);
-                            b.setPayedAmount(b.getDepositAmount());
+                            b.setPayedAmount(depositAmount);
                             b.setAutoFailedDate(LocalDate.now().plusDays(b.getTour().getTourCheckDays()));
                             b.setMinAdvanceDays(LocalDate.now().plusDays(b.getTour().getMinAdvancedDays()));
                         }
                         else {
                             // Đã thanh toán cọc → đây là thanh toán balance → BOOKING_BALANCE_SUCCESS
                             b.setBookingStatus(BookingStatus.BOOKING_BALANCE_SUCCESS);
-                            b.setPayedAmount(b.getTotalAmount());
+                            b.setPayedAmount(totalAmount);
                         }
                     }
                 }
                 else {
-                    if (b.getTotalAmount().equals(b.getDepositAmount())) {
+                    if (isFullPayment) {
                         b.setBookingStatus(BookingStatus.PENDING_PAYMENT);
                     }
                     else {
-                        //If deposit is paid, pay amount will always bigger than 0
-                        if (b.getPayedAmount().compareTo(BigDecimal.ZERO) > 0) {
-                            b.setBookingStatus(BookingStatus.PENDING_BALANCE_PAYMENT);
-                        }
-                        //else if pay amount is equal 0 then user is not yet pay deposit
-                        else {
+                        // Kiểm tra payedAmount với BigDecimal.ZERO để xác định đây là thanh toán cọc hay balance
+                        if (isDeposit) {
                             b.setBookingStatus(BookingStatus.PENDING_DEPOSIT_PAYMENT);
+                        }
+                        //else if pay amount is larger than 0 then user is pay deposit
+                        else {
+                            b.setBookingStatus(BookingStatus.PENDING_BALANCE_PAYMENT);
                         }
                     }
                 }

@@ -1,13 +1,9 @@
 package com.example.KDBS.controller;
 
-import com.example.KDBS.dto.request.BookingPaymentRequest;
-import com.example.KDBS.dto.request.BookingRequest;
-import com.example.KDBS.dto.request.ChangeBookingStatusRequest;
-import com.example.KDBS.dto.request.CreateComplaintRequest;
-import com.example.KDBS.dto.request.ResolveComplaintRequest;
-import com.example.KDBS.dto.request.TossCreateOrderRequest;
+import com.example.KDBS.dto.request.*;
 import com.example.KDBS.dto.response.*;
 import com.example.KDBS.enums.InsuranceStatus;
+import com.example.KDBS.model.Booking;
 import com.example.KDBS.service.BookingService;
 import com.example.KDBS.service.TossPaymentService;
 import com.example.KDBS.service.VoucherService;
@@ -79,35 +75,14 @@ public class BookingController {
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TossCreateOrderResponse> createBookingPayment(@RequestBody BookingPaymentRequest request) {
         // booking details
-        BookingResponse booking = bookingService.getBookingById(request.getBookingId());
-        BigDecimal totalAmount;
-        if (booking.getDepositAmount().equals(booking.getTotalAmount())) {
-            totalAmount = booking.getTotalAmount();
-        }
-        else {
-            if (request.isDeposit()){
-                totalAmount = booking.getDepositAmount();
-            }
-            else {
-                totalAmount = booking.getTotalAmount().subtract(booking.getDepositAmount());
-            }
-        }
-//
-//        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
-//            var preview = voucherService.previewApplyVoucher(
-//                    com.example.KDBS.dto.request.ApplyVoucherRequest.builder()
-//                            .bookingId(request.getBookingId())
-//                            .voucherCode(request.getVoucherCode())
-//                            .build());
-//            voucherService.attachVoucherToBookingPending(request.getBookingId(), preview);
-//            totalAmount = preview.getFinalTotal();
-//        }
+        Booking booking = bookingService.getRealBookingById(request.getBookingId());
+        BigDecimal totalAmount = getTotalAmount(request, booking);
 
         //  order info
         String orderInfo = String.format(
                 "Booking payment for booking ID:%d | Tour:%s - %d guests on %s",
                 request.getBookingId(),
-                booking.getTourName(),
+                booking.getTour().getTourName(),
                 booking.getTotalGuests(),
                 booking.getDepartureDate());
 
@@ -119,6 +94,24 @@ public class BookingController {
         var result = tossPaymentService.createOrder(orderRequest);
 
         return ResponseEntity.ok(result);
+    }
+
+    private static BigDecimal getTotalAmount(BookingPaymentRequest request, Booking booking) {
+        BigDecimal totalAmount;
+        boolean hasVoucher = booking.getVoucherCode() != null && !booking.getVoucherCode().isBlank();
+        boolean isFullPayment = booking.getDepositAmount().equals(booking.getTotalAmount());
+
+        if (isFullPayment) {
+            totalAmount = hasVoucher ? booking.getTotalDiscountAmount() : booking.getTotalAmount();
+        } else if (request.isDeposit()) {
+            totalAmount = hasVoucher ? booking.getDepositDiscountAmount() : booking.getDepositAmount();
+        } else {
+            // Remaining amount after deposit
+            totalAmount = hasVoucher
+                    ? booking.getTotalDiscountAmount().subtract(booking.getDepositDiscountAmount())
+                    : booking.getTotalAmount().subtract(booking.getDepositAmount());
+        }
+        return totalAmount;
     }
 
     @PutMapping("/{bookingId}/company-confirm-completion")

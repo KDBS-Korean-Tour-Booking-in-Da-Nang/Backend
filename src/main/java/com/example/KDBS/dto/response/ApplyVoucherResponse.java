@@ -28,8 +28,4 @@ public class ApplyVoucherResponse {
     // After discount:
     private BigDecimal finalDepositAmount;
     private BigDecimal finalRemainingAmount;
-
-    // Only for percentage vouchers:
-    private BigDecimal depositDiscountAmount;
-    private BigDecimal remainingDiscountAmount;
 }

@@ -83,10 +83,6 @@ public class VoucherService {
 
         BigDecimal original = booking.getTotalAmount();
 
-        if (isVoucherUsableForBooking(voucher, booking.getTour().getTourId(), original)) {
-            throw new AppException(ErrorCode.VOUCHER_INVALID);
-        }
-
         return buildVoucherPreview(voucher, booking.getTour(), original);
     }
 
@@ -269,9 +265,6 @@ public class VoucherService {
         if (oneTime) {
             response.setFinalDepositAmount(finalTotal);
             response.setFinalRemainingAmount(BigDecimal.ZERO);
-
-            response.setDepositDiscountAmount(response.getDiscountAmount()); // all discount belongs to one payment
-            response.setRemainingDiscountAmount(BigDecimal.ZERO);
             return;
         }
 
@@ -281,20 +274,6 @@ public class VoucherService {
 
         response.setFinalDepositAmount(finalDeposit);
         response.setFinalRemainingAmount(finalRemaining);
-
-        // For percentage voucher: proportional discount
-        if (response.getDiscountType() == VoucherDiscountType.PERCENT) {
-            BigDecimal discount = response.getDiscountAmount();
-            BigDecimal depositDiscount = discount.multiply(dp);
-            BigDecimal remainingDiscount = discount.subtract(depositDiscount);
-
-            response.setDepositDiscountAmount(depositDiscount);
-            response.setRemainingDiscountAmount(remainingDiscount);
-        } else {
-            // Fixed voucher → DO NOT split discount
-            response.setDepositDiscountAmount(null);
-            response.setRemainingDiscountAmount(null);
-        }
     }
 
 

@@ -89,6 +89,8 @@ public class BookingService {
         if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
             var preview = voucherService.previewApplyVoucher(savedBooking.getBookingId());
             voucherService.attachVoucherToBookingPending(savedBooking.getBookingId(), preview);
+            savedBooking.setDepositDiscountAmount(preview.getFinalDepositAmount());
+            savedBooking.setTotalDiscountAmount(preview.getFinalTotal());
         }
 
         return buildBookingResponse(savedBooking, savedGuests);
@@ -267,6 +269,12 @@ public class BookingService {
         response.setGuests(bookingMapper.toBookingGuestResponses(guests));
 
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public Booking getRealBookingById(Long bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
