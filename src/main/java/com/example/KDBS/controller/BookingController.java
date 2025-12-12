@@ -209,4 +209,14 @@ public class BookingController {
                     .body(Map.of("success", "false", "message", "Failed to send email: " + e.getMessage()));
         }
     }
+
+    //COMPANY STATISTIC
+    @GetMapping("/company/{companyId}/statistics")
+    public ResponseEntity<CompanyBookingStatisticResponse>
+    getCompanyBookingStatistics(@PathVariable int companyId) {
+
+        return ResponseEntity.ok(
+                bookingService.getCompanyBookingStatistics(companyId)
+        );
+    }
 }

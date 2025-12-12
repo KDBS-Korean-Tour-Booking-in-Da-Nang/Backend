@@ -7,6 +7,7 @@ import com.example.KDBS.dto.response.TourDeleteRequestResponse;
 import com.example.KDBS.dto.response.TourPreviewResponse;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.dto.response.TourUpdateRequestResponse;
+import com.example.KDBS.enums.TourStatus;
 import com.example.KDBS.service.TourDeleteService;
 import com.example.KDBS.service.TourService;
 import com.example.KDBS.service.TourUpdateService;
@@ -162,4 +163,9 @@ public class TourController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/change-status/{tourId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<TourResponse> changeTourStatus(@PathVariable Long tourId, @RequestParam TourStatus status) {
+        return ResponseEntity.ok(tourService.changeTourStatus(tourId, status));
+    }
 }

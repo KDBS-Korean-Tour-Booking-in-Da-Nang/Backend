@@ -25,6 +25,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     Boolean existsByTour_TourId(Long tourTourId);
 
+    @Query("""
+        SELECT b.bookingStatus, COUNT(b)
+        FROM Booking b
+        WHERE b.tour.companyId = :companyId
+        GROUP BY b.bookingStatus
+    """)
+    List<Object[]> countBookingsGroupByStatus(@Param("companyId") int companyId);
+
+    @Query("""
+        SELECT COUNT(b)
+        FROM Booking b
+        WHERE b.tour.companyId = :companyId
+    """)
+    long countTotalBookingsByCompanyId(@Param("companyId") int companyId);
 
 
 
