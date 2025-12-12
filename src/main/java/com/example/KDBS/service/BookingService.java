@@ -930,7 +930,7 @@ public class BookingService {
 
     //COMPANY STATISTIC
 
-    public CompanyBookingStatisticResponse getCompanyBookingStatistics(int companyId) {
+    public BookingStatisticResponse getCompanyBookingStatistics(int companyId) {
 
         // 1. Tổng booking
         long totalBookings =
@@ -955,7 +955,7 @@ public class BookingService {
             statusMap.put(status, count);
         }
 
-        return CompanyBookingStatisticResponse.builder()
+        return BookingStatisticResponse.builder()
                 .totalBookings(totalBookings)
                 .byStatus(statusMap)
                 .build();

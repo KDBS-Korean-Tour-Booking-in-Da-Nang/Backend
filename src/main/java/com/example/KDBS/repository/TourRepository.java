@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,13 +22,7 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
     @Query("SELECT t FROM Tour t LEFT JOIN FETCH t.contents")
     List<Tour> findAllWithContents();
 
-    @Query("""
-    SELECT t 
-    FROM Tour t 
-    LEFT JOIN FETCH t.contents 
-    WHERE t.tourStatus = :status
-""")
-    List<Tour> findAllPublicTours(@Param("status") TourStatus status);
+    List<Tour> findAllByTourStatusIn(Collection<TourStatus> tourStatus);
 
     List<Tour> findAllByCompanyId(int companyId);
 
@@ -58,6 +53,8 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
             Pageable pageable
     );
 
+
+    //COMPANY DASHBOARD STATS
     @Query("""
         SELECT t.tourStatus, COUNT(t)
         FROM Tour t
@@ -72,5 +69,21 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
         WHERE t.companyId = :companyId
     """)
     long countTotalToursByCompanyId(@Param("companyId") int companyId);
+
+    //ADMIN DASHBOARD STATS
+    // ADMIN DASHBOARD STATS
+    @Query("""
+    SELECT t.tourStatus, COUNT(t)
+    FROM Tour t
+    GROUP BY t.tourStatus
+""")
+    List<Object[]> countAllToursGroupByStatus();
+
+    @Query("""
+    SELECT COUNT(t)
+    FROM Tour t
+""")
+    long countAllTours();
+
 
 }

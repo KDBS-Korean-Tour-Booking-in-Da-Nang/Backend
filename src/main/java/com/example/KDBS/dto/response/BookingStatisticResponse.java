@@ -10,7 +10,7 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CompanyBookingStatisticResponse {
+public class BookingStatisticResponse {
 
     private long totalBookings;
 

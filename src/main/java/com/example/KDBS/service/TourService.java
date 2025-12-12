@@ -1,7 +1,7 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.TourRequest;
-import com.example.KDBS.dto.response.CompanyTourStatisticResponse;
+import com.example.KDBS.dto.response.TourStatisticResponse;
 import com.example.KDBS.dto.response.TourPreviewResponse;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.enums.Role;
@@ -94,7 +94,7 @@ public class TourService {
     }
 
     public List<TourResponse> getAllPublicTours() {
-        return tourRepository.findAllPublicTours(TourStatus.PUBLIC)
+        return tourRepository.findAllByTourStatusIn(List.of(TourStatus.PUBLIC))
                 .stream()
                 .map(tourMapper::toTourResponse)
                 .toList();
@@ -234,7 +234,7 @@ public class TourService {
     }
 
     //COMPANY TOUR STATISTIC
-    public CompanyTourStatisticResponse getCompanyTourStatistics(int companyId) {
+    public TourStatisticResponse getCompanyTourStatistics(int companyId) {
 
         // 1. Tổng tour
         long totalTours =
@@ -259,7 +259,7 @@ public class TourService {
             statusMap.put(status, count);
         }
 
-        return CompanyTourStatisticResponse.builder()
+        return TourStatisticResponse.builder()
                 .totalTours(totalTours)
                 .byStatus(statusMap)
                 .build();
