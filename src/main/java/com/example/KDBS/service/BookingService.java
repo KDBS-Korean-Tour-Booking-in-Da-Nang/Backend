@@ -19,6 +19,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -59,7 +60,7 @@ public class BookingService {
         booking.setTotalGuests(totalGuests);
         booking.setTourEndDate(request.getDepartureDate().plusDays(tour.getTourIntDuration()));
 
-        if(tour.getDepositPercentage() == 100 || tour.getDepositPercentage() == 0) {
+        if (tour.getDepositPercentage() == 100 || tour.getDepositPercentage() == 0) {
             booking.setBookingStatus(BookingStatus.PENDING_PAYMENT);
         } else {
             booking.setBookingStatus(BookingStatus.PENDING_DEPOSIT_PAYMENT);
@@ -70,7 +71,7 @@ public class BookingService {
         BigDecimal totalAmount = calculateBookingTotal(savedBooking.getBookingId());
         savedBooking.setTotalAmount(totalAmount);
 
-        if(tour.getDepositPercentage() == 100 || tour.getDepositPercentage() == 0) {
+        if (tour.getDepositPercentage() == 100 || tour.getDepositPercentage() == 0) {
             savedBooking.setDepositAmount(totalAmount);
         } else {
             savedBooking.setDepositAmount(totalAmount.multiply(BigDecimal.valueOf(tour.getDepositPercentage()))
@@ -148,7 +149,7 @@ public class BookingService {
         booking.setCancelDate(LocalDateTime.now());
 
         // Distribute money to company
-        if(result.getRefundPercentage() < 100) {
+        if (result.getRefundPercentage() < 100) {
             User company = userRepository.findById(booking.getTour().getCompanyId())
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
@@ -161,7 +162,7 @@ public class BookingService {
         response.setGuests(bookingMapper.toBookingGuestResponses(guests));
 
         // unlock and return voucher if any
-        if(booking.getVoucherCode() == null || booking.getVoucherCode().isBlank()) {
+        if (booking.getVoucherCode() == null || booking.getVoucherCode().isBlank()) {
             voucherService.unlockVoucherOnBookingCancelled(bookingId);
         }
 
@@ -189,19 +190,18 @@ public class BookingService {
 
     private RefundResult calculateRefund(Booking booking) {
 
-        if(booking.getMinAdvanceDays() == null) {
+        if (booking.getMinAdvanceDays() == null) {
             throw new AppException(ErrorCode.USER_NOT_YET_PAYED);
         }
 
         int refundPercentage;
         BigDecimal refundAmount;
 
-        if(booking.getBookingStatus().equals(BookingStatus.WAITING_FOR_APPROVED)
+        if (booking.getBookingStatus().equals(BookingStatus.WAITING_FOR_APPROVED)
                 || booking.getBookingStatus().equals(BookingStatus.WAITING_FOR_UPDATE)) {
             refundPercentage = 100;
             refundAmount = booking.getPayedAmount();
-        }
-        else if(LocalDate.now().isBefore(booking.getMinAdvanceDays()) &&
+        } else if (LocalDate.now().isBefore(booking.getMinAdvanceDays()) &&
                 (booking.getBookingStatus().equals(BookingStatus.PENDING_BALANCE_PAYMENT)
                         || booking.getBookingStatus().equals(BookingStatus.PENDING_PAYMENT))) {
 
@@ -210,19 +210,19 @@ public class BookingService {
                     .multiply(BigDecimal.valueOf(refundPercentage))
                     .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
-        } else if(LocalDate.now().isAfter(booking.getMinAdvanceDays())) {
+        } else if (LocalDate.now().isAfter(booking.getMinAdvanceDays())) {
 
             int remainDate = (int) ChronoUnit.DAYS.between(LocalDate.now(), booking.getDepartureDate());
             refundPercentage = (remainDate * 100) / booking.getTour().getMinAdvancedDays();
 
             refundPercentage = (refundPercentage / 5) * 5; // floor to nearest 5%
 
-            if(booking.getTour().getRefundFloor() > 0) {
+            if (booking.getTour().getRefundFloor() > 0) {
                 refundPercentage = Math.max(refundPercentage, booking.getTour().getRefundFloor());
             }
 
-            if(refundPercentage < 0) refundPercentage = 0;
-            if(refundPercentage > 80) refundPercentage = 80;
+            if (refundPercentage < 0) refundPercentage = 0;
+            if (refundPercentage > 80) refundPercentage = 80;
 
             refundAmount = booking.getPayedAmount()
                     .multiply(BigDecimal.valueOf(refundPercentage))
@@ -488,9 +488,7 @@ public class BookingService {
                 booking.setCompanyConfirmedCompletion(true);
             else
                 booking.setUserConfirmedCompletion(true);
-        }
-
-        else
+        } else
             throw new AppException(ErrorCode.BOOKING_CANNOT_CONFIRM_COMPLETION);
 
         if (booking.getUserConfirmedCompletion() && booking.getCompanyConfirmedCompletion()) {
@@ -612,13 +610,12 @@ public class BookingService {
 
         for (Booking booking : bookings) {
             if (booking.getBookingStatus().equals(BookingStatus.PENDING_DEPOSIT_PAYMENT) ||
-            booking.getBookingStatus().equals(BookingStatus.PENDING_PAYMENT)) {
+                    booking.getBookingStatus().equals(BookingStatus.PENDING_PAYMENT)) {
                 LocalDate maxDepositDate = booking.getDepartureDate().minusDays(booking.getTour().getMinAdvancedDays());
-                if(LocalDate.now().isAfter(maxDepositDate)) {
+                if (LocalDate.now().isAfter(maxDepositDate)) {
                     booking.setBookingStatus(BookingStatus.BOOKING_FAILED);
                 }
-            }
-            else if (booking.getBookingStatus().equals(BookingStatus.PENDING_BALANCE_PAYMENT)){
+            } else if (booking.getBookingStatus().equals(BookingStatus.PENDING_BALANCE_PAYMENT)) {
                 if (LocalDate.now().isAfter(booking.getMinAdvanceDays())) {
                     booking.setBookingStatus(BookingStatus.BOOKING_FAILED);
                     //refund deposit
@@ -628,8 +625,7 @@ public class BookingService {
                     booking.setRefundPercentage(0);
                     booking.setRefundAmount(BigDecimal.ZERO);
                 }
-            }
-            else {
+            } else {
                 if (LocalDate.now().isAfter(booking.getAutoFailedDate())) {
                     booking.setBookingStatus(BookingStatus.BOOKING_FAILED);
                     //refund 100%
@@ -639,8 +635,8 @@ public class BookingService {
             }
 
             //If booking is failed, unlock and return voucher if any
-            if(booking.getBookingStatus().equals(BookingStatus.BOOKING_FAILED)) {
-                if(booking.getVoucherCode() == null || booking.getVoucherCode().isBlank()) {
+            if (booking.getBookingStatus().equals(BookingStatus.BOOKING_FAILED)) {
+                if (booking.getVoucherCode() == null || booking.getVoucherCode().isBlank()) {
                     voucherService.unlockVoucherOnBookingCancelled(booking.getBookingId());
                 }
             }
@@ -882,4 +878,36 @@ public class BookingService {
     private BigDecimal defaultZero(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
     }
+
+    public CompanyBookingStatisticResponse getCompanyBookingStatistics(int companyId) {
+
+        // 1. Tổng booking
+        long totalBookings =
+                bookingRepository.countTotalBookingsByCompanyId(companyId);
+
+        // 2. Group by status
+        List<Object[]> results =
+                bookingRepository.countBookingsGroupByStatus(companyId);
+
+        Map<BookingStatus, Long> statusMap =
+                new EnumMap<>(BookingStatus.class);
+
+        // init = 0
+        for (BookingStatus status : BookingStatus.values()) {
+            statusMap.put(status, 0L);
+        }
+
+        // fill data
+        for (Object[] row : results) {
+            BookingStatus status = (BookingStatus) row[0];
+            Long count = (Long) row[1];
+            statusMap.put(status, count);
+        }
+
+        return CompanyBookingStatisticResponse.builder()
+                .totalBookings(totalBookings)
+                .byStatus(statusMap)
+                .build();
+    }
 }
+
