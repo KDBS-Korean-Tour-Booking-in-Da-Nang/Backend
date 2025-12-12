@@ -1,5 +1,6 @@
 package com.example.KDBS.controller;
 
+import com.example.KDBS.dto.request.AllVoucherRequest;
 import com.example.KDBS.dto.request.ApplyVoucherRequest;
 import com.example.KDBS.dto.request.VoucherCreateRequest;
 import com.example.KDBS.dto.response.ApplyVoucherResponse;
@@ -25,13 +26,17 @@ public class VoucherController {
         return ResponseEntity.ok(voucherService.createVoucher(request));
     }
 
-    @GetMapping("/preview-all/{bookingId}")
-    public ResponseEntity<List<ApplyVoucherResponse>> previewAllAvailableVouchers(@PathVariable Long bookingId) {
-        return ResponseEntity.ok(voucherService.previewAllAvailableVouchers(bookingId));
+    @PostMapping("/preview-all")
+    public ResponseEntity<List<ApplyVoucherResponse>> previewAllAvailableVouchers(@RequestBody AllVoucherRequest request) {
+        return ResponseEntity.ok(voucherService.previewAllAvailableVouchers(request));
     }
 
-    @PostMapping("/preview-apply")
-    public ResponseEntity<ApplyVoucherResponse> apply(@Valid @RequestBody ApplyVoucherRequest request) {
+    @GetMapping("/preview-apply/{bookingId}")
+    public ResponseEntity<ApplyVoucherResponse> preview(@PathVariable Long bookingId, @RequestParam String voucherCode) {
+        ApplyVoucherRequest request = ApplyVoucherRequest.builder()
+                .bookingId(bookingId)
+                .voucherCode(voucherCode)
+                .build();
         var preview = voucherService.previewApplyVoucher(request);
         return ResponseEntity.ok(preview);
     }
