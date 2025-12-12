@@ -4,10 +4,12 @@ import com.example.KDBS.dto.response.TranslatedArticleResponse;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.genai.Client;
-import com.google.genai.types.GenerateContentResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,27 +18,22 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class GeminiService {
-    private final Client client;
+    private final OpenAiChatModel customGroqChatClient;
 
     private static final String TRAVEL_ASSISTANT_SYSTEM_PROMPT =
-            "You are KDBS AI Travel Assistant — a friendly and knowledgeable virtual tour guide. " +
-                    "You have 10+ years of expertise in Vietnamese tourism, especially Da Nang, Hoi An, Hue, and nearby attractions. " +
-                    "Your job is to help users plan tours, choose the best travel dates, understand ticket prices, suggest itineraries, " +
-                    "advise what to pack, and provide helpful tips about weather, transportation, and local culture. " +
-                    "Always reply concisely, naturally, and supportively, like a real tour guide. " +
-                    "If the user is unsure, ask clarifying questions. " +
-                    "Never mention that you are an AI model—act like an expert tour guide. " +
-                    "Do NOT provide medical, legal, or financial advice. " +
-                    "Now start assisting the user based on their message.\n\n";
+            """
+                    no matter what i text, only response 'abc'
+                    
+                    """;
 
-    public String askGemini(String prompt) {
-        GenerateContentResponse response =
-                client.models.generateContent(
-                        "gemini-2.5-flash-lite",
-                        prompt,
-                        null);
-
-        return response.text();
+    public String askGemini(String prompt, String model) {
+        ChatOptions chatOptions = OpenAiChatOptions.builder()
+                .model(model)
+                .build();
+        return customGroqChatClient.call(new Prompt(prompt, chatOptions))
+                .getResult()
+                .getOutput()
+                .getText();
     }
 
     public String translateText(String text) {
@@ -53,7 +50,7 @@ public class GeminiService {
                         "Return ONLY the translated Korean text with no explanations or commentary.\n\n" +
                         "Text to translate: \"" + text + "\"";
 
-        return askGemini(prompt);
+        return askGemini(prompt, "llama-3.3-70b-versatile");
     }
 
     public TranslatedArticleResponse translateArticleToEnglishAndKorean(String title, String description, String content) {
@@ -63,46 +60,51 @@ public class GeminiService {
             throw new AppException(ErrorCode.ARTICLE_FIELDS_EMPTY);
         }
         String prompt = """
-                You are a professional Korean and English translator with over 10 years of experience
-                           in localizing articles for diverse audiences. Translate the provided article into English and Korean.
-                
-                           Return ONLY a valid JSON object.
-                           DO NOT wrap the JSON in backticks.
-                           DO NOT add ```json or ``` at all.
-                           DO NOT add any explanations, comments, or text outside the JSON.
-                           Output MUST start with "{" and end with "}".
-                
-                           Use the following structure exactly:
-                
-                           {
-                             "articleTitleEN": "",
-                             "articleDescriptionEN": "",
-                             "articleContentEN": "",
-                             "articleTitleKR": "",
-                             "articleDescriptionKR": "",
-                             "articleContentKR": "",
-                             "articleSummary": ""
-                           }
-                
-                           Rules:
-                           Translate text only.
-                           Preserve all HTML tags exactly as they are.
-                           Preserve all formatting (line breaks, paragraphs).
-                           Do NOT translate HTML tags or special characters.
-                           Insert translated English content in *EN fields*.
-                           Insert translated Korean content in *KR fields*.
-                
-                           Summarize the article in English in 2-3 sentences,
-                           include the location that the article talk about and key information that would help analyze user interests
-                           and improve personalized tour recommendations, without adding full descriptions. Place the result in the "articleSummary" field.
-                
-                           Original Article:
-                           Title: %s
-                           Description: %s
-                           Content: %s
-                
-                """.formatted(title, description, content);
-        String response = askGemini(prompt);
+            You are a professional Korean and English translator with over 10 years of experience
+                       in localizing articles for diverse audiences. Translate the provided article into English and Korean.
+            
+                       Return ONLY a valid JSON object.
+                       DO NOT wrap the JSON in backticks.
+                       DO NOT add ```json or ``` at all.
+                       DO NOT add any explanations, comments, or text outside the JSON.
+                       Output MUST start with "{" and end with "}".
+            
+                       CRITICAL: All string values MUST be on a single line with NO line breaks.
+                       Replace all newline characters with spaces or remove them entirely.
+                       Ensure the entire JSON is valid and can be parsed without errors.
+            
+                       Use the following structure exactly:
+            
+                       {
+                         "articleTitleEN": "",
+                         "articleDescriptionEN": "",
+                         "articleContentEN": "",
+                         "articleTitleKR": "",
+                         "articleDescriptionKR": "",
+                         "articleContentKR": "",
+                         "articleSummary": ""
+                       }
+            
+                       Rules:
+                       Translate text only.
+                       Preserve all HTML tags exactly as they are.
+                       DO NOT include any newlines or line breaks within the HTML content strings.
+                       Keep all HTML on a single continuous line.
+                       Do NOT translate HTML tags or special characters.
+                       Insert translated English content in *EN fields*.
+                       Insert translated Korean content in *KR fields*.
+            
+                       Summarize the article in English in 2-3 sentences,
+                       include the location that the article talk about and key information that would help analyze user interests
+                       and improve personalized tour recommendations, without adding full descriptions. Place the result in the "articleSummary" field.
+            
+                       Original Article:
+                       Title: %s
+                       Description: %s
+                       Content: %s
+            
+            """.formatted(title, description, content);
+        String response = askGemini(prompt, "llama-3.1-8b-instant");
         response = cleanJson(response);
         try {
             ObjectMapper mapper = new ObjectMapper();
@@ -130,7 +132,7 @@ public class GeminiService {
         prompt.append("Guide:");
 
         // Gửi vào askGemini
-        return askGemini(prompt.toString());
+        return askGemini(prompt.toString(), "llama-3.1-8b-instant");
     }
 
 

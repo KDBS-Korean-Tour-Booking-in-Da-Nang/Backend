@@ -67,7 +67,7 @@ public class SuggestTourViaBehaviorService {
 
         // 5. Build & send prompt
         String prompt = buildPrompt(texts, tours);
-        String aiResponse = geminiService.askGemini(prompt);
+        String aiResponse = geminiService.askGemini(prompt, "groq/compound");
         String cleaned = cleanJson(aiResponse);
 
         SuggestTourResultResponse result;

@@ -852,18 +852,10 @@ public class BookingService {
         Tour tour = tourRepository.findById(booking.getTour().getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
-        BigDecimal grossTotal = calculateBookingTotal(booking.getBookingId());
-        BigDecimal discount = booking.getVoucherDiscountApplied() != null
-                ? booking.getVoucherDiscountApplied()
-                : BigDecimal.ZERO;
+        BigDecimal grossTotal = booking.getPayedAmount();
 
-        BigDecimal payable = grossTotal.subtract(discount);
-        if (payable.compareTo(BigDecimal.ZERO) <= 0) {
-            return;
-        }
-
-        BigDecimal adminShare = payable.divide(BigDecimal.TEN, 2, RoundingMode.HALF_UP);
-        BigDecimal companyShare = payable.subtract(adminShare);
+        BigDecimal adminShare = grossTotal.divide(BigDecimal.TEN, 2, RoundingMode.HALF_UP);
+        BigDecimal companyShare = grossTotal.subtract(adminShare);
 
         User companyUser = userRepository.findById(tour.getCompanyId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));

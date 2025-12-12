@@ -73,7 +73,7 @@ public class SuggestTourByArticleService {
         // Build AI prompt
         String prompt = buildPrompt(articles, tours);
 
-        String aiResponse = geminiService.askGemini(prompt);
+        String aiResponse = geminiService.askGemini(prompt, "groq/compound-mini");
 
         String cleaned = cleanJson(aiResponse);
 
