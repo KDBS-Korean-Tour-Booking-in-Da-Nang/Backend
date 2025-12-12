@@ -1,13 +1,15 @@
 package com.example.KDBS.dto.response;
 
 import com.example.KDBS.enums.BookingStatus;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.util.Map;
 
-@Data
+@Getter
+@Setter
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class CompanyBookingStatisticResponse {
 
     private long totalBookings;

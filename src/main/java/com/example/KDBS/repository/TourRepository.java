@@ -58,5 +58,19 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
             Pageable pageable
     );
 
+    @Query("""
+        SELECT t.tourStatus, COUNT(t)
+        FROM Tour t
+        WHERE t.companyId = :companyId
+        GROUP BY t.tourStatus
+    """)
+    List<Object[]> countToursGroupByStatus(@Param("companyId") int companyId);
+
+    @Query("""
+        SELECT COUNT(t)
+        FROM Tour t
+        WHERE t.companyId = :companyId
+    """)
+    long countTotalToursByCompanyId(@Param("companyId") int companyId);
 
 }

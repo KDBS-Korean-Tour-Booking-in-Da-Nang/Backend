@@ -3,10 +3,7 @@ package com.example.KDBS.controller;
 import com.example.KDBS.dto.request.TourDeleteCreateRequest;
 import com.example.KDBS.dto.request.TourRequest;
 import com.example.KDBS.dto.request.TourUpdateCreateRequest;
-import com.example.KDBS.dto.response.TourDeleteRequestResponse;
-import com.example.KDBS.dto.response.TourPreviewResponse;
-import com.example.KDBS.dto.response.TourResponse;
-import com.example.KDBS.dto.response.TourUpdateRequestResponse;
+import com.example.KDBS.dto.response.*;
 import com.example.KDBS.enums.TourStatus;
 import com.example.KDBS.service.TourDeleteService;
 import com.example.KDBS.service.TourService;
@@ -168,4 +165,14 @@ public class TourController {
     public ResponseEntity<TourResponse> changeTourStatus(@PathVariable Long tourId, @RequestParam TourStatus status) {
         return ResponseEntity.ok(tourService.changeTourStatus(tourId, status));
     }
+
+    //COMPANY TOUR STATISTIC
+    @GetMapping("/company/{companyId}/statistics")
+    public ResponseEntity<CompanyTourStatisticResponse> getCompanyTourStatistics(@PathVariable int companyId) {
+
+        return ResponseEntity.ok(
+                tourService.getCompanyTourStatistics(companyId)
+        );
+    }
+
 }
