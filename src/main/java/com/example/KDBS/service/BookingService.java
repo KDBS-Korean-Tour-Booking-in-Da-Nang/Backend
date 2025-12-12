@@ -989,5 +989,27 @@ public class BookingService {
         return monthlyRevenue;
     }
 
+    public Map<Integer, Long> getMonthlyBookingCount(int companyId, int year) {
+
+        List<Object[]> results =
+                bookingRepository.getMonthlyBookingCount(companyId, year);
+
+        Map<Integer, Long> monthlyBookingCount = new LinkedHashMap<>();
+
+        // Init 12 months = 0
+        for (int i = 1; i <= 12; i++) {
+            monthlyBookingCount.put(i, 0L);
+        }
+
+        // Fill DB data
+        for (Object[] row : results) {
+            Integer month = (Integer) row[0];
+            Long count = (Long) row[1];
+            monthlyBookingCount.put(month, count);
+        }
+
+        return monthlyBookingCount;
+    }
+
 }
 

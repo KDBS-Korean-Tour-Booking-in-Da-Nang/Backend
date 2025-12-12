@@ -57,6 +57,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("successStatuses") List<BookingStatus> successStatuses
     );
 
+    // COMPANY MONTHLY BOOKING COUNT (ALL STATUS)
+    @Query("""
+    SELECT MONTH(b.createdAt), COUNT(b)
+    FROM Booking b
+    WHERE b.tour.companyId = :companyId
+      AND YEAR(b.createdAt) = :year
+    GROUP BY MONTH(b.createdAt)
+""")
+    List<Object[]> getMonthlyBookingCount(
+            @Param("companyId") int companyId,
+            @Param("year") int year
+    );
+
 
     // ADMIN DASHBOARD STATS
     @Query("""
@@ -83,6 +96,17 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Object[]> getAdminMonthlyRevenue(
             @Param("year") int year,
             @Param("successStatuses") List<BookingStatus> successStatuses
+    );
+
+    // ADMIN MONTHLY BOOKING COUNT (ALL COMPANIES, ALL STATUS)
+    @Query("""
+    SELECT MONTH(b.createdAt), COUNT(b)
+    FROM Booking b
+    WHERE YEAR(b.createdAt) = :year
+    GROUP BY MONTH(b.createdAt)
+""")
+    List<Object[]> getAdminMonthlyBookingCount(
+            @Param("year") int year
     );
 
 
