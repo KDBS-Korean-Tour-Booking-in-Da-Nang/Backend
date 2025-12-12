@@ -1,6 +1,7 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.TourRequest;
+import com.example.KDBS.dto.response.CompanyTourStatisticResponse;
 import com.example.KDBS.dto.response.TourPreviewResponse;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.enums.Role;
@@ -31,7 +32,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -228,5 +231,37 @@ public class TourService {
             }
         }
         return paths;
+    }
+
+    //COMPANY TOUR STATISTIC
+    public CompanyTourStatisticResponse getCompanyTourStatistics(int companyId) {
+
+        // 1. Tổng tour
+        long totalTours =
+                tourRepository.countTotalToursByCompanyId(companyId);
+
+        // 2. Group by status
+        List<Object[]> results =
+                tourRepository.countToursGroupByStatus(companyId);
+
+        Map<TourStatus, Long> statusMap =
+                new EnumMap<>(TourStatus.class);
+
+        // init tất cả status = 0
+        for (TourStatus status : TourStatus.values()) {
+            statusMap.put(status, 0L);
+        }
+
+        // fill data
+        for (Object[] row : results) {
+            TourStatus status = (TourStatus) row[0];
+            Long count = (Long) row[1];
+            statusMap.put(status, count);
+        }
+
+        return CompanyTourStatisticResponse.builder()
+                .totalTours(totalTours)
+                .byStatus(statusMap)
+                .build();
     }
 }

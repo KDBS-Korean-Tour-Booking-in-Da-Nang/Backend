@@ -212,11 +212,27 @@ public class BookingController {
 
     //COMPANY STATISTIC
     @GetMapping("/company/{companyId}/statistics")
-    public ResponseEntity<CompanyBookingStatisticResponse>
-    getCompanyBookingStatistics(@PathVariable int companyId) {
+    public ResponseEntity<CompanyBookingStatisticResponse> getCompanyBookingStatistics(@PathVariable int companyId) {
 
         return ResponseEntity.ok(
                 bookingService.getCompanyBookingStatistics(companyId)
         );
     }
+
+    @GetMapping("/company/{companyId}/monthly-statistics")
+    public ResponseEntity<Map<String, Object>> getMonthlyStatistics(
+            @PathVariable int companyId,
+            @RequestParam int year
+    ) {
+        Map<Integer, BigDecimal> monthlyRevenue =
+                bookingService.getMonthlyRevenue(companyId, year);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "year", year,
+                        "monthlyRevenue", monthlyRevenue
+                )
+        );
+    }
+
 }

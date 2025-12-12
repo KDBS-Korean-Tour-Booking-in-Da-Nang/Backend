@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -879,6 +880,8 @@ public class BookingService {
         return value != null ? value : BigDecimal.ZERO;
     }
 
+    //COMPANY STATISTIC
+
     public CompanyBookingStatisticResponse getCompanyBookingStatistics(int companyId) {
 
         // 1. Tổng booking
@@ -909,5 +912,34 @@ public class BookingService {
                 .byStatus(statusMap)
                 .build();
     }
+
+    public Map<Integer, BigDecimal> getMonthlyRevenue(int companyId, int year) {
+
+        List<Object[]> results = bookingRepository.getMonthlyRevenue(
+                companyId,
+                year,
+                List.of(
+                        BookingStatus.BOOKING_SUCCESS,
+                        BookingStatus.BOOKING_BALANCE_SUCCESS
+                )
+        );
+
+        Map<Integer, BigDecimal> monthlyRevenue = new LinkedHashMap<>();
+
+        // Init 12 months = 0
+        for (int i = 1; i <= 12; i++) {
+            monthlyRevenue.put(i, BigDecimal.ZERO);
+        }
+
+        // Fill DB data
+        for (Object[] row : results) {
+            Integer month = (Integer) row[0];
+            BigDecimal revenue = (BigDecimal) row[1];
+            monthlyRevenue.put(month, revenue);
+        }
+
+        return monthlyRevenue;
+    }
+
 }
 

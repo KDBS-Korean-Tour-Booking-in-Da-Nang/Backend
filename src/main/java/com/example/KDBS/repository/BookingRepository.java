@@ -41,5 +41,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     long countTotalBookingsByCompanyId(@Param("companyId") int companyId);
 
 
+    @Query("""
+    SELECT MONTH(b.createdAt), SUM(b.totalAmount)
+    FROM Booking b
+    WHERE b.tour.companyId = :companyId
+      AND YEAR(b.createdAt) = :year
+      AND b.bookingStatus IN :successStatuses
+    GROUP BY MONTH(b.createdAt)
+""")
+    List<Object[]> getMonthlyRevenue(
+            @Param("companyId") int companyId,
+            @Param("year") int year,
+            @Param("successStatuses") List<BookingStatus> successStatuses
+    );
+
 
 }
