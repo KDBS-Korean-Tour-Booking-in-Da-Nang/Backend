@@ -5,6 +5,7 @@ import com.example.KDBS.dto.request.TourUpdateCreateRequest;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.dto.response.TourUpdateRequestResponse;
+import com.example.KDBS.enums.StaffTask;
 import com.example.KDBS.enums.TourUpdateStatus;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
@@ -38,6 +39,7 @@ public class TourUpdateService {
     private final TourService tourService;
     private final BookingSimpleMapper bookingSimpleMapper;
     private final BookingRepository bookingRepository;
+    private final StaffService staffService;
 
 
     @Transactional
@@ -86,6 +88,7 @@ public class TourUpdateService {
 
     @Transactional
     public TourResponse approveRequest(Long requestId, String staffNote) throws Exception {
+        staffService.getAuthorizedStaff(StaffTask.APPROVE_TOUR_BOOKING_AND_APPROVE_ARTICLE);
 
         TourUpdateRequest req = updateRepo.findById(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.UPDATE_REQUEST_NOT_FOUND));
@@ -115,6 +118,7 @@ public class TourUpdateService {
 
     @Transactional
     public void rejectRequest(Long requestId, String staffNote) {
+        staffService.getAuthorizedStaff(StaffTask.APPROVE_TOUR_BOOKING_AND_APPROVE_ARTICLE);
 
         TourUpdateRequest req = updateRepo.findById(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.UPDATE_REQUEST_NOT_FOUND));

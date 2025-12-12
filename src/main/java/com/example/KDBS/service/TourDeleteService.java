@@ -3,6 +3,7 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.response.BookingSummaryResponse;
 import com.example.KDBS.dto.response.TourDeleteRequestResponse;
 import com.example.KDBS.enums.BookingStatus;
+import com.example.KDBS.enums.StaffTask;
 import com.example.KDBS.enums.TourDeleteStatus;
 import com.example.KDBS.enums.TourStatus;
 import com.example.KDBS.exception.AppException;
@@ -31,6 +32,7 @@ public class TourDeleteService {
     private final TourDeleteRequestRepository deleteRepo;
     private final TourDeleteMapper deleteMapper;
     private final BookingSimpleMapper bookingSimpleMapper;
+    private final StaffService staffService;
 
     @Transactional
     public TourDeleteRequestResponse createDeleteRequest(Long tourId, String note) {
@@ -83,6 +85,7 @@ public class TourDeleteService {
 
     @Transactional
     public void approve(Long id, String staffNote) {
+        staffService.getAuthorizedStaff(StaffTask.APPROVE_TOUR_BOOKING_AND_APPROVE_ARTICLE);
         TourDeleteRequest req = deleteRepo.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DELETE_REQUEST_NOT_FOUND));
 
@@ -97,6 +100,7 @@ public class TourDeleteService {
 
     @Transactional
     public void reject(Long id, String staffNote) {
+        staffService.getAuthorizedStaff(StaffTask.APPROVE_TOUR_BOOKING_AND_APPROVE_ARTICLE);
         TourDeleteRequest req = deleteRepo.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DELETE_REQUEST_NOT_FOUND));
 
