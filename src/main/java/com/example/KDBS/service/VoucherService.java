@@ -1,5 +1,6 @@
 package com.example.KDBS.service;
 
+import com.example.KDBS.dto.request.AllVoucherRequest;
 import com.example.KDBS.dto.request.ApplyVoucherRequest;
 import com.example.KDBS.dto.request.VoucherCreateRequest;
 import com.example.KDBS.dto.response.ApplyVoucherResponse;
@@ -87,7 +88,7 @@ public class VoucherService {
             throw new AppException(ErrorCode.VOUCHER_INVALID);
         }
 
-        return buildVoucherPreview(voucher, booking, original);
+        return buildVoucherPreview(voucher, booking.getTour(), original);
     }
 
 
@@ -207,12 +208,9 @@ public class VoucherService {
     }
 
     @Transactional(readOnly = true)
-    public List<ApplyVoucherResponse> previewAllAvailableVouchers(Long bookingId) {
+    public List<ApplyVoucherResponse> previewAllAvailableVouchers(AllVoucherRequest request) {
 
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-
-        Tour tour = tourRepository.findById(booking.getTour().getTourId())
+        Tour tour = tourRepository.findById(request.getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
         List<Voucher> vouchers = voucherRepository.findByCompanyId(tour.getCompanyId());
@@ -220,7 +218,7 @@ public class VoucherService {
             return new ArrayList<>();
         }
 
-        BigDecimal original = booking.getTotalAmount();
+        BigDecimal original = calculateBookingOriginalTotal(tour, request);
         List<ApplyVoucherResponse> available = new ArrayList<>();
 
         for (Voucher voucher : vouchers) {
@@ -229,7 +227,7 @@ public class VoucherService {
                 continue;
             }
 
-            ApplyVoucherResponse resp = buildVoucherPreview(voucher, booking, original);
+            ApplyVoucherResponse resp = buildVoucherPreview(voucher, tour, original);
 
             available.add(resp);
         }
@@ -237,7 +235,7 @@ public class VoucherService {
         return available;
     }
 
-    private ApplyVoucherResponse buildVoucherPreview(Voucher voucher, Booking booking, BigDecimal original) {
+    private ApplyVoucherResponse buildVoucherPreview(Voucher voucher, Tour tour, BigDecimal original) {
         BigDecimal discount = calculateDiscountAmount(voucher, original);
         BigDecimal finalTotal = original.subtract(discount).max(BigDecimal.ZERO);
 
@@ -247,15 +245,20 @@ public class VoucherService {
         resp.setFinalTotal(finalTotal);
 
         // add deposit split
-        applyDepositSplit(resp, booking);
+        applyDepositSplit(resp, tour);
 
         return resp;
     }
 
+    private BigDecimal calculateBookingOriginalTotal(Tour tour, AllVoucherRequest request) {
+        BigDecimal adultTotal = tour.getAdultPrice().multiply(BigDecimal.valueOf(request.getAdultsCount()));
+        BigDecimal childrenTotal = tour.getChildrenPrice().multiply(BigDecimal.valueOf(request.getChildrenCount()));
+        BigDecimal babyTotal = tour.getBabyPrice().multiply(BigDecimal.valueOf(request.getBabiesCount()));
+        return adultTotal.add(childrenTotal).add(babyTotal);
+    }
 
-
-    private void applyDepositSplit(ApplyVoucherResponse response, Booking booking) {
-        BigDecimal dpPercent = BigDecimal.valueOf(booking.getTour().getDepositPercentage()); // e.g. 50
+    private void applyDepositSplit(ApplyVoucherResponse response, Tour tour) {
+        BigDecimal dpPercent = BigDecimal.valueOf(tour.getDepositPercentage()); // e.g. 50
         BigDecimal dp = dpPercent.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
 
         response.setDepositPercentage(dp);
