@@ -30,10 +30,10 @@ public class User {
     @Column(name = "username", length = 30)
     private String username;
 
-    @Column(name = "email", length = 255)
+    @Column(name = "email")
     private String email;
 
-    @Column(name = "password", length = 255)
+    @Column(name = "password")
     private String password;
 
     @Column(name = "avatar", length = 500)
@@ -60,18 +60,18 @@ public class User {
     @Column(name = "create_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "status", length = 255)
+    @Column(name = "status")
     private Status status;
 
-    @Column(name = "role", length = 255)
+    @Column(name = "role")
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @Column(name = "staff_task", length = 255)
+    @Column(name = "staff_task")
     @Enumerated(EnumType.STRING)
     private StaffTask staffTask;
 
-    @Column(name = "ban_reason", length = 255)
+    @Column(name = "ban_reason")
     private String banReason;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
@@ -80,7 +80,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "suggestion", length = 20)
-    private SuggestionStatus suggestion = SuggestionStatus.NOT_SUGGESTED;
+    private SuggestionStatus suggestion;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
@@ -98,4 +98,8 @@ public class User {
     @JsonManagedReference
     private List<TourRated> tourRatings;
 
+    @PrePersist
+    protected void onCreate() {
+        this.suggestion = SuggestionStatus.NOT_SUGGESTED;
+    }
 }
