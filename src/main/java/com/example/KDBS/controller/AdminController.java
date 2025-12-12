@@ -54,6 +54,23 @@ public class AdminController {
         );
     }
 
+    // ADMIN MONTHLY BOOKING COUNT
+    @GetMapping("/booking/monthly-booking-count")
+    public ResponseEntity<Map<String, Object>> getAdminMonthlyBookingCount(
+            @RequestParam int year
+    ) {
+        Map<Integer, Long> monthlyBookingCount =
+                adminService.getAdminMonthlyBookingCount(year);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "year", year,
+                        "monthlyBookingCount", monthlyBookingCount
+                )
+        );
+    }
+
+
     // COUNT UNBANNED USER
     @GetMapping("/count/unbanned/user")
     public ResponseEntity<Long> countUnbannedUsers() {

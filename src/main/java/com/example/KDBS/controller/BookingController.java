@@ -235,4 +235,18 @@ public class BookingController {
         );
     }
 
+    @GetMapping("/company/{companyId}/monthly-booking-count")
+    public ResponseEntity<Map<String, Object>> getMonthlyBookingCount(
+            @PathVariable int companyId,
+            @RequestParam int year
+    ) {
+        return ResponseEntity.ok(
+                Map.of(
+                        "year", year,
+                        "monthlyBookingCount",
+                        bookingService.getMonthlyBookingCount(companyId, year)
+                )
+        );
+    }
+
 }

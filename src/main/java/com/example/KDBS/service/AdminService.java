@@ -113,6 +113,30 @@ public class AdminService {
         return monthlyRevenue;
     }
 
+    // ADMIN MONTHLY BOOKING COUNT
+    public Map<Integer, Long> getAdminMonthlyBookingCount(int year) {
+
+        List<Object[]> results =
+                bookingRepository.getAdminMonthlyBookingCount(year);
+
+        Map<Integer, Long> monthlyBookingCount = new LinkedHashMap<>();
+
+        // init 12 tháng = 0
+        for (int i = 1; i <= 12; i++) {
+            monthlyBookingCount.put(i, 0L);
+        }
+
+        // fill data từ DB
+        for (Object[] row : results) {
+            Integer month = (Integer) row[0];
+            Long count = (Long) row[1];
+            monthlyBookingCount.put(month, count);
+        }
+
+        return monthlyBookingCount;
+    }
+
+
     // ADMIN USER STATISTIC
     public UserStatisticResponse getAdminUserStatistics() {
 
