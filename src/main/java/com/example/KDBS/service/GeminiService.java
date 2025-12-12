@@ -26,9 +26,9 @@ public class GeminiService {
                     
                     """;
 
-    public String askGemini(String prompt) {
+    public String askGemini(String prompt, String model) {
         ChatOptions chatOptions = OpenAiChatOptions.builder()
-                .model("llama-3.1-8b-instant")
+                .model(model)
                 .build();
         return customGroqChatClient.call(new Prompt(prompt, chatOptions))
                 .getResult()
@@ -50,7 +50,7 @@ public class GeminiService {
                         "Return ONLY the translated Korean text with no explanations or commentary.\n\n" +
                         "Text to translate: \"" + text + "\"";
 
-        return askGemini(prompt);
+        return askGemini(prompt, "llama-3.3-70b-versatile");
     }
 
     public TranslatedArticleResponse translateArticleToEnglishAndKorean(String title, String description, String content) {
@@ -104,7 +104,7 @@ public class GeminiService {
                        Content: %s
             
             """.formatted(title, description, content);
-        String response = askGemini(prompt);
+        String response = askGemini(prompt, "llama-3.1-8b-instant");
         response = cleanJson(response);
         try {
             ObjectMapper mapper = new ObjectMapper();
@@ -132,7 +132,7 @@ public class GeminiService {
         prompt.append("Guide:");
 
         // Gửi vào askGemini
-        return askGemini(prompt.toString());
+        return askGemini(prompt.toString(), "llama-3.1-8b-instant");
     }
 
 

@@ -12,12 +12,6 @@ import org.springframework.web.bind.annotation.*;
 public class GeminiController {
     private final GeminiService geminiService;
 
-    //Chỉ dùng để test Gemini API
-    @PostMapping("/ask")
-    public String askGemini(@RequestBody String prompt) {
-        return geminiService.askGemini(prompt);
-    }
-
     @PostMapping("/translate")
     public String translateText(@RequestBody TranslateRequest request) {
         return geminiService.translateText(request.getText());
