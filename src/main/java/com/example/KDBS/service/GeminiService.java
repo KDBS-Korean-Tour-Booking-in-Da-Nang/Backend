@@ -36,7 +36,7 @@ public class GeminiService {
 
     @Bean
     public OpenAiChatModel customGroqChatClient() {
-        return createChatClient(apiKeys.getFirst());
+        return createChatClient(apiKeys.get(0));
     }
 
     private static final String TRAVEL_ASSISTANT_SYSTEM_PROMPT =

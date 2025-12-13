@@ -89,9 +89,10 @@ public class SuggestTourByArticleService {
         // Convert IDs → List<Tour>
         List<Tour> recommendedTours = result.getRecommendedTourIds().stream()
                 .map(tourRepository::findById)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+                .flatMap(Optional::stream)
+                .filter(t -> t.getTourStatus() == TourStatus.PUBLIC)
                 .toList();
+
 
         if (user != null) {
             for (Tour t : recommendedTours) {
