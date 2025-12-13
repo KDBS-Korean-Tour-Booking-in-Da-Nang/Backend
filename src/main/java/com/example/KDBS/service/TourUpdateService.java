@@ -2,7 +2,6 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.TourRequest;
 import com.example.KDBS.dto.request.TourUpdateCreateRequest;
-import com.example.KDBS.dto.response.BookingSummaryResponse;
 import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.dto.response.TourUpdateRequestResponse;
 import com.example.KDBS.enums.StaffTask;
@@ -11,7 +10,6 @@ import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.BookingSimpleMapper;
 import com.example.KDBS.mapper.TourUpdateMapper;
-import com.example.KDBS.model.Booking;
 import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.TourUpdateRequest;
 import com.example.KDBS.repository.BookingRepository;
@@ -20,7 +18,6 @@ import com.example.KDBS.repository.TourUpdateRequestRepository;
 import com.example.KDBS.utils.FileStorageService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.json.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,14 +49,21 @@ public class TourUpdateService {
         Tour original = tourRepository.findByIdWithContents(tourId)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
-        // Convert updated tour to JSON
-        String jsonUpdatedTour = objectMapper.writeValueAsString(req.getUpdatedTour());
+
 
         // Save new tour image (optional)
         String imgPath = null;
         if (tourImg != null && !tourImg.isEmpty()) {
             imgPath = fileStorageService.uploadFile(tourImg, "/tours/thumbnails");
         }
+
+        // Convert updated tour to JSON
+        TourResponse tourResponse = updateMapper.toTourResponse(req.getUpdatedTour());
+        tourResponse.setCreatedAt(original.getCreatedAt());
+        tourResponse.setId(original.getTourId());
+        tourResponse.setTourStatus(original.getTourStatus());
+        tourResponse.setTourImgPath(imgPath);
+        String jsonUpdatedTour = objectMapper.writeValueAsString(tourResponse);
 
         TourUpdateRequest update = TourUpdateRequest.builder()
                 .originalTour(original)
@@ -73,7 +77,7 @@ public class TourUpdateService {
         updateRepo.save(update);
 
         TourUpdateRequestResponse res = updateMapper.toResponse(update);
-        res.setUpdatedTour(req.getUpdatedTour());
+        res.setUpdatedTour(tourResponse);
 
         // Attach booking list (Simple format)
         var bookings = bookingRepository.findByTour_TourIdOrderByCreatedAtDesc(original.getTourId())
@@ -146,7 +150,7 @@ public class TourUpdateService {
                     res.setBookings(bookings);
                     res.setBookingCount(bookings.size());
                     try {
-                        TourRequest tourRequest = objectMapper.readValue(update.getUpdatedTourJson(), TourRequest.class);
+                        TourResponse tourRequest = objectMapper.readValue(update.getUpdatedTourJson(), TourResponse.class);
                         res.setUpdatedTour(tourRequest);
                     } catch (JsonProcessingException e) {
                         throw new RuntimeException(e);

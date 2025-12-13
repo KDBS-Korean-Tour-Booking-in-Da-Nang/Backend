@@ -13,16 +13,31 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.ResourceAccessException;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class GeminiService {
-    private final OpenAiChatModel customGroqChatClient;
+    @Value("${spring.ai.openai.api-keys}")
+    private List<String> apiKeys; // Comma-separated in properties: key1,key2,key3
+
+    @Value("${spring.ai.openai.base-url}")
+    private String GROQ_API_URL;
+
+    private final AtomicInteger currentKeyIndex = new AtomicInteger(0);
+    private OpenAiChatModel currentChatClient;
+
+    @Bean
+    public OpenAiChatModel customGroqChatClient() {
+        return createChatClient(apiKeys.getFirst());
+    }
 
     private static final String TRAVEL_ASSISTANT_SYSTEM_PROMPT =
             """
@@ -49,27 +64,81 @@ public class GeminiService {
                     
                     """;
 
+    private OpenAiChatModel createChatClient(String apiKey) {
+        OpenAiApi groqOpenAiApi = new OpenAiApi.Builder()
+                .apiKey(apiKey)
+                .baseUrl(GROQ_API_URL)
+                .build();
+        return OpenAiChatModel.builder()
+                .openAiApi(groqOpenAiApi)
+                .build();
+    }
+
+    private void rotateToNextKey() {
+        int nextIndex = (currentKeyIndex.get() + 1) % apiKeys.size();
+        currentKeyIndex.set(nextIndex);
+        currentChatClient = createChatClient(apiKeys.get(nextIndex));
+        log.info("Rotated to API key index: {} (Total keys: {})", nextIndex + 1, apiKeys.size());
+    }
+
+    private boolean isRateLimitError(Exception e) {
+        String message = e.getMessage().toLowerCase();
+        return message.contains("rate limit")
+                || message.contains("429")
+                || message.contains("quota exceeded")
+                || message.contains("too many requests");
+    }
+
     public String askGemini(String prompt, String model) {
-        int maxRetries = 5;
+        log.info("model: {}", model);
+        int maxRetries = apiKeys.size() * 2; // Try each key at least twice
         int attempt = 0;
 
-        while (true) {
+        while (attempt < maxRetries) {
             try {
+                // Ensure we have a current client
+                if (currentChatClient == null) {
+                    currentChatClient = createChatClient(apiKeys.get(currentKeyIndex.get()));
+                }
+
                 ChatOptions chatOptions = OpenAiChatOptions.builder()
                         .model(model)
                         .build();
-                return customGroqChatClient.call(new Prompt(prompt, chatOptions))
+
+                return currentChatClient.call(new Prompt(prompt, chatOptions))
                         .getResult()
                         .getOutput()
                         .getText();
-            } catch (ResourceAccessException e) {
+
+            } catch (Exception e) {
                 attempt++;
-                log.info("Attempt {} failed: {}", attempt, e.getMessage());
+                log.warn("Attempt {} failed with key index {}: {}",
+                        attempt, currentKeyIndex.get(), e.getMessage());
+
+                // Check if it's a rate limit error
+                if (isRateLimitError(e)) {
+                    log.info("Rate limit detected, rotating to next key...");
+                    rotateToNextKey();
+
+                    // Add small delay before retry
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                } else {
+                    // For non-rate-limit errors, throw immediately
+                    throw new RuntimeException("API call failed: " + e.getMessage(), e);
+                }
+
                 if (attempt >= maxRetries) {
-                    throw new RuntimeException("Failed after " + maxRetries + " attempts", e);
+                    throw new RuntimeException(
+                            "Failed after " + maxRetries + " attempts across all API keys", e);
                 }
             }
         }
+
+        throw new RuntimeException("Unexpected exit from retry loop");
     }
 
     public String translateText(String text) {
