@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +27,8 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
     List<Tour> findAllByTourStatusIn(Collection<TourStatus> tourStatus);
 
     List<Tour> findAllByCompanyId(int companyId);
+
+    List<Tour> findByTourExpirationDateBefore(LocalDate now);
 
 
     // Tìm theo tourName hoặc tourDescription hoặc tourSchedule chứa keyword

@@ -135,29 +135,6 @@ public class TourService {
                 .map(tourMapper::toTourResponse);
     }
 
-    /** Delete tour and cascade its contents & images */
-    @Transactional
-    public void deleteTour(Long tourId, String userEmail) {
-        Tour tour = tourRepository.findById(tourId)
-                .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
-
-        User currentUser = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        // Check authorization
-        if (currentUser.getRole() == Role.COMPANY &&
-                tour.getCompanyId() != (currentUser.getUserId())) {
-            throw new AppException(ErrorCode.FORBIDDEN);
-        }
-
-        boolean hasBookings = bookingRepository.existsByTour_TourId(tourId);
-
-        if (hasBookings) {
-            tour.setTourStatus(TourStatus.DISABLED);
-        }
-        else tourRepository.deleteById(tourId);
-    }
-
     @Transactional
     public TourResponse applyApprovedUpdate(Tour original,
                                             TourRequest updated,
@@ -217,6 +194,13 @@ public class TourService {
                 img.setImgPath(path);
                 tourContentImgRepository.save(img);
             }
+        }
+    }
+
+    public void checkTour() {
+        List<Tour> tours = tourRepository.findByTourExpirationDateBefore(LocalDate.now());
+        for(Tour tour : tours) {
+            tour.setTourStatus(TourStatus.DISABLED);
         }
     }
 
