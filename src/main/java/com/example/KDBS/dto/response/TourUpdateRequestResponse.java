@@ -1,7 +1,5 @@
 package com.example.KDBS.dto.response;
 
-import com.example.KDBS.dto.request.TourRequest;
-import com.example.KDBS.enums.BookingStatus;
 import com.example.KDBS.enums.TourUpdateStatus;
 import lombok.Data;
 
@@ -15,7 +13,7 @@ public class TourUpdateRequestResponse {
     private Long originalTourId;
 
     private TourResponse originalTour;
-    private TourRequest updatedTour;
+    private TourResponse updatedTour;
 
     private long bookingCount;
     private List<BookingSimpleResponse> bookings;

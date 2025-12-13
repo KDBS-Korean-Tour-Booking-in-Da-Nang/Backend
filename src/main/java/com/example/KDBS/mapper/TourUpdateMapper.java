@@ -1,6 +1,7 @@
 package com.example.KDBS.mapper;
 
 import com.example.KDBS.dto.request.TourRequest;
+import com.example.KDBS.dto.response.TourResponse;
 import com.example.KDBS.dto.response.TourUpdateRequestResponse;
 import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.TourUpdateRequest;
@@ -17,6 +18,15 @@ public interface TourUpdateMapper {
     @Mapping(target = "bookingCount", ignore = true)
     @Mapping(target = "bookings", ignore = true)
     TourUpdateRequestResponse toResponse(TourUpdateRequest request);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "tourImgPath", ignore = true)
+    @Mapping(target = "tourStatus", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "contents", source = "contents")
+    TourResponse toTourResponse(TourRequest tourRequest);
+
+    TourResponse.TourContentResponse toTourContentResponse(TourRequest.TourContentRequest contentRequest);
 
 
     // Staff approve → apply updated fields vào Tour thật

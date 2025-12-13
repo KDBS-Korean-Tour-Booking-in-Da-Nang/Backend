@@ -88,6 +88,6 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
     FROM Tour t
 """)
     long countAllTours();
-
+    List<Tour> findTop4ByTourStatusOrderByCreatedAtDesc(TourStatus status);
 
 }
