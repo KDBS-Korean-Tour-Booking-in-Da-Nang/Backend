@@ -26,10 +26,13 @@ public class SuggestTourViaBehaviorService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public List<Tour> suggestTours(int userId) {
+    public List<Tour> suggestTours(Integer userId) {
 
         // 1. Dù userId hợp lệ hay không, vẫn cho phép suggest
-        User user = userRepository.findById(userId).orElse(null);
+        User user = null;
+        if (userId != null) {
+            user = userRepository.findById(userId).orElse(null);
+        }
 
         // 2. Nếu user tồn tại và đã suggest hôm nay → trả về suggestion cũ
         if (user != null && user.getSuggestion() == SuggestionStatus.SUGGESTED) {
@@ -54,6 +57,14 @@ public class SuggestTourViaBehaviorService {
             logs = logRepository.findTop30ByUserOrderByCreatedAtDesc(user);
         } else {
             logs = logRepository.findTop30ByOrderByCreatedAtDesc();
+        }
+
+        // FALLBACK: Không có hành vi → lấy 4 tour gần nhất
+        if (logs == null || logs.isEmpty()) {
+            log.info("No user behavior found → return 4 latest tours");
+
+            return tourRepository
+                    .findTop4ByTourStatusOrderByCreatedAtDesc(TourStatus.PUBLIC);
         }
 
         if (logs.isEmpty()) return List.of();
@@ -81,9 +92,10 @@ public class SuggestTourViaBehaviorService {
         // 6. Convert IDs → Tour list
         List<Tour> recommendedTours = result.getRecommendedTourIds().stream()
                 .map(tourRepository::findById)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+                .flatMap(Optional::stream)
+                .filter(t -> t.getTourStatus() == TourStatus.PUBLIC)
                 .toList();
+
 
         // 7. Nếu user tồn tại → lưu suggestion + đánh dấu đã suggest hôm nay
         if (user != null) {
@@ -190,6 +202,11 @@ public class SuggestTourViaBehaviorService {
                         * versatility for general travelers.
                     - NEVER return fewer than 4 tourIds (unless total DB tours ≤ 4).
                     - NEVER add explanation or natural language. Only return a JSON object exactly as shown.
+                IMPORTANT:
+                - You MUST ONLY choose tours from the AVAILABLE TOURS list below.
+                - DO NOT invent tourIds.
+                - DO NOT choose tours that are not listed.
+
                                 
                 ### USER INTEREST CONTENT:
                 """);

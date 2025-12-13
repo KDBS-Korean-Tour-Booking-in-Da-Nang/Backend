@@ -22,7 +22,7 @@ public class SuggestTourController {
     }
 
     @GetMapping("/suggestViaBehavior")
-    public List<Tour> suggestToursViaBehavior(@RequestParam(required = false) int userId){
+    public List<Tour> suggestToursViaBehavior(@RequestParam(required = false) Integer userId){
         return suggestTourViaBehaviorService.suggestTours(userId);
     }
 }
