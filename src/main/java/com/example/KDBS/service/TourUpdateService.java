@@ -18,7 +18,9 @@ import com.example.KDBS.repository.BookingRepository;
 import com.example.KDBS.repository.TourRepository;
 import com.example.KDBS.repository.TourUpdateRequestRepository;
 import com.example.KDBS.utils.FileStorageService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.json.Json;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -143,6 +145,12 @@ public class TourUpdateService {
 
                     res.setBookings(bookings);
                     res.setBookingCount(bookings.size());
+                    try {
+                        TourRequest tourRequest = objectMapper.readValue(update.getUpdatedTourJson(), TourRequest.class);
+                        res.setUpdatedTour(tourRequest);
+                    } catch (JsonProcessingException e) {
+                        throw new RuntimeException(e);
+                    }
 
                     return res;
                 })
