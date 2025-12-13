@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 public class BookingScheduler {
     private final BookingService bookingService;
 
-    @Async
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Ho_Chi_Minh")
     public void checkTourCompletions() {
         log.info("Running scheduled task: check for tour completions");

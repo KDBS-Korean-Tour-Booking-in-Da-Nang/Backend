@@ -9,6 +9,7 @@ import com.example.KDBS.dto.response.UserResponse;
 import com.example.KDBS.enums.OTPPurpose;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.Status;
+import com.example.KDBS.enums.SuggestionStatus;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
 import com.example.KDBS.mapper.UserIdCardMapper;
@@ -277,6 +278,13 @@ public class UserService {
         JsonNode data = root.path("data").get(0);
 
         return mapper.treeToValue(data, IdCardApiRequest.class);
+    }
+
+    public void resetUserSuggestion() {
+        var users = userRepository.findUserByRoleAndSuggestion(Role.USER, SuggestionStatus.SUGGESTED);
+        for(User user : users) {
+            user.setSuggestion(SuggestionStatus.NOT_SUGGESTED);
+        }
     }
 
 }
