@@ -3,6 +3,9 @@ package com.example.KDBS.service;
 import com.example.KDBS.dto.response.TranslatedArticleResponse;
 import com.example.KDBS.exception.AppException;
 import com.example.KDBS.exception.ErrorCode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +14,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.util.List;
 
@@ -27,13 +31,26 @@ public class GeminiService {
                     """;
 
     public String askGemini(String prompt, String model) {
-        ChatOptions chatOptions = OpenAiChatOptions.builder()
-                .model(model)
-                .build();
-        return customGroqChatClient.call(new Prompt(prompt, chatOptions))
-                .getResult()
-                .getOutput()
-                .getText();
+        int maxRetries = 5;
+        int attempt = 0;
+
+        while (true) {
+            try {
+                ChatOptions chatOptions = OpenAiChatOptions.builder()
+                        .model(model)
+                        .build();
+                return customGroqChatClient.call(new Prompt(prompt, chatOptions))
+                        .getResult()
+                        .getOutput()
+                        .getText();
+            } catch (ResourceAccessException e) {
+                attempt++;
+                log.info("Attempt {} failed: {}", attempt, e.getMessage());
+                if (attempt >= maxRetries) {
+                    throw new RuntimeException("Failed after " + maxRetries + " attempts", e);
+                }
+            }
+        }
     }
 
     public String translateText(String text) {
@@ -67,6 +84,7 @@ public class GeminiService {
                        DO NOT wrap the JSON in backticks.
                        DO NOT add ```json or ``` at all.
                        DO NOT add any explanations, comments, or text outside the JSON.
+                       Add \\" to escape all double quotes within string values.
                        Output MUST start with "{" and end with "}".
             
                        CRITICAL: All string values MUST be on a single line with NO line breaks.
@@ -152,10 +170,74 @@ public class GeminiService {
             raw = raw.substring(start, end + 1);
         }
 
-        // Remove trailing commas (common LLM error)
+        // Remove trailing commas
         raw = raw.replaceAll(",\\s*}", "}")
                 .replaceAll(",\\s*]", "]");
 
-        return raw.trim();
+        // Try to parse and re-serialize to fix escaping issues
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.enable(JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS.mappedFeature());
+            mapper.enable(JsonReadFeature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER.mappedFeature());
+
+            JsonNode node = mapper.readTree(raw);
+            return mapper.writeValueAsString(node);
+        } catch (JsonProcessingException e) {
+            // If Jackson can't parse it, try manual quote fixing
+            return fixUnescapedQuotesManually(raw);
+        }
+    }
+
+    private String fixUnescapedQuotesManually(String json) {
+        // Use the fixUnescapedQuotes method from above
+        StringBuilder result = new StringBuilder();
+        boolean inString = false;
+        boolean escaped = false;
+
+        for (int i = 0; i < json.length(); i++) {
+            char c = json.charAt(i);
+
+            if (escaped) {
+                result.append(c);
+                escaped = false;
+                continue;
+            }
+
+            if (c == '\\') {
+                result.append(c);
+                escaped = true;
+                continue;
+            }
+
+            if (c == '"') {
+                if (!inString) {
+                    result.append(c);
+                    inString = true;
+                } else {
+                    // Check if this is really the end of the string
+                    int j = i + 1;
+                    while (j < json.length() && Character.isWhitespace(json.charAt(j))) {
+                        j++;
+                    }
+
+                    if (j < json.length()) {
+                        char next = json.charAt(j);
+                        if (next == ':' || next == ',' || next == '}' || next == ']') {
+                            result.append(c);
+                            inString = false;
+                        } else {
+                            result.append("\\\"");
+                        }
+                    } else {
+                        result.append(c);
+                        inString = false;
+                    }
+                }
+            } else {
+                result.append(c);
+            }
+        }
+
+        return result.toString();
     }
 }
