@@ -2,8 +2,6 @@ package com.example.KDBS.service;
 
 import com.example.KDBS.dto.response.SuggestTourResultResponse;
 import com.example.KDBS.enums.TourStatus;
-import com.example.KDBS.enums.UserActionTarget;
-import com.example.KDBS.enums.UserActionType;
 import com.example.KDBS.model.*;
 import com.example.KDBS.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -20,64 +17,45 @@ import java.util.Optional;
 @Slf4j
 public class SuggestTourByArticleService {
 
-    private final UserRepository userRepository;
-    private final UserActionLogRepository logRepository;
     private final ArticleRepository articleRepository;
     private final TourRepository tourRepository;
     private final GeminiService geminiService;
     private final ObjectMapper objectMapper;
-    private final SuggestedTourRepository suggestedTourRepository;
+    public List<Tour> suggestToursByArticle(Long articleId) {
 
-    /**
-     * Suggest tour based on user article reading behavior.
-     * If email invalid → fallback to 10 latest logs of READ_ARTICLE.
-     */
-    public List<Tour> suggestToursForUser(int userId) {
-
-        User user = userRepository.findById(userId).orElse(null);
-
-        List<UserActionLog> logs;
-
-        if (user != null) {
-            logs = logRepository.findByUserAndActionTypeAndTargetType(
-                    user,
-                    UserActionType.READ_ARTICLE,
-                    UserActionTarget.ARTICLE
-            );
-        } else {
-            logs = logRepository.findTop10ByActionTypeAndTargetTypeOrderByCreatedAtDesc(
-                    UserActionType.READ_ARTICLE,
-                    UserActionTarget.ARTICLE
-            );
+        // CASE 1: Không có articleId → lấy 4 tour PUBLIC gần nhất
+        if (articleId == null || articleId == 0) {
+            return tourRepository
+                    .findTop4ByTourStatusOrderByCreatedAtDesc(TourStatus.PUBLIC);
         }
 
-        if (logs.isEmpty()) {
-            return List.of();
+        // CASE 2: Có articleId → lấy article
+        Article article = articleRepository.findById(articleId).orElse(null);
+
+        if (article == null) {
+            // articleId không tồn tại → fallback
+            return tourRepository
+                    .findTop4ByTourStatusOrderByCreatedAtDesc(TourStatus.PUBLIC);
         }
 
-        List<Article> articles = logs.stream()
-                .map(log -> articleRepository.findById(log.getTargetId()).orElse(null))
-                .filter(Objects::nonNull)
-                .toList();
-
-        if (articles.isEmpty()) {
-            return List.of();
-        }
-
-        List<Tour> tours = tourRepository.findAllByTourStatusIn(List.of(TourStatus.PUBLIC));
+        List<Tour> tours = tourRepository.findAllByTourStatusIn(
+                List.of(TourStatus.PUBLIC)
+        );
 
         if (tours.isEmpty()) {
             return List.of();
         }
 
-        // Build AI prompt
-        String prompt = buildPrompt(articles, tours);
+        // Build prompt từ 1 article
+        String prompt = buildPrompt(article, tours);
 
-        String aiResponse = geminiService.askGemini(prompt, "llama-3.1-8b-instant");
+        String aiResponse = geminiService.askGemini(
+                prompt,
+                "llama-3.1-8b-instant"
+        );
 
         String cleaned = cleanJson(aiResponse);
 
-        // Parse ai response
         SuggestTourResultResponse result;
         try {
             result = objectMapper.readValue(cleaned, SuggestTourResultResponse.class);
@@ -86,87 +64,61 @@ public class SuggestTourByArticleService {
             return List.of();
         }
 
-        // Convert IDs → List<Tour>
-        List<Tour> recommendedTours = result.getRecommendedTourIds().stream()
+        return result.getRecommendedTourIds().stream()
                 .map(tourRepository::findById)
                 .flatMap(Optional::stream)
                 .filter(t -> t.getTourStatus() == TourStatus.PUBLIC)
                 .toList();
-
-
-        if (user != null) {
-            for (Tour t : recommendedTours) {
-                SuggestedTour st = SuggestedTour.builder()
-                        .user(user)
-                        .tour(t)
-                        .build();
-                suggestedTourRepository.save(st);
-            }
-        }
-
-        return recommendedTours;
     }
 
 
-    private String buildPrompt(List<Article> articles, List<Tour> tours) {
+
+
+    private String buildPrompt(Article article, List<Tour> tours) {
 
         StringBuilder prompt = new StringBuilder("""
-               You are KDBS AI Recommendation Engine.
+        You are KDBS AI Recommendation Engine.
 
-               Your task:
-                   1. Analyze what the user is interested in based on the articles they read.
-               
-                   2. Determine user preferences such as:
-                        - preferred destinations (beach, mountains, historical sites, city tours)
-                        - activity type (cultural, adventure, sightseeing, spiritual)
-                        - duration preference (short vs. long tours)
-                        - scenic preferences (landscapes, beaches, night markets, rural areas)
-               
-                   3. Match these preferences with the list of tours provided later.
-               
-                   4. Output ONLY a pure JSON object:
-                   {
-                     "recommendedTourIds": [1, 5, 7, 10]
-                   }
-               
-               IMPORTANT RULES:
-                   - You MUST ALWAYS return at least 4 tourIds in the array.
-                   - If user interest signals strongly match specific tours → choose those tours.
-                   - If no clear match exists → choose 4 tours that are most relevant based on:
-                       * general travel popularity,
-                       * well-known destinations,
-                       * scenic appeal,
-                       * neutral or widely appealing tour types.
-                   - NEVER return fewer than 4 tourIds.
-                   - NEVER output explanations or natural language.
-               
-               ### USER INTEREST CONTENT:
-               
-               """);
+        Your task:
+            1. Analyze the user's interest based on the article content below.
 
-        for (Article a : articles) {
-            prompt.append("""
-                ---
-                Title: %s
-                Summary: %s
-                ---
-                """.formatted(
-                    safe(a.getArticleTitle()),
-                    safe(a.getArticleSummary())
-            ));
+            2. Determine preferences such as:
+                - destination type (beach, mountains, historical, city)
+                - activity type (cultural, adventure, sightseeing, spiritual)
+                - tour duration (short or long)
+                - scenery preference (nature, beach, night market, rural)
+
+            3. Match these preferences with the available tours.
+
+        Output format (STRICT):
+        {
+          "recommendedTourIds": [1, 5, 7, 10]
         }
 
-        prompt.append("\n### AVAILABLE TOURS (reduced fields):\n");
+        IMPORTANT RULES:
+            - ALWAYS return at least 4 tourIds.
+            - ONLY return tourIds that exist in the provided tour list.
+            - NEVER return explanations or additional text.
+
+        ### ARTICLE CONTENT:
+        Title: %s
+        Summary: %s
+
+        ### AVAILABLE TOURS:
+        """.formatted(
+                safe(article.getArticleTitleEN()),
+                safe(article.getArticleSummary())
+        ));
 
         for (Tour t : tours) {
             prompt.append("""
-                {
-                   "tourId": %d,
-                   "tourName": "%s",
-                   "tourDescription": "%s",
-                   "tourDuration": "%s"
-                }
-                """.formatted(
+            {
+              "tourId": %d,
+              "tourName": "%s",
+              "tourDescription": "%s",
+              "tourDuration": "%s"
+            }
+            """.formatted(
                     t.getTourId(),
                     safe(t.getTourName()),
                     safe(t.getTourDescription()),
@@ -175,13 +127,13 @@ public class SuggestTourByArticleService {
         }
 
         prompt.append("""
-
-            Select the most relevant tours.
-            Return ONLY JSON. 
-            """);
+        Select the 4 most relevant tours.
+        Return ONLY JSON.
+        """);
 
         return prompt.toString();
     }
+
 
     private String safe(String s) {
         return s == null ? "" : s.replace("\"", "'");
