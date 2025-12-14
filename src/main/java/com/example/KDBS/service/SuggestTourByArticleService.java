@@ -73,7 +73,7 @@ public class SuggestTourByArticleService {
         // Build AI prompt
         String prompt = buildPrompt(articles, tours);
 
-        String aiResponse = geminiService.askGemini(prompt, "groq/compound-mini");
+        String aiResponse = geminiService.askGemini(prompt, "llama-3.1-8b-instant");
 
         String cleaned = cleanJson(aiResponse);
 
@@ -112,7 +112,7 @@ public class SuggestTourByArticleService {
 
         StringBuilder prompt = new StringBuilder("""
                You are KDBS AI Recommendation Engine.
-                                       
+
                Your task:
                    1. Analyze what the user is interested in based on the articles they read.
                
@@ -142,7 +142,7 @@ public class SuggestTourByArticleService {
                
                ### USER INTEREST CONTENT:
                
-                """);
+               """);
 
         for (Article a : articles) {
             prompt.append("""
@@ -175,7 +175,7 @@ public class SuggestTourByArticleService {
         }
 
         prompt.append("""
-                
+
             Select the most relevant tours.
             Return ONLY JSON. 
             """);
