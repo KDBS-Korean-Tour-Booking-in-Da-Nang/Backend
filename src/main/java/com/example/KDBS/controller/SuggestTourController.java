@@ -17,8 +17,8 @@ public class SuggestTourController {
     private final SuggestTourViaBehaviorService suggestTourViaBehaviorService;
 
     @GetMapping("/suggestByArticle")
-    public List<Tour> suggestToursByArticle(@RequestParam(required = false) Integer userId) {
-        return suggestTourByArticleService.suggestToursForUser(userId != null ? userId : 0);
+    public List<Tour> suggestToursByArticle(@RequestParam(required = false) Long articleId) {
+        return suggestTourByArticleService.suggestToursByArticle(articleId);
     }
 
     @GetMapping("/suggestViaBehavior")
