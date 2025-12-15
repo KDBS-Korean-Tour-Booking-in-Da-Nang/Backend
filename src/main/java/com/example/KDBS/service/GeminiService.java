@@ -130,11 +130,7 @@ public class GeminiService {
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                     }
-                } else {
-                    // For non-rate-limit errors, throw immediately
-                    throw new RuntimeException("API call failed: " + e.getMessage(), e);
                 }
-
                 if (attempt >= maxRetries) {
                     throw new RuntimeException(
                             "Failed after " + maxRetries + " attempts across all API keys", e);
