@@ -6,6 +6,7 @@ import com.example.KDBS.service.GoogleOAuth2Service;
 import com.example.KDBS.service.NaverOAuth2Service;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @CrossOrigin("*")
+@Slf4j
 public class OAuth2Controller {
 
     private final GoogleOAuth2Service googleOAuth2Service;
@@ -43,6 +45,8 @@ public class OAuth2Controller {
         if (state != null && state.startsWith("platform=")) {
             platform = state.substring("platform=".length());
         }
+
+        log.info("Google OAuth2 callback received with platform: {}", platform);
 
         handleOAuthCallback(
                 () -> googleOAuth2Service.handleGoogleCallback(code),
