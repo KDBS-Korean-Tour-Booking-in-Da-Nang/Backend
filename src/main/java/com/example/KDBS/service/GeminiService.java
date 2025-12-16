@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.jwk.source.RateLimitReachedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -120,7 +121,7 @@ public class GeminiService {
                         attempt, currentKeyIndex.get(), e.getMessage());
 
                 // Check if it's a rate limit error
-                if (isRateLimitError(e)) {
+                if (isRateLimitError(e) || e instanceof RateLimitReachedException) {
                     log.info("Rate limit detected, rotating to next key...");
                     rotateToNextKey();
 
