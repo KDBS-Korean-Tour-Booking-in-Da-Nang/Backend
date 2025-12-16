@@ -38,7 +38,7 @@ public class Tour {
     @Column(name = "tour_description", columnDefinition = "MEDIUMTEXT")
     private String tourDescription;
 
-    @Column(name = "tour_img_path")
+    @Column(name = "tour_img_path", length = 1000)
     private String tourImgPath;
 
     @Column(name = "tour_duration")

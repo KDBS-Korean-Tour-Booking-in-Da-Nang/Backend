@@ -105,6 +105,8 @@ public class OAuth2Controller {
             frontendUrl = this.frontendUrl;
         }
 
+        log.info("Building frontend URL for provider: {}, platform: {}, base URL: {}", provider, platform, frontendUrl);
+
         return  frontendUrl + "/" + provider + "/callback?" +
                 "token=" + URLEncoder.encode(authResponse.getToken(), StandardCharsets.UTF_8) +
                 "&userId=" + authResponse.getUser().getUserId() +
