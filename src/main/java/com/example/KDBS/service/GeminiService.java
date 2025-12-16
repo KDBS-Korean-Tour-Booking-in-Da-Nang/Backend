@@ -211,7 +211,7 @@ public class GeminiService {
                        Content: %s
             
             """.formatted(title, description, content);
-        String response = askGemini(prompt, "meta-llama/llama-4-scout-17b-16e-instruct");
+        String response = askGemini(prompt, "llama-3.3-70b-versatile");
         response = cleanJson(response);
         try {
             ObjectMapper mapper = new ObjectMapper();

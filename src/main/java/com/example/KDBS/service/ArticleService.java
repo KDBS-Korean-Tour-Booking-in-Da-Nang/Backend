@@ -118,7 +118,7 @@ public class ArticleService {
             List<String> links = new ArrayList<>();
             int count = 0;
             for (Element article : articles) {
-                if (count >= 20)
+                if (count >= 2)
                     break;
                 String link = article.select("h3 > a").attr("abs:href").trim();
 
@@ -133,7 +133,7 @@ public class ArticleService {
 
             count = 0;
             for (Element article : articles) {
-                if (count >= 20)
+                if (count >= 2)
                     break;
                 String link = article.select("h3 > a").attr("abs:href").trim();
 
