@@ -12,13 +12,11 @@ public interface UserMapper {
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "email", source = "email")
     @Mapping(target = "username", source = "username")
-    @Mapping(target = "password", source = "password")
     @Mapping(target = "role", source = "role")
     User toUser(UserRegisterRequest request);
 
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "username", source = "username")
-    @Mapping(target = "password", source = "password")
     @Mapping(target = "staffTask", source = "staffTask")
     User toStaff(StaffCreateRequest request);
 
