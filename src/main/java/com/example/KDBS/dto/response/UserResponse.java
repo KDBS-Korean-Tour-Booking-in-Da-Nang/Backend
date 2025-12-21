@@ -1,7 +1,6 @@
 package com.example.KDBS.dto.response;
 
 import com.example.KDBS.enums.StaffTask;
-import com.example.KDBS.enums.Status;
 import com.example.KDBS.enums.SuggestionStatus;
 import lombok.*;
 
@@ -18,7 +17,6 @@ public class UserResponse {
     private int userId;
     private String username;
     private String email;
-    private String password;
     private String avatar;
     private String phone;
     private LocalDate dob;
