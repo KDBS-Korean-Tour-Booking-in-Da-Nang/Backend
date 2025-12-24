@@ -95,6 +95,8 @@ public class BookingService {
             savedBooking.setTotalDiscountAmount(preview.getFinalTotal());
         }
 
+        tour.setAmount(tour.getAmount() - 1); // Decrease available slots
+
         return buildBookingResponse(savedBooking, savedGuests);
     }
 
@@ -166,6 +168,9 @@ public class BookingService {
         if (booking.getVoucherCode() == null || booking.getVoucherCode().isBlank()) {
             voucherService.unlockVoucherOnBookingCancelled(bookingId);
         }
+
+        Tour tour = booking.getTour();
+        tour.setAmount(tour.getAmount() + 1); // Restore available slots
 
         return response;
     }
@@ -461,6 +466,8 @@ public class BookingService {
         }
 
         if (request.getStatus().equals(BookingStatus.BOOKING_REJECTED)) {
+            Tour tour = booking.getTour();
+            tour.setAmount(tour.getAmount() + 1); // Restore available slots
             booking.setRefundPercentage(100);
             booking.setRefundAmount(booking.getPayedAmount());
         }
@@ -637,6 +644,8 @@ public class BookingService {
 
             //If booking is failed, unlock and return voucher if any
             if (booking.getBookingStatus().equals(BookingStatus.BOOKING_FAILED)) {
+                Tour tour = booking.getTour();
+                tour.setAmount(tour.getAmount() + 1); // Restore available slots
                 if (booking.getVoucherCode() == null || booking.getVoucherCode().isBlank()) {
                     voucherService.unlockVoucherOnBookingCancelled(booking.getBookingId());
                 }
