@@ -43,8 +43,14 @@ public class BookingService {
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
-        Tour tour = tourRepository.findById(request.getTourId())
+        Tour tour = tourRepository.findByIdForUpdate(request.getTourId())
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
+
+        //Race condition checking
+        if (tour.getAmount() <= 0) {
+            throw new AppException(ErrorCode.TOUR_FULLY_BOOKED);
+        }
+        tour.setAmount(tour.getAmount() - 1);
 
         validateGuestCounts(request);
 
@@ -95,7 +101,9 @@ public class BookingService {
             savedBooking.setTotalDiscountAmount(preview.getFinalTotal());
         }
 
-        tour.setAmount(tour.getAmount() - 1); // Decrease available slots
+        if (tour.getAmount() <= 0) {
+            tour.setTourStatus(TourStatus.DISABLED);
+        }
 
         return buildBookingResponse(savedBooking, savedGuests);
     }
@@ -171,6 +179,10 @@ public class BookingService {
 
         Tour tour = booking.getTour();
         tour.setAmount(tour.getAmount() + 1); // Restore available slots
+
+        if (tour.getTourStatus().equals(TourStatus.DISABLED)) {
+            tour.setTourStatus(TourStatus.PUBLIC);
+        }
 
         return response;
     }
@@ -468,6 +480,9 @@ public class BookingService {
         if (request.getStatus().equals(BookingStatus.BOOKING_REJECTED)) {
             Tour tour = booking.getTour();
             tour.setAmount(tour.getAmount() + 1); // Restore available slots
+            if (tour.getTourStatus().equals(TourStatus.DISABLED)) {
+                tour.setTourStatus(TourStatus.PUBLIC);
+            }
             booking.setRefundPercentage(100);
             booking.setRefundAmount(booking.getPayedAmount());
         }
@@ -646,6 +661,9 @@ public class BookingService {
             if (booking.getBookingStatus().equals(BookingStatus.BOOKING_FAILED)) {
                 Tour tour = booking.getTour();
                 tour.setAmount(tour.getAmount() + 1); // Restore available slots
+                if (tour.getTourStatus().equals(TourStatus.DISABLED)) {
+                    tour.setTourStatus(TourStatus.PUBLIC);
+                }
                 if (booking.getVoucherCode() == null || booking.getVoucherCode().isBlank()) {
                     voucherService.unlockVoucherOnBookingCancelled(booking.getBookingId());
                 }

@@ -191,7 +191,9 @@ public enum ErrorCode {
 
         //Cancel Booking
         BOOKING_CANNOT_CANCEL(1107, "Booking cannot be cancelled in its current status", HttpStatus.BAD_REQUEST),
-        USER_NOT_YET_PAYED(1108, "User has not yet paid for the booking", HttpStatus.BAD_REQUEST);
+        USER_NOT_YET_PAYED(1108, "User has not yet paid for the booking", HttpStatus.BAD_REQUEST),
+
+        TOUR_FULLY_BOOKED(1110, "The tour is fully booked", HttpStatus.BAD_REQUEST);
 
         private final int code;
         private final String message;
