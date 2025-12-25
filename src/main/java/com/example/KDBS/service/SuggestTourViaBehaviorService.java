@@ -173,27 +173,28 @@ public class SuggestTourViaBehaviorService {
 
         StringBuilder prompt = new StringBuilder("""
                 You are KDBS AI Recommendation Engine.
-                                
+
                 Your task:
                     1. Analyze what the user is interested in based on the articles they read,
                        the forum posts they created, the comments they wrote, and the posts or comments they liked.
-                                
+
                     2. Determine user preferences such as:
                          - preferred destinations (beach, mountains, historical sites, city tours)
                          - activity type (cultural, adventure, sightseeing, spiritual)
                          - duration preference (short vs. long tours)
                          - scenic preferences (landscapes, beaches, night markets, rural areas)
-                                
+
                     3. Match these preferences with the list of tours provided later.
-                                
+
                     4. Output ONLY a pure JSON object:
                     {
-                      "recommendedTourIds": [1, 5, 7, 10]
+                      "recommendedTourIds": [1, 5, 7, 10, ...]
                     }
-                                
+
                 IMPORTANT RULES:
                     - If the database contains **4 or fewer tours**, you MUST return *all available tourIds* exactly as provided.
                     - If the database contains **more than 4 tours**, you MUST ALWAYS return at least 4 tourIds.
+                    - If there is more than 4 tours that strongly match user interests, return all possible strongly matching tours.
                     - If user interest signals have strong matches → return the most relevant tours.
                     - If user preferences are unclear → return 4 tours that are the most generally relevant based on:
                         * popularity,
@@ -207,7 +208,7 @@ public class SuggestTourViaBehaviorService {
                 - DO NOT invent tourIds.
                 - DO NOT choose tours that are not listed.
 
-                                
+
                 ### USER INTEREST CONTENT:
                 """);
 
