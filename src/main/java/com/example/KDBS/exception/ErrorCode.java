@@ -193,7 +193,10 @@ public enum ErrorCode {
         BOOKING_CANNOT_CANCEL(1107, "Booking cannot be cancelled in its current status", HttpStatus.BAD_REQUEST),
         USER_NOT_YET_PAYED(1108, "User has not yet paid for the booking", HttpStatus.BAD_REQUEST),
 
-        TOUR_FULLY_BOOKED(1110, "The tour is fully booked", HttpStatus.BAD_REQUEST);
+        TOUR_FULLY_BOOKED(1110, "The tour is fully booked", HttpStatus.BAD_REQUEST),
+        MIN_GUESTS_EXCEEDS_MAX_GUESTS(1111, "Minimum guests exceed maximum guests", HttpStatus.BAD_REQUEST),
+        GUESTS_MUST_BE_POSITIVE(1112, "Number of guests must be positive", HttpStatus.BAD_REQUEST),
+        GUESTS_CANNOT_EXCEED_LIMIT(1113, "Number of guests cannot exceed 99", HttpStatus.BAD_REQUEST);
 
         private final int code;
         private final String message;
