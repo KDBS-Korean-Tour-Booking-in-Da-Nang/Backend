@@ -1,9 +1,9 @@
 package com.example.KDBS.service;
 
 import com.example.KDBS.dto.request.TourRequest;
-import com.example.KDBS.dto.response.TourStatisticResponse;
 import com.example.KDBS.dto.response.TourPreviewResponse;
 import com.example.KDBS.dto.response.TourResponse;
+import com.example.KDBS.dto.response.TourStatisticResponse;
 import com.example.KDBS.enums.Role;
 import com.example.KDBS.enums.StaffTask;
 import com.example.KDBS.enums.TourStatus;
@@ -14,7 +14,6 @@ import com.example.KDBS.mapper.TourUpdateMapper;
 import com.example.KDBS.model.Tour;
 import com.example.KDBS.model.TourContent;
 import com.example.KDBS.model.TourContentImg;
-import com.example.KDBS.model.User;
 import com.example.KDBS.repository.*;
 import com.example.KDBS.utils.FileStorageService;
 import jakarta.transaction.Transactional;
@@ -66,6 +65,17 @@ public class TourService {
         var company = userRepository.findByEmailAndRole(request.getCompanyEmail(), Role.COMPANY)
                 .orElseThrow(() -> new AppException(ErrorCode.COMPANY_NOT_FOUND_WITH_EMAIL));
 
+        if (request.getMinGuests() <= 0 || request.getMaxGuests() <= 0) {
+            throw new AppException(ErrorCode.GUESTS_MUST_BE_POSITIVE);
+        }
+
+        if (request.getMinGuests() > 99 || request.getMaxGuests() > 99) {
+            throw new AppException(ErrorCode.GUESTS_CANNOT_EXCEED_LIMIT);
+        }
+
+        if (request.getMinGuests() > request.getMaxGuests()) {
+            throw new AppException(ErrorCode.MIN_GUESTS_EXCEEDS_MAX_GUESTS);
+        }
 
         //Tour expiration date must be after tour deadline + 1 day(so if is 7 days, must be at least 8 days later)
         if (LocalDate.now().plusDays(request.getTourCheckDays() + 1).isAfter(request.getTourExpirationDate())){

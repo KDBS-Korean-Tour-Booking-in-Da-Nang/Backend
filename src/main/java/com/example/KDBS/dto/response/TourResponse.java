@@ -23,6 +23,8 @@ public class TourResponse {
     private String tourType;
     private String tourSchedule;
     private int amount;
+    private int minGuests;
+    private int maxGuests;
     private int balancePaymentDays;
     private int minAdvancedDays;
     private int depositPercentage;

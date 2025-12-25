@@ -40,8 +40,7 @@ public class GeminiService {
         return createChatClient(apiKeys.get(0));
     }
 
-    private static final String TRAVEL_ASSISTANT_SYSTEM_PROMPT =
-            """
+    private static final String TRAVEL_ASSISTANT_SYSTEM_PROMPT = """
             My system is a management platform for booking Da Nang tours targeted at Korean tourists.
             You will act as the AI assistant for this system to answer user questions from both tourists and companies. If users ask about operational steps or system terms, you will explain them clearly.
             CRITICAL: You MUST respond in the EXACT SAME LANGUAGE as the user's question.
@@ -53,6 +52,8 @@ public class GeminiService {
             Tour Name: The name of the tour. You should proactively suggest naming it in Korean to reach more Korean users.
             Durations and Nights: These indicate the days and nights of the tour, for example, 3 days and 2 nights, or 4 days and 3 nights.
             Number of available tours: The number of tours the company wants to offer on the system.
+            Max Guests: The maximum number of guests allowed for the tour.
+            Min Guests: The minimum number of guests required for the tour to proceed.
             Booking Cut-off Date: The date after which the tour can no longer be booked, meaning the company stops offering it on the system. However, any bookings made before this date will still proceed normally.
             Check Day: The estimated time the company needs to process documents on the system. This can vary based on each company's actual operations.
             Balance Payment Day: The deadline for users to pay the remaining balance of their booking.
@@ -146,71 +147,76 @@ public class GeminiService {
         if (text == null || text.isEmpty()) {
             throw new AppException(ErrorCode.TEXT_IS_EMPTY);
         }
-        String prompt =
-                "You are a professional Korean translator with 10+ years of experience in localizing online community content " +
-                        "with a deep understanding of both formal and casual language, internet slang, and forum communication styles. " +
-                        "Translate the following text into Korean in a casual, conversational style suitable for forum discussions. " +
-                        "Preserve ALL quotation marks exactly as they appear, including any phrases inside \"...\". " +
-                        "Do NOT remove, change, or omit quoted parts—translate them naturally into Korean while keeping the quotes. " +
-                        "Handle slang or informal expressions naturally. " +
-                        "Return ONLY the translated Korean text with no explanations or commentary.\n\n" +
-                        "Text to translate: \"" + text + "\"";
+        String prompt = "You are a professional Korean translator with 10+ years of experience in localizing online community content "
+                +
+                "with a deep understanding of both formal and casual language, internet slang, and forum communication styles. "
+                +
+                "Translate the following text into Korean in a casual, conversational style suitable for forum discussions. "
+                +
+                "Preserve ALL quotation marks exactly as they appear, including any phrases inside \"...\". " +
+                "Do NOT remove, change, or omit quoted parts—translate them naturally into Korean while keeping the quotes. "
+                +
+                "Handle slang or informal expressions naturally. " +
+                "Return ONLY the translated Korean text with no explanations or commentary.\n\n" +
+                "Text to translate: \"" + text + "\"";
 
         return askGemini(prompt, "llama-3.3-70b-versatile");
     }
 
-    public TranslatedArticleResponse translateArticleToEnglishAndKorean(String title, String description, String content) {
+    public TranslatedArticleResponse translateArticleToEnglishAndKorean(String title, String description,
+            String content) {
         if (title == null || title.isEmpty() ||
-            description == null || description.isEmpty() ||
-            content == null || content.isEmpty()) {
+                description == null || description.isEmpty() ||
+                content == null || content.isEmpty()) {
             throw new AppException(ErrorCode.ARTICLE_FIELDS_EMPTY);
         }
         String prompt = """
-            You are a professional Korean and English translator with over 10 years of experience
-                       in localizing articles for diverse audiences. Translate the provided article into English and Korean.
-            
-                       Return ONLY a valid JSON object.
-                       DO NOT wrap the JSON in backticks.
-                       DO NOT add ```json or ``` at all.
-                       DO NOT add any explanations, comments, or text outside the JSON.
-                       Add \\" to escape all double quotes within string values.
-                       Output MUST start with "{" and end with "}".
-            
-                       CRITICAL: All string values MUST be on a single line with NO line breaks.
-                       Replace all newline characters with spaces or remove them entirely.
-                       Ensure the entire JSON is valid and can be parsed without errors.
-            
-                       Use the following structure exactly:
-            
-                       {
-                         "articleTitleEN": "",
-                         "articleDescriptionEN": "",
-                         "articleContentEN": "",
-                         "articleTitleKR": "",
-                         "articleDescriptionKR": "",
-                         "articleContentKR": "",
-                         "articleSummary": ""
-                       }
-            
-                       Rules:
-                       Translate text only.
-                       Preserve all HTML tags exactly as they are.
-                       DO NOT include any newlines or line breaks within the HTML content strings.
-                       Keep all HTML on a single continuous line.
-                       Do NOT translate HTML tags or special characters.
-                       Insert translated English content in *EN fields*.
-                       Insert translated Korean content in *KR fields*.
-            
-                       Summarize the article in English in 2-3 sentences,
-                       include the location that the article talk about and key information that would help analyze user interests
-                       and improve personalized tour recommendations, without adding full descriptions. Place the result in the "articleSummary" field.
-            
-                       Original Article:
-                       Title: %s
-                       Description: %s
-                       Content: %s
-            
-            """.formatted(title, description, content);
+                You are a professional Korean and English translator with over 10 years of experience
+                           in localizing articles for diverse audiences. Translate the provided article into English and Korean.
+
+                           Return ONLY a valid JSON object.
+                           DO NOT wrap the JSON in backticks.
+                           DO NOT add ```json or ``` at all.
+                           DO NOT add any explanations, comments, or text outside the JSON.
+                           Add \\" to escape all double quotes within string values.
+                           Output MUST start with "{" and end with "}".
+
+                           CRITICAL: All string values MUST be on a single line with NO line breaks.
+                           Replace all newline characters with spaces or remove them entirely.
+                           Ensure the entire JSON is valid and can be parsed without errors.
+
+                           Use the following structure exactly:
+
+                           {
+                             "articleTitleEN": "",
+                             "articleDescriptionEN": "",
+                             "articleContentEN": "",
+                             "articleTitleKR": "",
+                             "articleDescriptionKR": "",
+                             "articleContentKR": "",
+                             "articleSummary": ""
+                           }
+
+                           Rules:
+                           Translate text only.
+                           Preserve all HTML tags exactly as they are.
+                           DO NOT include any newlines or line breaks within the HTML content strings.
+                           Keep all HTML on a single continuous line.
+                           Do NOT translate HTML tags or special characters.
+                           Insert translated English content in *EN fields*.
+                           Insert translated Korean content in *KR fields*.
+
+                           Summarize the article in English in 2-3 sentences,
+                           include the location that the article talk about and key information that would help analyze user interests
+                           and improve personalized tour recommendations, without adding full descriptions. Place the result in the "articleSummary" field.
+
+                           Original Article:
+                           Title: %s
+                           Description: %s
+                           Content: %s
+
+                """
+                .formatted(title, description, content);
         String response = askGemini(prompt, "llama-3.3-70b-versatile");
         response = cleanJson(response);
         try {
@@ -242,9 +248,9 @@ public class GeminiService {
         return askGemini(prompt.toString(), "llama-3.1-8b-instant");
     }
 
-
     private String cleanJson(String raw) {
-        if (raw == null) return null;
+        if (raw == null)
+            return null;
 
         // Remove any markdown code fences
         raw = raw.replace("```json", "")

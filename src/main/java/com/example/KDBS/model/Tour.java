@@ -78,7 +78,14 @@ public class Tour {
     @Column(name = "tour_schedule", columnDefinition = "TEXT")
     private String tourSchedule;
 
+    @Column(name = "amount")
     private int amount;
+
+    @Column(name = "min_guests")
+    private int minGuests;
+
+    @Column(name = "max_guests")
+    private int maxGuests;
 
     @Column(name = "adult_price", precision = 10, scale = 2)
     private BigDecimal adultPrice;

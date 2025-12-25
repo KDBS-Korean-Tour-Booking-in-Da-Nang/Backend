@@ -49,7 +49,17 @@ public class TourUpdateService {
         Tour original = tourRepository.findByIdWithContents(tourId)
                 .orElseThrow(() -> new AppException(ErrorCode.TOUR_NOT_FOUND));
 
+        if (req.getUpdatedTour().getMinGuests() <= 0 || req.getUpdatedTour().getMaxGuests() <= 0) {
+            throw new AppException(ErrorCode.GUESTS_MUST_BE_POSITIVE);
+        }
 
+        if (req.getUpdatedTour().getMinGuests() > 99 || req.getUpdatedTour().getMaxGuests() > 99) {
+            throw new AppException(ErrorCode.GUESTS_CANNOT_EXCEED_LIMIT);
+        }
+
+        if (req.getUpdatedTour().getMinGuests() > req.getUpdatedTour().getMaxGuests()) {
+            throw new AppException(ErrorCode.MIN_GUESTS_EXCEEDS_MAX_GUESTS);
+        }
 
         // Save new tour image (optional)
         String imgPath = null;
