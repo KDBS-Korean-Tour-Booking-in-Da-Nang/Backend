@@ -41,6 +41,8 @@ public class TourRequest {
     private String tourSchedule;
     @NotNull(message = "Tour amount is required")
     private int amount;
+    private int minGuests;
+    private int maxGuests;
     private int balancePaymentDays;
     private int minAdvancedDays;
     private int depositPercentage;

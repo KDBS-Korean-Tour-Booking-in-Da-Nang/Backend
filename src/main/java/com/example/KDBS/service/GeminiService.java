@@ -50,6 +50,8 @@ public class GeminiService {
                     Number of available tours: The number of tours the company wants to offer on the system.
                     Booking Cut-off Date: The date after which the tour can no longer be booked, meaning the company stops offering it on the system. However, any bookings made before this date will still proceed normally.
                     Check Day: The estimated time the company needs to process documents on the system. This can vary based on each company's actual operations.
+                    Max Guests: The maximum number of guests allowed for the tour.
+                    Min Guests: The minimum number of guests required for the tour to proceed.
                     Balance Payment Day: The deadline for users to pay the remaining balance of their booking.
                     Minimum Advance Day: This is the required lead time before the departure date for the company to approve documents and for the user to pay the remaining balance. It's calculated as Minimum Advance Day = Check Day + Balance Payment Day. This only starts after the user pays the deposit. After the Check Date, the user has (Balance Payment Day) days to pay the remaining amount. If not, the booking will automatically fail and be refunded according to specific rules.
                     Deposit Percentage: The percentage of the deposit that the company sets for the tours they create.
