@@ -102,7 +102,7 @@ public class BookingService {
         }
 
         if (tour.getAmount() <= 0) {
-            tour.setTourStatus(TourStatus.DISABLED);
+            tour.setTourStatus(TourStatus.OUT_OF_TOUR);
         }
 
         return buildBookingResponse(savedBooking, savedGuests);
@@ -180,7 +180,7 @@ public class BookingService {
         Tour tour = booking.getTour();
         tour.setAmount(tour.getAmount() + 1); // Restore available slots
 
-        if (tour.getTourStatus().equals(TourStatus.DISABLED)) {
+        if (tour.getTourStatus().equals(TourStatus.OUT_OF_TOUR)) {
             tour.setTourStatus(TourStatus.PUBLIC);
         }
 
@@ -480,7 +480,7 @@ public class BookingService {
         if (request.getStatus().equals(BookingStatus.BOOKING_REJECTED)) {
             Tour tour = booking.getTour();
             tour.setAmount(tour.getAmount() + 1); // Restore available slots
-            if (tour.getTourStatus().equals(TourStatus.DISABLED)) {
+            if (tour.getTourStatus().equals(TourStatus.OUT_OF_TOUR)) {
                 tour.setTourStatus(TourStatus.PUBLIC);
             }
             booking.setRefundPercentage(100);
@@ -661,7 +661,7 @@ public class BookingService {
             if (booking.getBookingStatus().equals(BookingStatus.BOOKING_FAILED)) {
                 Tour tour = booking.getTour();
                 tour.setAmount(tour.getAmount() + 1); // Restore available slots
-                if (tour.getTourStatus().equals(TourStatus.DISABLED)) {
+                if (tour.getTourStatus().equals(TourStatus.OUT_OF_TOUR)) {
                     tour.setTourStatus(TourStatus.PUBLIC);
                 }
                 if (booking.getVoucherCode() == null || booking.getVoucherCode().isBlank()) {
